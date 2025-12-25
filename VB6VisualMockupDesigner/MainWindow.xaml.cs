@@ -6,10 +6,12 @@ using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
+
 
 namespace VB6VisualMockupDesigner
 {
@@ -22,6 +24,10 @@ namespace VB6VisualMockupDesigner
         private UIElement _selectedElement = null;
         private Point _clickPosition;
         private const int PixelsToTwips = 15;
+
+        // Variables para el Adorner (Redimensionamiento)
+        private AdornerLayer _adornerLayer;
+        private ResizeAdorner _currentAdorner;
 
         // Contadores
         private int _btnCount = 1; private int _lblCount = 1;
@@ -37,57 +43,145 @@ namespace VB6VisualMockupDesigner
         public MainWindow()
         {
             InitializeComponent();
+
+            // Inicializar la capa de adornos cuando la ventana cargue
+            this.Loaded += (s, e) => _adornerLayer = AdornerLayer.GetAdornerLayer(DesignCanvas);
         }
+
+        #region Interactividad (Selección y Redimensionamiento)
+
+        private void Control_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            SelectElement((UIElement)sender);
+            _clickPosition = e.GetPosition(_selectedElement);
+            _selectedElement.CaptureMouse();
+            e.Handled = true;
+        }
+
+        private void SelectElement(UIElement element)
+        {
+            // 1. Limpiar selección anterior (quitar los puntos azules del control previo)
+            if (_selectedElement != null) RemoveAdorner(_selectedElement);
+
+            _selectedElement = element;
+
+            // 2. Mostrar Adorner de redimensionamiento en el nuevo control
+            ShowAdorner(_selectedElement);
+
+            if (_selectedElement is FrameworkElement fe)
+            {
+                PropHeaderTitle.Text = "Propiedades - " + fe.Name;
+                PropName.Text = fe.Name;
+
+                if (fe is TextBox txt) { LabelPropCaption.Text = "Text"; PropCaption.Text = txt.Text; }
+                else if (fe is GroupBox grp) { LabelPropCaption.Text = "Caption"; PropCaption.Text = grp.Header?.ToString(); }
+                else if (fe is ContentControl cc) { LabelPropCaption.Text = "Caption"; PropCaption.Text = cc.Content?.ToString(); }
+                else { LabelPropCaption.Text = "Caption"; PropCaption.Text = ""; }
+
+                UpdatePositionProperties();
+            }
+        }
+
+        // --- LÓGICA DE REDIMENSIONAMIENTO ---
+        private void ShowAdorner(UIElement element)
+        {
+            if (_adornerLayer != null)
+            {
+                _currentAdorner = new ResizeAdorner(element);
+                _adornerLayer.Add(_currentAdorner);
+            }
+        }
+
+        private void RemoveAdorner(UIElement element)
+        {
+            if (_adornerLayer != null && _currentAdorner != null)
+            {
+                _adornerLayer.Remove(_currentAdorner);
+                _currentAdorner = null;
+            }
+        }
+        // ------------------------------------
+
+        private void UpdatePositionProperties()
+        {
+            if (_selectedElement != null && _selectedElement is FrameworkElement fe)
+            {
+                double leftPx = Canvas.GetLeft(_selectedElement);
+                double topPx = Canvas.GetTop(_selectedElement);
+                PropLeft.Text = (Math.Round(leftPx) * PixelsToTwips).ToString();
+                PropTop.Text = (Math.Round(topPx) * PixelsToTwips).ToString();
+            }
+        }
+
+        private void Control_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (_selectedElement != null && _selectedElement.IsMouseCaptured)
+            {
+                Point currentMousePos = e.GetPosition(DesignCanvas);
+
+                // Snap to grid (8px)
+                double newLeft = Math.Round((currentMousePos.X - _clickPosition.X) / 8) * 8;
+                double newTop = Math.Round((currentMousePos.Y - _clickPosition.Y) / 8) * 8;
+
+                if (newLeft < 0) newLeft = 0;
+                if (newTop < 0) newTop = 0;
+
+                Canvas.SetLeft(_selectedElement, newLeft);
+                Canvas.SetTop(_selectedElement, newTop);
+                UpdatePositionProperties();
+            }
+            // Si solo movemos el mouse sobre el objeto seleccionado (sin arrastrar),
+            // actualizamos las propiedades por si el Adorner cambió el tamaño
+            else if (_selectedElement != null)
+            {
+                UpdatePositionProperties();
+            }
+        }
+
+        private void Control_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            if (_selectedElement != null && _selectedElement.IsMouseCaptured)
+                _selectedElement.ReleaseMouseCapture();
+        }
+
+        private void DesignCanvas_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            // Deseleccionar al hacer clic en el fondo y quitar Adorner
+            if (_selectedElement != null) RemoveAdorner(_selectedElement);
+
+            _selectedElement = null;
+            PropHeaderTitle.Text = "Propiedades - Form1";
+            PropName.Text = "Form1";
+            PropCaption.Text = "Form1";
+            PropLeft.Text = "0";
+            PropTop.Text = "0";
+        }
+
+        #endregion
 
         #region Funciones de Archivo (Importar / Exportar)
 
-        // IMPORTAR .FRM
         private void ImportFrm_Click(object sender, RoutedEventArgs e)
         {
             OpenFileDialog openFileDialog = new OpenFileDialog();
             openFileDialog.Filter = "VB6 Form (*.frm)|*.frm|All files (*.*)|*.*";
-
-            if (openFileDialog.ShowDialog() == true)
-            {
-                try { ParseVb6Frm(openFileDialog.FileName); }
-                catch (Exception ex) { MessageBox.Show("Error al importar: " + ex.Message); }
-            }
+            if (openFileDialog.ShowDialog() == true) try { ParseVb6Frm(openFileDialog.FileName); } catch (Exception ex) { MessageBox.Show(ex.Message); }
         }
 
-        // EXPORTAR CÓDIGO VB6
         private void ExportCode_Click(object sender, RoutedEventArgs e)
         {
             SaveFileDialog saveFileDialog = new SaveFileDialog();
             saveFileDialog.Filter = "VB6 Form (*.frm)|*.frm";
             saveFileDialog.FileName = "Form1_New.frm";
-
-            if (saveFileDialog.ShowDialog() == true)
-            {
-                try
-                {
-                    File.WriteAllText(saveFileDialog.FileName, GenerateVb6Code());
-                    MessageBox.Show("Código generado correctamente.");
-                }
-                catch (Exception ex) { MessageBox.Show("Error al guardar: " + ex.Message); }
-            }
+            if (saveFileDialog.ShowDialog() == true) try { File.WriteAllText(saveFileDialog.FileName, GenerateVb6Code()); MessageBox.Show("Código generado."); } catch (Exception ex) { MessageBox.Show(ex.Message); }
         }
 
-        // EXPORTAR IMAGEN PNG
         private void ExportImage_Click(object sender, RoutedEventArgs e)
         {
             SaveFileDialog saveFileDialog = new SaveFileDialog();
             saveFileDialog.Filter = "PNG Image (*.png)|*.png";
             saveFileDialog.FileName = "Mockup.png";
-
-            if (saveFileDialog.ShowDialog() == true)
-            {
-                try
-                {
-                    SaveCanvasToImage(saveFileDialog.FileName);
-                    MessageBox.Show("Imagen guardada.");
-                }
-                catch (Exception ex) { MessageBox.Show("Error al guardar imagen: " + ex.Message); }
-            }
+            if (saveFileDialog.ShowDialog() == true) try { SaveCanvasToImage(saveFileDialog.FileName); MessageBox.Show("Imagen guardada."); } catch (Exception ex) { MessageBox.Show(ex.Message); }
         }
 
         #endregion
@@ -256,9 +350,7 @@ namespace VB6VisualMockupDesigner
         private void AddFileListBox_Click(object sender, RoutedEventArgs e) => CreateControl<ListBox>("File", ref _filCount, l => { l.Width = 120; l.Height = 80; });
         private void AddShape_Click(object sender, RoutedEventArgs e) => CreateControl<Rectangle>("Shape", ref _shpCount, r => { r.Width = 64; r.Height = 64; r.Stroke = Brushes.Black; r.StrokeThickness = 1; });
         private void AddLine_Click(object sender, RoutedEventArgs e) => CreateControl<Line>("Line", ref _linCount, l => { l.X1 = 0; l.Y1 = 0; l.X2 = 80; l.Y2 = 80; l.Stroke = Brushes.Black; l.StrokeThickness = 1; });
-
-        // Manejador faltante que causaba el error
-        private void AddImage_Click(object sender, RoutedEventArgs e) => CreateControl<Image>("Image", ref _imgCount, i => { i.Width = 80; i.Height = 60; i.Source = null; /* Placeholder */ });
+        private void AddImage_Click(object sender, RoutedEventArgs e) => CreateControl<Image>("Image", ref _imgCount, i => { i.Width = 80; i.Height = 60; i.Source = null; });
 
         private void CreateControl<T>(string prefix, ref int counter, Action<T> initialize) where T : FrameworkElement, new()
         {
@@ -299,79 +391,6 @@ namespace VB6VisualMockupDesigner
 
         private Brush GetVbGray() => new SolidColorBrush(Color.FromRgb(212, 208, 200));
 
-        #endregion
-
-        #region Interactividad
-
-        private void Control_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-        {
-            SelectElement((UIElement)sender);
-            _clickPosition = e.GetPosition(_selectedElement);
-            _selectedElement.CaptureMouse();
-            e.Handled = true;
-        }
-
-        private void SelectElement(UIElement element)
-        {
-            _selectedElement = element;
-            if (_selectedElement is FrameworkElement fe)
-            {
-                PropHeaderTitle.Text = "Propiedades - " + fe.Name;
-                PropName.Text = fe.Name;
-
-                if (fe is TextBox txt) { LabelPropCaption.Text = "Text"; PropCaption.Text = txt.Text; }
-                else if (fe is GroupBox grp) { LabelPropCaption.Text = "Caption"; PropCaption.Text = grp.Header?.ToString(); }
-                else if (fe is ContentControl cc) { LabelPropCaption.Text = "Caption"; PropCaption.Text = cc.Content?.ToString(); }
-                else { LabelPropCaption.Text = "Caption"; PropCaption.Text = ""; }
-
-                UpdatePositionProperties();
-            }
-        }
-
-        private void UpdatePositionProperties()
-        {
-            if (_selectedElement != null)
-            {
-                double leftPx = Canvas.GetLeft(_selectedElement);
-                double topPx = Canvas.GetTop(_selectedElement);
-                PropLeft.Text = (Math.Round(leftPx) * PixelsToTwips).ToString();
-                PropTop.Text = (Math.Round(topPx) * PixelsToTwips).ToString();
-            }
-        }
-
-        private void Control_MouseMove(object sender, MouseEventArgs e)
-        {
-            if (_selectedElement != null && _selectedElement.IsMouseCaptured)
-            {
-                Point currentMousePos = e.GetPosition(DesignCanvas);
-                double newLeft = Math.Round((currentMousePos.X - _clickPosition.X) / 8) * 8;
-                double newTop = Math.Round((currentMousePos.Y - _clickPosition.Y) / 8) * 8;
-
-                if (newLeft < 0) newLeft = 0;
-                if (newTop < 0) newTop = 0;
-
-                Canvas.SetLeft(_selectedElement, newLeft);
-                Canvas.SetTop(_selectedElement, newTop);
-                UpdatePositionProperties();
-            }
-        }
-
-        private void Control_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
-        {
-            if (_selectedElement != null && _selectedElement.IsMouseCaptured)
-                _selectedElement.ReleaseMouseCapture();
-        }
-
-        private void DesignCanvas_MouseDown(object sender, MouseButtonEventArgs e)
-        {
-            _selectedElement = null;
-            PropHeaderTitle.Text = "Propiedades - Form1";
-            PropName.Text = "Form1";
-            PropCaption.Text = "Form1";
-            PropLeft.Text = "0";
-            PropTop.Text = "0";
-        }
-
         private void PropCaption_TextChanged(object sender, TextChangedEventArgs e)
         {
             if (_selectedElement == null) return;
@@ -388,7 +407,6 @@ namespace VB6VisualMockupDesigner
                 PropHeaderTitle.Text = "Propiedades - " + fe.Name;
             }
         }
-
         #endregion
     }
 

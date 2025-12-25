@@ -50,7 +50,7 @@
             <Setter Property="Margin" Value="0,0,0,10"/>
         </Style>
 
-        <!-- Fondo de puntos para el Canvas -->
+        <!-- Fondo de puntos para el Canvas (Estilo VB6) -->
         <VisualBrush x:Key="VB6GridBrush" TileMode="Tile" Viewport="0,0,8,8" ViewportUnits="Absolute">
             <VisualBrush.Visual>
                 <Canvas>
@@ -60,7 +60,7 @@
         </VisualBrush>
     </Window.Resources>
 
-    <!-- GRID PRINCIPAL: Dividido en Barra Superior (Auto) y Área de Trabajo (*) -->
+    <!-- GRID PRINCIPAL -->
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -139,7 +139,7 @@
                                 </Grid>
                             </Button>
 
-                            <!-- OptionButton -->
+                            <!-- OptionButton (Corregido) -->
                             <Button Style="{StaticResource ToolboxButtonStyle}" ToolTip="OptionButton" Click="AddOptionButton_Click">
                                 <Grid Width="12" Height="12">
                                     <Ellipse Stroke="Black" StrokeThickness="1" Fill="White"/>
@@ -185,7 +185,7 @@
                                 </Border>
                             </Button>
 
-                            <!-- Timer -->
+                            <!-- Timer (Corregido) -->
                             <Button Style="{StaticResource ToolboxButtonStyle}" ToolTip="Timer" Click="AddTimer_Click">
                                 <Grid Width="18" Height="18">
                                     <Ellipse Stroke="Black" StrokeThickness="1"/>
