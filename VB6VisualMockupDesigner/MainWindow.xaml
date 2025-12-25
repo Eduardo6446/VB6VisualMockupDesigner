@@ -140,7 +140,7 @@
                                 </Grid>
                             </Button>
 
-                            <!-- OptionButton (Corregido) -->
+                            <!-- OptionButton -->
                             <Button Style="{StaticResource ToolboxButtonStyle}" ToolTip="OptionButton" Click="AddOptionButton_Click">
                                 <Grid Width="12" Height="12">
                                     <Ellipse Stroke="Black" StrokeThickness="1" Fill="White"/>
@@ -186,7 +186,7 @@
                                 </Border>
                             </Button>
 
-                            <!-- Timer (Corregido) -->
+                            <!-- Timer -->
                             <Button Style="{StaticResource ToolboxButtonStyle}" ToolTip="Timer" Click="AddTimer_Click">
                                 <Grid Width="18" Height="18">
                                     <Ellipse Stroke="Black" StrokeThickness="1"/>
@@ -235,10 +235,22 @@
                         <DropShadowEffect BlurRadius="15" Direction="270" Opacity="0.3" ShadowDepth="5"/>
                     </Border.Effect>
                     <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                        <!-- Añadimos MouseMove y MouseUp al Canvas para el rectángulo de selección -->
                         <Canvas Name="DesignCanvas" 
                                 Width="800" Height="600" 
                                 Background="{StaticResource VB6GridBrush}"
-                                MouseDown="DesignCanvas_MouseDown">
+                                MouseDown="DesignCanvas_MouseDown"
+                                MouseMove="DesignCanvas_MouseMove"
+                                MouseUp="DesignCanvas_MouseUp">
+
+                            <!-- Rectángulo de Selección (Lazo azul) -->
+                            <!-- Panel.ZIndex alto para que se dibuje por encima de todo -->
+                            <Rectangle x:Name="SelectionBox" 
+                                       Stroke="#3399FF" 
+                                       StrokeThickness="1" 
+                                       Fill="#330000FF" 
+                                       Visibility="Collapsed"
+                                       Panel.ZIndex="9999"/>
                         </Canvas>
                     </ScrollViewer>
                 </Border>
@@ -298,6 +310,5 @@
             </Border>
         </Grid>
     </Grid>
-
 
 </Window>
