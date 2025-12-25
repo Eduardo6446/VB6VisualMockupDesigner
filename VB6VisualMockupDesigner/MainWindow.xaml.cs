@@ -1,19 +1,17 @@
-﻿using Microsoft.Win32;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
-using System.Windows.Documents;
+using System.Windows.Documents; 
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
-
-
-
+using Microsoft.Win32;
+using System.Linq; 
 
 namespace VB6VisualMockupDesigner
 {
@@ -33,18 +31,33 @@ namespace VB6VisualMockupDesigner
         private const int PixelsToTwips = 15;
         private AdornerLayer _adornerLayer;
 
+        // --- SISTEMA DE UNDO / REDO ---
+        private Stack<List<ControlState>> _undoStack = new Stack<List<ControlState>>();
+        private Stack<List<ControlState>> _redoStack = new Stack<List<ControlState>>();
+        private List<ControlState> _stateBeforeDrag; // Para guardar estado antes de mover
+
+        private class ControlState
+        {
+            public string Name { get; set; }
+            public string VbType { get; set; }
+            public double Left { get; set; }
+            public double Top { get; set; }
+            public double Width { get; set; }
+            public double Height { get; set; }
+            public string Text { get; set; }
+        }
+
         // --- PORTAPAPELES INTERNO ---
         private List<ClipboardData> _internalClipboard = new List<ClipboardData>();
 
-        // Clase simple para guardar datos de copia
         private class ClipboardData
         {
             public string VbType { get; set; }
             public double Width { get; set; }
             public double Height { get; set; }
-            public double Left { get; set; } // Guardamos posición relativa
+            public double Left { get; set; }
             public double Top { get; set; }
-            public string Text { get; set; } // Text, Caption o Header
+            public string Text { get; set; }
         }
 
         // --- CONTADORES ---
@@ -68,15 +81,26 @@ namespace VB6VisualMockupDesigner
             this.Loaded += (s, e) => _adornerLayer = AdornerLayer.GetAdornerLayer(DesignCanvas);
         }
 
-        #region Atajos de Teclado (Delete, Copy, Paste)
+        #region Atajos de Teclado (Undo, Redo, Delete, Copy, Paste)
 
         protected override void OnKeyDown(KeyEventArgs e)
         {
             base.OnKeyDown(e);
 
-            // Eliminar
-            if (e.Key == Key.Delete)
+            // Undo (Ctrl + Z)
+            if (e.Key == Key.Z && Keyboard.Modifiers == ModifierKeys.Control)
             {
+                Undo();
+            }
+            // Redo (Ctrl + Y)
+            else if (e.Key == Key.Y && Keyboard.Modifiers == ModifierKeys.Control)
+            {
+                Redo();
+            }
+            // Eliminar
+            else if (e.Key == Key.Back || e.Key == Key.Delete)
+            {
+                RecordUndo(); // Guardar estado antes de borrar
                 DeleteSelectedControls();
             }
             // Copiar (Ctrl + C)
@@ -87,21 +111,123 @@ namespace VB6VisualMockupDesigner
             // Pegar (Ctrl + V)
             else if (e.Key == Key.V && Keyboard.Modifiers == ModifierKeys.Control)
             {
+                RecordUndo(); // Guardar estado antes de pegar
                 PasteControls();
             }
         }
+
+        #region Lógica Undo / Redo
+
+        private void RecordUndo()
+        {
+            // Guardar el estado actual en la pila de deshacer
+            _undoStack.Push(GetCurrentState());
+            // Al hacer una nueva acción, se limpia la pila de rehacer
+            _redoStack.Clear();
+        }
+
+        private void Undo()
+        {
+            if (_undoStack.Count == 0) return;
+
+            // Guardar estado actual en Redo antes de volver atrás
+            _redoStack.Push(GetCurrentState());
+
+            // Recuperar y aplicar el estado anterior
+            var previousState = _undoStack.Pop();
+            RestoreState(previousState);
+        }
+
+        private void Redo()
+        {
+            if (_redoStack.Count == 0) return;
+
+            // Guardar estado actual en Undo antes de avanzar
+            _undoStack.Push(GetCurrentState());
+
+            // Recuperar y aplicar el estado futuro
+            var nextState = _redoStack.Pop();
+            RestoreState(nextState);
+        }
+
+        private List<ControlState> GetCurrentState()
+        {
+            var state = new List<ControlState>();
+            foreach (UIElement child in DesignCanvas.Children)
+            {
+                if (child is FrameworkElement fe && child != SelectionBox)
+                {
+                    string vbType = MapWpfToVbType(fe);
+                    string text = "";
+
+                    if (fe is TextBox txt) text = txt.Text;
+                    else if (fe is GroupBox gb) text = gb.Header?.ToString();
+                    else if (fe is ContentControl cc) text = cc.Content?.ToString();
+                    else if (fe is ComboBox cmb) text = cmb.Text;
+
+                    state.Add(new ControlState
+                    {
+                        Name = fe.Name,
+                        VbType = vbType,
+                        Left = Canvas.GetLeft(fe),
+                        Top = Canvas.GetTop(fe),
+                        Width = fe.Width,
+                        Height = fe.Height,
+                        Text = text
+                    });
+                }
+            }
+            return state;
+        }
+
+        private void RestoreState(List<ControlState> state)
+        {
+            // Limpiar todo (menos el SelectionBox)
+            ClearSelection();
+            var elementsToRemove = new List<UIElement>();
+            foreach (UIElement child in DesignCanvas.Children)
+            {
+                if (child != SelectionBox) elementsToRemove.Add(child);
+            }
+            foreach (var el in elementsToRemove) DesignCanvas.Children.Remove(el);
+
+            // Reconstruir controles
+            foreach (var item in state)
+            {
+                FrameworkElement ctrl = CreateElementInstance(item.VbType);
+                if (ctrl == null) continue;
+
+                ctrl.Name = item.Name;
+                ctrl.Width = item.Width;
+                ctrl.Height = item.Height;
+
+                if (ctrl is TextBox txt) txt.Text = item.Text;
+                else if (ctrl is GroupBox gb) gb.Header = item.Text;
+                else if (ctrl is ContentControl cc) cc.Content = item.Text;
+                else if (ctrl is ComboBox cmb) cmb.Text = item.Text;
+
+                // Estilos base
+                if (ctrl is Control c && !(ctrl is Label))
+                {
+                    c.FontFamily = new FontFamily("MS Sans Serif");
+                    c.FontSize = 11;
+                }
+
+                RegisterControl(ctrl);
+                Canvas.SetLeft(ctrl, item.Left);
+                Canvas.SetTop(ctrl, item.Top);
+            }
+        }
+
+        #endregion
 
         private void DeleteSelectedControls()
         {
             if (_selectedElements.Count == 0) return;
 
-            // Hacemos una copia de la lista porque ClearSelection modificará _selectedElements
             var toDelete = new List<UIElement>(_selectedElements);
-
-            // Limpiamos selección visual (adorners)
             ClearSelection();
 
-            // Eliminamos del Canvas
             foreach (var el in toDelete)
             {
                 DesignCanvas.Children.Remove(el);
@@ -114,7 +240,6 @@ namespace VB6VisualMockupDesigner
 
             _internalClipboard.Clear();
 
-            // Calcular el punto más arriba a la izquierda para copiar relativo al grupo
             double minLeft = double.MaxValue;
             double minTop = double.MaxValue;
 
@@ -141,11 +266,10 @@ namespace VB6VisualMockupDesigner
                         VbType = vbType,
                         Width = fe.Width,
                         Height = fe.Height,
-                        Left = Canvas.GetLeft(fe) - minLeft, // Guardar relativo al grupo
+                        Left = Canvas.GetLeft(fe) - minLeft,
                         Top = Canvas.GetTop(fe) - minTop,
                     };
 
-                    // Extraer texto según tipo
                     if (fe is TextBox txt) data.Text = txt.Text;
                     else if (fe is GroupBox gb) data.Text = gb.Header?.ToString();
                     else if (fe is ContentControl cc) data.Text = cc.Content?.ToString();
@@ -160,38 +284,18 @@ namespace VB6VisualMockupDesigner
         {
             if (_internalClipboard.Count == 0) return;
 
-            // Deseleccionar actuales
             ClearSelection();
-
-            // Punto de inserción: Centro de la pantalla o un offset del original
-            // Simplificación: Pegar desplazado 20px del origen visual o del original
             double pasteOffsetX = 20;
             double pasteOffsetY = 20;
 
-            // Si hay un elemento seleccionado previamente, podríamos usar su posición,
-            // pero como acabamos de limpiar la selección, usaremos un offset fijo acumulativo o
-            // simplemente pegaremos donde estaban los originales + 20px si no se ha movido el scroll.
-            // Para UX simple: Pegar en (TopLeft original + 20)
-
-            // Buscar el último seleccionado para referencia (si hubiera lógica de mouse position)
-            // Aquí pegaremos desplazado +10px por cada pegado consecutivo para efecto cascada sería ideal,
-            // pero por ahora +20px fijo respecto a la copia original.
-
-            // IMPORTANTE: Para que se sienta natural, calculamos el offset basado en donde estaban.
-            // Pero si copiamos y pegamos varias veces, queremos que se muevan. 
-            // Usaremos un offset relativo a la posición original guardada.
-
             foreach (var data in _internalClipboard)
             {
-                // 1. Crear instancia base
                 FrameworkElement newCtrl = CreateElementInstance(data.VbType);
                 if (newCtrl == null) continue;
 
-                // 2. Generar nuevo nombre único
                 string newName = GetNextNameForType(data.VbType);
                 newCtrl.Name = newName;
 
-                // 3. Restaurar propiedades
                 newCtrl.Width = data.Width;
                 newCtrl.Height = data.Height;
 
@@ -200,37 +304,17 @@ namespace VB6VisualMockupDesigner
                 else if (newCtrl is ContentControl cc) cc.Content = data.Text;
                 else if (newCtrl is ComboBox cmb) cmb.Text = data.Text;
 
-                // Estilos base (ya aplicados en RegisterControl, pero reforzamos si es necesario)
                 if (newCtrl is Control c && !(newCtrl is Label))
                 {
                     c.FontFamily = new FontFamily("MS Sans Serif");
                     c.FontSize = 11;
                 }
 
-                // 4. Registrar eventos y añadir al Canvas
                 RegisterControl(newCtrl);
-
-                // 5. Posicionar (Desplazado +20px para que se note la copia)
-                // Nota: data.Left es relativo al grupo. Sumamos un offset base.
-                // Podríamos mejorar esto usando la posición del mouse, pero requiere trackearlo.
-                // Usaremos la posición original + 20.
-
-                // Necesitamos la posición absoluta original para sumar el relativo.
-                // Como simplificación en Copy guardé relativo a minLeft. 
-                // Vamos a restaurar en una posición visible. Digamos 40,40 + relativo.
-                // O mejor: Si copiamos elementos en (100,100), pegarlos en (120,120).
-                // Para eso necesitaríamos saber el minLeft original en Paste.
-                // Asumiremos que el usuario quiere verlos cerca.
-
-                // Hack rápido: Recuperar la posición absoluta aproximada sumando un offset fijo
-                // a la posición guardada (si no normalizamos en Copy).
-                // En Copy normalizamos (Left - minLeft). 
-                // Vamos a pegar en el centro de la vista actual o en 50,50 + relativo.
 
                 Canvas.SetLeft(newCtrl, 50 + data.Left + pasteOffsetX);
                 Canvas.SetTop(newCtrl, 50 + data.Top + pasteOffsetY);
 
-                // 6. Añadir a la nueva selección
                 AddToSelection(newCtrl);
             }
         }
@@ -251,7 +335,7 @@ namespace VB6VisualMockupDesigner
                 case "Shape": return "Shape" + _shpCount++;
                 case "Image": return "Image" + _imgCount++;
                 case "HScrollBar": return "HScroll" + _scrCount++;
-                case "VScrollBar": return "VScroll" + _scrCount++; // Comparten contador scroll
+                case "VScrollBar": return "VScroll" + _scrCount++;
                 case "DriveListBox": return "Drive" + _drvCount++;
                 case "DirListBox": return "Dir" + _dirCount++;
                 case "FileListBox": return "File" + _filCount++;
@@ -266,9 +350,12 @@ namespace VB6VisualMockupDesigner
 
         private void Control_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
+            // Guardar estado ANTES de empezar a arrastrar o seleccionar
+            // Esto es crucial para poder deshacer el movimiento después
+            _stateBeforeDrag = GetCurrentState();
+
             var clickedElement = (UIElement)sender;
 
-            // Ctrl para alternar selección
             if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
             {
                 if (_selectedElements.Contains(clickedElement))
@@ -365,6 +452,15 @@ namespace VB6VisualMockupDesigner
             {
                 _isDragging = false;
                 foreach (var el in _selectedElements) el.ReleaseMouseCapture();
+
+                // Verificar si hubo movimiento real
+                var currentState = GetCurrentState();
+                if (_stateBeforeDrag != null && !AreStatesEqual(_stateBeforeDrag, currentState))
+                {
+                    // Si hubo cambios, empujar el estado PREVIO al Undo stack
+                    _undoStack.Push(_stateBeforeDrag);
+                    _redoStack.Clear();
+                }
             }
 
             if (_isSelecting)
@@ -376,6 +472,18 @@ namespace VB6VisualMockupDesigner
                 Rect selectionRect = new Rect(Canvas.GetLeft(SelectionBox), Canvas.GetTop(SelectionBox), SelectionBox.Width, SelectionBox.Height);
                 SelectControlsInRect(selectionRect);
             }
+        }
+
+        // Helper para comparar estados y saber si hubo movimiento
+        private bool AreStatesEqual(List<ControlState> s1, List<ControlState> s2)
+        {
+            if (s1.Count != s2.Count) return false;
+            // Comparación simple por posición
+            for (int i = 0; i < s1.Count; i++)
+            {
+                if (s1[i].Left != s2[i].Left || s1[i].Top != s2[i].Top) return false;
+            }
+            return true;
         }
 
         private void Control_MouseMove(object sender, MouseEventArgs e) { if (_isDragging) DesignCanvas_MouseMove(sender, e); }
@@ -493,7 +601,12 @@ namespace VB6VisualMockupDesigner
         {
             OpenFileDialog openFileDialog = new OpenFileDialog();
             openFileDialog.Filter = "VB6 Form (*.frm)|*.frm|All files (*.*)|*.*";
-            if (openFileDialog.ShowDialog() == true) try { ParseVb6Frm(openFileDialog.FileName); } catch (Exception ex) { MessageBox.Show(ex.Message); }
+            if (openFileDialog.ShowDialog() == true) try
+                {
+                    RecordUndo(); // Guardar antes de importar
+                    ParseVb6Frm(openFileDialog.FileName);
+                }
+                catch (Exception ex) { MessageBox.Show(ex.Message); }
         }
         private void ExportCode_Click(object sender, RoutedEventArgs e)
         {
@@ -529,7 +642,6 @@ namespace VB6VisualMockupDesigner
                     string type = parts[1].Replace("VB.", "");
                     string name = parts[2];
 
-                    // Extraer lógica de parsing a un método, pero usando el factory nuevo
                     CreateControlFromImport(type, name, lines, i);
                 }
             }
@@ -693,6 +805,8 @@ namespace VB6VisualMockupDesigner
 
         private void CreateControlManual(string vbType)
         {
+            RecordUndo(); // Guardar estado antes de agregar nuevo control
+
             FrameworkElement ctrl = CreateElementInstance(vbType);
             if (ctrl == null) return;
 
