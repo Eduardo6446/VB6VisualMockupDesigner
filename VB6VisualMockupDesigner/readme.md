@@ -54,7 +54,7 @@ Usa el menú superior para Importar o Exportar.
 
 Posibles mejoras futuras para la herramienta:
 
-[ ] Implementar redimensionamiento de controles con el ratón (Resizing handles).
+[✓] Implementar redimensionamiento de controles con el ratón (Resizing handles).
 
 [ ] Selección múltiple de objetos.
 

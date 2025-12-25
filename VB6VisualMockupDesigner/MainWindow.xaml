@@ -5,8 +5,9 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:VB6VisualMockupDesigner"
         mc:Ignorable="d"
+
         Title="VB6 Visual Mockup Designer - Prototipe" Height="450" Width="800"
-        Background="#D4D0C8">
+        Background="#D4D0C8" Icon="/icon.ico">
 
 
 
