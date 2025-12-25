@@ -1,0 +1,202 @@
+﻿<Window x:Class="VB6VisualMockupDesigner.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:VB6VisualMockupDesigner"
+        mc:Ignorable="d"
+        Title="VB6 Visual Mockup Designer - Prototipe" Height="450" Width="800"
+        Background="#D4D0C8">
+
+    <Window.Resources>
+        <!-- Estilo para los botones de la Toolbox (Cuadrícula de Iconos) -->
+        <Style x:Key="ToolboxButtonStyle" TargetType="Button">
+            <Setter Property="Width" Value="32"/>
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="Margin" Value="2"/>
+            <Setter Property="Background" Value="#D4D0C8"/>
+            <Setter Property="BorderBrush" Value="#808080"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="2"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#E0E0E0"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Estilo para los TextBlocks de encabezado -->
+        <Style x:Key="HeaderTextStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="#333333"/>
+            <Setter Property="Margin" Value="0,0,0,10"/>
+        </Style>
+
+        <!-- Pincel para la cuadrícula de puntos (Estilo VB6) -->
+        <VisualBrush x:Key="VB6GridBrush" TileMode="Tile" Viewport="0,0,8,8" ViewportUnits="Absolute">
+            <VisualBrush.Visual>
+                <Canvas>
+                    <Ellipse Fill="#BCBCBC" Width="1" Height="1" Margin="0"/>
+                </Canvas>
+            </VisualBrush.Visual>
+        </VisualBrush>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="220"/>
+            <!-- Toolbox Section -->
+            <ColumnDefinition Width="*"/>
+            <!-- Canvas Section -->
+            <ColumnDefinition Width="280"/>
+            <!-- Properties Section -->
+        </Grid.ColumnDefinitions>
+
+        <!-- TOOLBOX (Izquierda) -->
+        <Border Grid.Column="0" Background="#E0E0E0" BorderBrush="#BCBCBC" BorderThickness="0,0,1,0">
+            <DockPanel LastChildFill="True" Margin="8">
+                <TextBlock Text="General" DockPanel.Dock="Top" Style="{StaticResource HeaderTextStyle}"/>
+
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <UniformGrid Columns="2" VerticalAlignment="Top">
+                        <!-- Puntero (Selección) -->
+                        <Button Style="{StaticResource ToolboxButtonStyle}" ToolTip="Pointer">
+                            <Path Data="M2,2 L10,18 L13,13 L18,13 Z" Fill="Black" Stretch="Uniform" Margin="4"/>
+                        </Button>
+
+                        <!-- Label -->
+                        <Button Style="{StaticResource ToolboxButtonStyle}" ToolTip="Label">
+                            <TextBlock Text="A" FontSize="18" FontWeight="Bold" FontFamily="Serif" HorizontalAlignment="Center"/>
+                        </Button>
+
+                        <!-- TextBox -->
+                        <Button Style="{StaticResource ToolboxButtonStyle}" ToolTip="TextBox">
+                            <Border BorderBrush="Black" BorderThickness="1" Width="20" Height="14" Background="White">
+                                <TextBlock Text="ab" FontSize="8" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                            </Border>
+                        </Button>
+
+                        <!-- CommandButton -->
+                        <Button Style="{StaticResource ToolboxButtonStyle}" ToolTip="CommandButton" Click="AddButton_Click">
+                            <Border BorderBrush="Black" BorderThickness="1" Width="20" Height="14" Background="#D4D0C8" CornerRadius="1"/>
+                        </Button>
+
+                        <!-- CheckBox -->
+                        <Button Style="{StaticResource ToolboxButtonStyle}" ToolTip="CheckBox">
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                <Border BorderBrush="Black" BorderThickness="1" Width="10" Height="10" Background="White"/>
+                            </StackPanel>
+                        </Button>
+
+                        <!-- ComboBox -->
+                        <Button Style="{StaticResource ToolboxButtonStyle}" ToolTip="ComboBox">
+                            <Border BorderBrush="Black" BorderThickness="1" Width="22" Height="12" Background="White">
+                                <Path Data="M0,0 L5,5 L10,0" Fill="Black" HorizontalAlignment="Right" Margin="0,2,2,0"/>
+                            </Border>
+                        </Button>
+
+                        <!-- Frame -->
+                        <Button Style="{StaticResource ToolboxButtonStyle}" ToolTip="Frame">
+                            <Border BorderBrush="Gray" BorderThickness="1" Width="24" Height="20" Margin="2">
+                                <TextBlock Text="xyz" FontSize="6" VerticalAlignment="Top" Margin="2,0,0,0"/>
+                            </Border>
+                        </Button>
+
+                        <!-- Timer -->
+                        <Button Style="{StaticResource ToolboxButtonStyle}" ToolTip="Timer">
+                            <Ellipse Stroke="Black" StrokeThickness="1" Width="18" Height="18">
+                                <Ellipse.Fill>
+                                    <VisualBrush>
+                                        <VisualBrush.Visual>
+                                            <Path Data="M9,2 L9,9 L12,12" Stroke="Black" StrokeThickness="1"/>
+                                        </VisualBrush.Visual>
+                                    </VisualBrush>
+                                </Ellipse.Fill>
+                            </Ellipse>
+                        </Button>
+                    </UniformGrid>
+                </ScrollViewer>
+            </DockPanel>
+        </Border>
+
+        <!-- CANVAS (Centro) -->
+        <Border Grid.Column="1" Background="#808080" Padding="20">
+            <Border CornerRadius="4" Background="White">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="15" Direction="270" Opacity="0.3" ShadowDepth="5"/>
+                </Border.Effect>
+                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                    <!-- Fondo de cuadrícula añadido -->
+                    <Canvas Name="DesignCanvas" 
+                            Width="800" Height="600" 
+                            Background="{StaticResource VB6GridBrush}"
+                            MouseDown="DesignCanvas_MouseDown">
+                        <!-- Aquí se dibujarán los controles -->
+                    </Canvas>
+                </ScrollViewer>
+            </Border>
+        </Border>
+
+        <!-- PANEL DE PROPIEDADES (Derecha) -->
+        <Border Grid.Column="2" Background="#E0E0E0" BorderBrush="#BCBCBC" BorderThickness="1,0,0,0">
+            <DockPanel Margin="0">
+                <Border DockPanel.Dock="Top" Background="#D4D0C8" Padding="10" BorderBrush="#BCBCBC" BorderThickness="0,0,0,1">
+                    <TextBlock Name="PropHeaderTitle" Text="Properties - Form1" FontWeight="Bold"/>
+                </Border>
+
+                <ScrollViewer>
+                    <Border Padding="10">
+                        <StackPanel>
+                            <!-- Categoría: Apariencia -->
+                            <Expander Header="Appearance" IsExpanded="True" Margin="0,0,0,10">
+                                <Grid Margin="5,10,5,5">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="80"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+
+                                    <TextBlock Text="(Name)" Grid.Row="0" VerticalAlignment="Center" Margin="0,4"/>
+                                    <TextBox Name="PropName" Grid.Row="0" Grid.Column="1" Margin="2" Padding="2" BorderBrush="#BCBCBC" TextChanged="PropName_TextChanged"/>
+
+                                    <TextBlock Text="Caption" Grid.Row="1" VerticalAlignment="Center" Margin="0,4"/>
+                                    <TextBox Name="PropCaption" Grid.Row="1" Grid.Column="1" Margin="2" Padding="2" BorderBrush="#BCBCBC" TextChanged="PropCaption_TextChanged"/>
+
+                                    <TextBlock Text="BackColor" Grid.Row="2" VerticalAlignment="Center" Margin="0,4"/>
+                                    <ComboBox Grid.Row="2" Grid.Column="1" Margin="2">
+                                        <ComboBoxItem Content="&amp;H8000000F&amp;"/>
+                                    </ComboBox>
+                                </Grid>
+                            </Expander>
+
+                            <!-- Categoría: Posición -->
+                            <Expander Header="Position" IsExpanded="True">
+                                <Grid Margin="5,10,5,5">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="80"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+
+                                    <TextBlock Text="Left (twips)" Grid.Row="0" VerticalAlignment="Center" Margin="0,4"/>
+                                    <TextBox Name="PropLeft" Grid.Row="0" Grid.Column="1" Margin="2" Padding="2" Background="White"/>
+
+                                    <TextBlock Text="Top (twips)" Grid.Row="1" VerticalAlignment="Center" Margin="0,4"/>
+                                    <TextBox Name="PropTop" Grid.Row="1" Grid.Column="1" Margin="2" Padding="2" Background="White"/>
+                                </Grid>
+                            </Expander>
+                        </StackPanel>
+                    </Border>
+                </ScrollViewer>
+            </DockPanel>
+        </Border>
+    </Grid>
+</Window>
