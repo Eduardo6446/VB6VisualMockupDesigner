@@ -44,8 +44,10 @@ namespace VB6VisualMockupDesigner
         private Point _selectionStartPoint;
         private AdornerLayer _adornerLayer;
 
-        // --- SIMULACIÓN ---
+        // --- MODOS ---
         private bool _isSimulationMode = false;
+        private bool _isTabIndexMode = false;
+        private int _nextTabIndex = 0;
 
         public MainWindow()
         {
@@ -60,11 +62,13 @@ namespace VB6VisualMockupDesigner
 
             // Inicializar Adorners al cargar
             this.Loaded += (s, e) => _adornerLayer = AdornerLayer.GetAdornerLayer(DesignCanvas);
+
+            // IMPORTANTE: Asegurar que el Canvas maneje los eventos primero
+            DesignCanvas.PreviewMouseLeftButtonDown += DesignCanvas_PreviewMouseLeftButtonDown;
         }
 
         private void InitializeServices()
         {
-            // Reiniciar servicios (útil para "Nuevo Diseño")
             _controlFactory = new ControlFactory();
             _fileManager = new Vb6FileManager(_controlFactory);
         }
@@ -77,13 +81,13 @@ namespace VB6VisualMockupDesigner
 
             if (e.Key == Key.F5)
             {
+                if (_isTabIndexMode) return;
                 BtnSimulate.IsChecked = !BtnSimulate.IsChecked;
                 ToggleSimulationMode(BtnSimulate.IsChecked == true);
                 return;
             }
 
-            // Si estamos simulando, bloquear atajos de edición
-            if (_isSimulationMode) return;
+            if (_isSimulationMode || _isTabIndexMode) return;
 
             // Edición
             if (e.Key == Key.Z && Keyboard.Modifiers == ModifierKeys.Control) Undo();
@@ -100,64 +104,240 @@ namespace VB6VisualMockupDesigner
 
         #endregion
 
-        #region Modo Simulación (NUEVO)
+        #region Modos (Simulación y TabIndex)
 
         private void BtnSimulate_Click(object sender, RoutedEventArgs e)
         {
+            if (_isTabIndexMode) { BtnTabIndex.IsChecked = false; ToggleTabIndexMode(false); }
             ToggleSimulationMode(BtnSimulate.IsChecked == true);
         }
 
         private void ToggleSimulationMode(bool enable)
         {
             _isSimulationMode = enable;
-
             if (_isSimulationMode)
             {
-                ClearSelection(); // Quitar selección actual
-                DesignCanvas.Background = Brushes.White; // Quitar rejilla
-
-                // CAMBIAR ICONO A STOP (Cuadrado Rojo)
+                ClearSelection();
+                DesignCanvas.Background = Brushes.White;
                 var stopIcon = new Canvas { Width = 16, Height = 16 };
                 var rect = new Rectangle { Width = 10, Height = 10, Fill = Brushes.Red, Stroke = Brushes.DarkRed, StrokeThickness = 1 };
                 Canvas.SetLeft(rect, 3); Canvas.SetTop(rect, 3);
                 stopIcon.Children.Add(rect);
                 BtnSimulate.Content = stopIcon;
-                BtnSimulate.ToolTip = "Detener Simulación (F5)";
-
-                // Permitir interacción nativa (escribir, clicar)
-                foreach (UIElement child in DesignCanvas.Children)
-                {
-                    if (child is Control c && child != SelectionBox)
-                    {
-                        c.Focusable = true; // Habilitar foco para escribir
-                        c.IsHitTestVisible = true;
-                    }
-                }
+                foreach (UIElement child in DesignCanvas.Children) { if (child is Control c && child != SelectionBox) { c.Focusable = true; c.IsHitTestVisible = true; } }
             }
             else
             {
-                DesignCanvas.Background = (VisualBrush)this.Resources["VB6GridBrush"]; // Restaurar rejilla
-
-                // RESTAURAR ICONO A PLAY (Triángulo Verde)
+                DesignCanvas.Background = (VisualBrush)this.Resources["VB6GridBrush"];
                 var playIcon = new Canvas { Width = 16, Height = 16 };
                 var poly = new Polygon { Points = new PointCollection { new Point(4, 2), new Point(14, 8), new Point(4, 14) }, Fill = Brushes.Green, Stroke = Brushes.DarkGreen, StrokeThickness = 1 };
                 playIcon.Children.Add(poly);
                 BtnSimulate.Content = playIcon;
-                BtnSimulate.ToolTip = "Modo Simulación (F5)";
+                foreach (UIElement child in DesignCanvas.Children) { if (child is Control c) c.Focusable = false; }
+            }
+        }
 
-                // Bloquear interacción nativa para permitir arrastre
-                foreach (UIElement child in DesignCanvas.Children)
+        private void BtnTabIndex_Click(object sender, RoutedEventArgs e)
+        {
+            if (_isSimulationMode) { BtnSimulate.IsChecked = false; ToggleSimulationMode(false); }
+            ToggleTabIndexMode(BtnTabIndex.IsChecked == true);
+        }
+
+        private void ToggleTabIndexMode(bool enable)
+        {
+            _isTabIndexMode = enable;
+            if (_isTabIndexMode)
+            {
+                ClearSelection();
+                _nextTabIndex = 0;
+                RefreshTabIndexAdorners();
+                DesignCanvas.Cursor = Cursors.Pen;
+            }
+            else
+            {
+                ClearAllAdorners();
+                DesignCanvas.Cursor = Cursors.Arrow;
+            }
+        }
+
+        private void RefreshTabIndexAdorners()
+        {
+            ClearAllAdorners();
+            foreach (UIElement child in DesignCanvas.Children)
+            {
+                if (child is Control c && IsDesignerControl(c) && !(c is Label))
                 {
-                    if (child is Control c)
-                    {
-                        c.Focusable = false; // Deshabilitar foco para que no atrape el teclado
-                    }
+                    _adornerLayer.Add(new TabIndexAdorner(c, c.TabIndex));
                 }
+            }
+        }
+
+        private void ClearAllAdorners()
+        {
+            if (_adornerLayer == null) return;
+            Adorner[] toRemove = _adornerLayer.GetAdorners(DesignCanvas);
+            if (toRemove != null) foreach (var ad in toRemove) _adornerLayer.Remove(ad);
+            foreach (UIElement child in DesignCanvas.Children)
+            {
+                var ads = _adornerLayer.GetAdorners(child);
+                if (ads != null) foreach (var ad in ads) _adornerLayer.Remove(ad);
             }
         }
 
         #endregion
 
+        #region Interactividad (Mouse)
+
+        private void DesignCanvas_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (_isSimulationMode) return;
+
+            // TabIndex
+            if (_isTabIndexMode)
+            {
+                DependencyObject clickedObj = e.OriginalSource as DependencyObject;
+                FrameworkElement clickedCtrl = null;
+                while (clickedObj != null && clickedObj != DesignCanvas)
+                {
+                    if (clickedObj is Control c && IsDesignerControl(c))
+                    {
+                        clickedCtrl = c;
+                        break;
+                    }
+                    clickedObj = VisualTreeHelper.GetParent(clickedObj);
+                }
+
+                if (clickedCtrl != null && clickedCtrl is Control control && !(control is Label))
+                {
+                    RecordUndo();
+                    control.TabIndex = _nextTabIndex++;
+                    RefreshTabIndexAdorners();
+                }
+                e.Handled = true;
+                return;
+            }
+
+            // Selección Normal
+            DependencyObject clickedObject = e.OriginalSource as DependencyObject;
+            if (clickedObject is ContentElement ce) clickedObject = ContentOperations.GetParent(ce) ?? (ce as FrameworkContentElement)?.Parent;
+
+            FrameworkElement clickedElement = null;
+            while (clickedObject != null && clickedObject != DesignCanvas)
+            {
+                if (clickedObject is FrameworkElement fe && IsDesignerControl(fe)) { clickedElement = fe; break; }
+                if (clickedObject is Visual || clickedObject is System.Windows.Media.Media3D.Visual3D) clickedObject = VisualTreeHelper.GetParent(clickedObject); else clickedObject = null;
+            }
+
+            if (clickedElement != null && clickedElement != SelectionBox)
+            {
+                _stateBeforeDrag = GetCurrentState();
+                if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
+                {
+                    if (_selectedElements.Contains(clickedElement)) { RemoveFromSelection(clickedElement); e.Handled = true; return; }
+                    else AddToSelection(clickedElement);
+                }
+                else if (!_selectedElements.Contains(clickedElement))
+                {
+                    ClearSelection();
+                    AddToSelection(clickedElement);
+                }
+
+                _isDragging = true;
+                var parent = VisualTreeHelper.GetParent(clickedElement) as IInputElement;
+                _startClickPoint = e.GetPosition(parent);
+                _initialPositions.Clear();
+                foreach (var el in _selectedElements) { var p = VisualTreeHelper.GetParent(el) as Panel; if (p != null) _initialPositions[el] = new Point(Canvas.GetLeft(el), Canvas.GetTop(el)); }
+                DesignCanvas.CaptureMouse();
+                e.Handled = true;
+            }
+            else { DesignCanvas_MouseDown(sender, e); }
+        }
+
+        private bool IsDesignerControl(FrameworkElement fe)
+        {
+            return !string.IsNullOrEmpty(fe.Name) && fe.Name != "SelectionBox" && fe.Name != "DesignCanvas";
+        }
+
+        private void DesignCanvas_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (_isSimulationMode || _isTabIndexMode) return;
+            ClearSelection();
+            _isSelecting = true;
+            _selectionStartPoint = e.GetPosition(DesignCanvas);
+            Canvas.SetLeft(SelectionBox, _selectionStartPoint.X);
+            Canvas.SetTop(SelectionBox, _selectionStartPoint.Y);
+            SelectionBox.Width = 0; SelectionBox.Height = 0;
+            SelectionBox.Visibility = Visibility.Visible;
+            DesignCanvas.CaptureMouse();
+        }
+
+        private void DesignCanvas_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (_isSimulationMode || _isTabIndexMode) return;
+            if (_isDragging)
+            {
+                if (_selectedElements.Count > 0)
+                {
+                    var refEl = _selectedElements[0];
+                    var parent = VisualTreeHelper.GetParent(refEl) as IInputElement;
+                    if (parent != null)
+                    {
+                        Point currentMousePos = e.GetPosition(parent);
+                        double deltaX = currentMousePos.X - _startClickPoint.X;
+                        double deltaY = currentMousePos.Y - _startClickPoint.Y;
+                        foreach (var el in _selectedElements)
+                        {
+                            if (_initialPositions.ContainsKey(el))
+                            {
+                                Point init = _initialPositions[el];
+                                double nl = Math.Round((init.X + deltaX) / 8) * 8;
+                                double nt = Math.Round((init.Y + deltaY) / 8) * 8;
+                                if (nl < 0) nl = 0; if (nt < 0) nt = 0;
+                                Canvas.SetLeft(el, nl); Canvas.SetTop(el, nt);
+                            }
+                        }
+                        UpdatePropertyPanel();
+                    }
+                }
+            }
+            else if (_isSelecting)
+            {
+                Point cur = e.GetPosition(DesignCanvas);
+                double x = Math.Min(cur.X, _selectionStartPoint.X);
+                double y = Math.Min(cur.Y, _selectionStartPoint.Y);
+                Canvas.SetLeft(SelectionBox, x); Canvas.SetTop(SelectionBox, y);
+                SelectionBox.Width = Math.Abs(cur.X - _selectionStartPoint.X);
+                SelectionBox.Height = Math.Abs(cur.Y - _selectionStartPoint.Y);
+            }
+        }
+
+        private void DesignCanvas_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            if (_isSimulationMode || _isTabIndexMode) return;
+            if (_isDragging)
+            {
+                _isDragging = false;
+                foreach (var el in _selectedElements) el.ReleaseMouseCapture();
+                if (_stateBeforeDrag != null && !AreStatesEqual(_stateBeforeDrag, GetCurrentState())) { _undoStack.Push(_stateBeforeDrag); _redoStack.Clear(); }
+            }
+            if (_isSelecting)
+            {
+                _isSelecting = false; SelectionBox.Visibility = Visibility.Collapsed; DesignCanvas.ReleaseMouseCapture();
+                SelectControlsInRect(new Rect(Canvas.GetLeft(SelectionBox), Canvas.GetTop(SelectionBox), SelectionBox.Width, SelectionBox.Height));
+            }
+        }
+
+        private bool AreStatesEqual(List<ControlState> s1, List<ControlState> s2)
+        {
+            if (s1.Count != s2.Count) return false;
+            for (int i = 0; i < s1.Count; i++) if (s1[i].Left != s2[i].Left || s1[i].Top != s2[i].Top || s1[i].ZIndex != s2[i].ZIndex) return false;
+            return true;
+        }
+
+        private void Control_MouseMove(object sender, MouseEventArgs e) { if (_isDragging) DesignCanvas_MouseMove(sender, e); }
+        private void Control_MouseLeftButtonUp(object sender, MouseButtonEventArgs e) { if (_isDragging) DesignCanvas_MouseUp(sender, e); }
+
+        #endregion
 
         #region Menú Archivo
 
@@ -173,7 +353,7 @@ namespace VB6VisualMockupDesigner
             }
 
             // Limpieza completa
-            RecordUndo(); // Opcional: guardar estado anterior por si se arrepiente
+            RecordUndo();
             ClearSelection();
 
             // Mantener solo el SelectionBox
@@ -266,7 +446,6 @@ namespace VB6VisualMockupDesigner
             if (_selectedElements.Count == 0) return;
             RecordUndo();
 
-            // Buscar el ZIndex máximo actual
             int maxZ = 0;
             foreach (UIElement child in DesignCanvas.Children)
             {
@@ -275,7 +454,6 @@ namespace VB6VisualMockupDesigner
                 if (z > maxZ) maxZ = z;
             }
 
-            // Poner los seleccionados encima
             foreach (UIElement el in _selectedElements)
             {
                 maxZ++;
@@ -288,7 +466,6 @@ namespace VB6VisualMockupDesigner
             if (_selectedElements.Count == 0) return;
             RecordUndo();
 
-            // Buscar el ZIndex mínimo
             int minZ = 0;
             foreach (UIElement child in DesignCanvas.Children)
             {
@@ -297,7 +474,6 @@ namespace VB6VisualMockupDesigner
                 if (z < minZ) minZ = z;
             }
 
-            // Poner los seleccionados debajo
             foreach (UIElement el in _selectedElements)
             {
                 minZ--;
@@ -453,17 +629,13 @@ namespace VB6VisualMockupDesigner
 
         private void RegisterControl(FrameworkElement ctrl)
         {
-            ctrl.PreviewMouseLeftButtonDown += Control_MouseLeftButtonDown;
-            ctrl.PreviewMouseMove += Control_MouseMove;
-            ctrl.PreviewMouseLeftButtonUp += Control_MouseLeftButtonUp;
+            // Focusable false para que no atrapen teclado en modo edición
+            ctrl.Focusable = false;
 
-            // Para Modo Simulación: Por defecto no tienen foco para poder arrastrarlos
-            // Si _isSimulationMode se activa, esto cambiará.
             if (ctrl is Control c && !(ctrl is Label))
             {
                 c.FontFamily = new FontFamily("MS Sans Serif");
                 c.FontSize = 11;
-                c.Focusable = false; // Importante para que no roben el foco al hacer clic
             }
 
             if (!DesignCanvas.Children.Contains(ctrl)) DesignCanvas.Children.Add(ctrl);
@@ -500,6 +672,7 @@ namespace VB6VisualMockupDesigner
             {
                 if (child is FrameworkElement fe && child != SelectionBox)
                 {
+                    int ti = (fe is Control c) ? c.TabIndex : 0;
                     state.Add(new ControlState
                     {
                         Name = fe.Name,
@@ -509,7 +682,8 @@ namespace VB6VisualMockupDesigner
                         Width = fe.Width,
                         Height = fe.Height,
                         Text = VbHelpers.GetControlText(fe),
-                        ZIndex = Panel.GetZIndex(fe)
+                        ZIndex = Panel.GetZIndex(fe),
+                        TabIndex = ti
                     });
                 }
             }
@@ -531,6 +705,7 @@ namespace VB6VisualMockupDesigner
                 ctrl.Width = item.Width;
                 ctrl.Height = item.Height;
                 VbHelpers.SetControlText(ctrl, item.Text);
+                if (ctrl is Control c) c.TabIndex = item.TabIndex;
 
                 RegisterControl(ctrl);
                 Canvas.SetLeft(ctrl, item.Left);
@@ -600,135 +775,6 @@ namespace VB6VisualMockupDesigner
             ClearSelection();
             foreach (var el in toDelete) DesignCanvas.Children.Remove(el);
         }
-
-        #endregion
-
-        #region Interactividad (Mouse)
-
-        private void Control_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-        {
-
-            if (_isSimulationMode) return;
-
-            _stateBeforeDrag = GetCurrentState();
-            var clickedElement = (UIElement)sender;
-
-            if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
-            {
-                if (_selectedElements.Contains(clickedElement))
-                {
-                    RemoveFromSelection(clickedElement);
-                    e.Handled = true;
-                    return;
-                }
-                else AddToSelection(clickedElement);
-            }
-            else if (!_selectedElements.Contains(clickedElement))
-            {
-                ClearSelection();
-                AddToSelection(clickedElement);
-            }
-
-            _isDragging = true;
-            _startClickPoint = e.GetPosition(DesignCanvas);
-            _initialPositions.Clear();
-            foreach (var el in _selectedElements)
-                _initialPositions[el] = new Point(Canvas.GetLeft(el), Canvas.GetTop(el));
-
-            clickedElement.CaptureMouse();
-            e.Handled = true;
-        }
-
-        private void DesignCanvas_MouseDown(object sender, MouseButtonEventArgs e)
-        {
-
-            if (_isSimulationMode) return;
-
-            ClearSelection();
-            _isSelecting = true;
-            _selectionStartPoint = e.GetPosition(DesignCanvas);
-
-            Canvas.SetLeft(SelectionBox, _selectionStartPoint.X);
-            Canvas.SetTop(SelectionBox, _selectionStartPoint.Y);
-            SelectionBox.Width = 0; SelectionBox.Height = 0;
-            SelectionBox.Visibility = Visibility.Visible;
-
-            DesignCanvas.CaptureMouse();
-        }
-
-        private void DesignCanvas_MouseMove(object sender, MouseEventArgs e)
-        {
-
-            if (_isSimulationMode) return;
-
-            if (_isDragging)
-            {
-                Point currentMousePos = e.GetPosition(DesignCanvas);
-                double deltaX = currentMousePos.X - _startClickPoint.X;
-                double deltaY = currentMousePos.Y - _startClickPoint.Y;
-
-                foreach (var el in _selectedElements)
-                {
-                    if (_initialPositions.ContainsKey(el))
-                    {
-                        Point init = _initialPositions[el];
-                        double nl = Math.Round((init.X + deltaX) / 8) * 8;
-                        double nt = Math.Round((init.Y + deltaY) / 8) * 8;
-                        if (nl < 0) nl = 0; if (nt < 0) nt = 0;
-                        Canvas.SetLeft(el, nl); Canvas.SetTop(el, nt);
-                    }
-                }
-                UpdatePropertyPanel();
-            }
-            else if (_isSelecting)
-            {
-                Point cur = e.GetPosition(DesignCanvas);
-                double x = Math.Min(cur.X, _selectionStartPoint.X);
-                double y = Math.Min(cur.Y, _selectionStartPoint.Y);
-                Canvas.SetLeft(SelectionBox, x); Canvas.SetTop(SelectionBox, y);
-                SelectionBox.Width = Math.Abs(cur.X - _selectionStartPoint.X);
-                SelectionBox.Height = Math.Abs(cur.Y - _selectionStartPoint.Y);
-            }
-        }
-
-        private void DesignCanvas_MouseUp(object sender, MouseButtonEventArgs e)
-        {
-
-            if (_isSimulationMode) return;
-
-            if (_isDragging)
-            {
-                _isDragging = false;
-                foreach (var el in _selectedElements) el.ReleaseMouseCapture();
-
-                var currentState = GetCurrentState();
-                if (_stateBeforeDrag != null && !AreStatesEqual(_stateBeforeDrag, currentState))
-                {
-                    _undoStack.Push(_stateBeforeDrag);
-                    _redoStack.Clear();
-                }
-            }
-
-            if (_isSelecting)
-            {
-                _isSelecting = false;
-                SelectionBox.Visibility = Visibility.Collapsed;
-                DesignCanvas.ReleaseMouseCapture();
-
-                Rect selectionRect = new Rect(Canvas.GetLeft(SelectionBox), Canvas.GetTop(SelectionBox), SelectionBox.Width, SelectionBox.Height);
-                SelectControlsInRect(selectionRect);
-            }
-        }
-
-        private bool AreStatesEqual(List<ControlState> s1, List<ControlState> s2)
-        {
-            if (s1.Count != s2.Count) return false;
-            for (int i = 0; i < s1.Count; i++)
-                if (s1[i].Left != s2[i].Left || s1[i].Top != s2[i].Top || s1[i].ZIndex != s2[i].ZIndex) return false;
-            return true;
-        }
-        private void Control_MouseMove(object sender, MouseEventArgs e) { if (_isDragging) DesignCanvas_MouseMove(sender, e); }
-        private void Control_MouseLeftButtonUp(object sender, MouseButtonEventArgs e) { if (_isDragging) DesignCanvas_MouseUp(sender, e); }
 
         #endregion
 

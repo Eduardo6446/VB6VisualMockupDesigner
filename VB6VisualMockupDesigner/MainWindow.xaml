@@ -178,9 +178,21 @@
 
                     <Separator/>
 
+                    <!-- MODO SIMULACIÓN -->
+
                     <ToggleButton x:Name="BtnSimulate" Click="BtnSimulate_Click" ToolTip="Modo Simulación (F5)">
                         <Canvas Width="16" Height="16">
                             <Polygon Points="4,2 14,8 4,14" Fill="Green" Stroke="DarkGreen" StrokeThickness="1"/>
+                        </Canvas>
+                    </ToggleButton>
+
+                    <Separator/>
+
+                    <!-- MODO TAB INDEX -->
+                    <ToggleButton x:Name="BtnTabIndex" Click="BtnTabIndex_Click" ToolTip="Editor de Orden de Tabulación">
+                        <Canvas Width="16" Height="16">
+                            <Rectangle Width="14" Height="14" Fill="#0078D7" Stroke="Black" StrokeThickness="0.5" RadiusX="2" RadiusY="2" Canvas.Left="1" Canvas.Top="1"/>
+                            <TextBlock Text="#" FontSize="10" FontWeight="Bold" Foreground="White" Canvas.Left="4" Canvas.Top="0"/>
                         </Canvas>
                     </ToggleButton>
 

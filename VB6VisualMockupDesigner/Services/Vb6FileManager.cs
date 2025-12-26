@@ -19,63 +19,94 @@ namespace VB6VisualMockupDesigner.Services
 
         public void ParseVb6Frm(string filePath, Canvas canvas, Action<FrameworkElement> registerControlCallback)
         {
+            // Limpiar lienzo actual
             canvas.Children.Clear();
-            // Nota: El SelectionBox se debe volver a agregar o manejar en la ventana, 
-            // aquí limpiamos todo. Es mejor que la ventana gestione el SelectionBox.
 
             string[] lines = File.ReadAllLines(filePath);
+
             for (int i = 0; i < lines.Length; i++)
             {
                 string line = lines[i].Trim();
+
+                // Detectar inicio de control: Begin VB.CommandButton cmdOK
                 if (line.StartsWith("Begin VB."))
                 {
                     string[] parts = line.Split(' ');
                     if (parts.Length < 3) continue;
+
                     string type = parts[1].Replace("VB.", "");
                     string name = parts[2];
 
-                    CreateControlFromImport(type, name, lines, i, registerControlCallback);
+                    CreateControlFromImport(type, name, lines, i, registerControlCallback, canvas);
                 }
             }
         }
 
-        private void CreateControlFromImport(string vbType, string name, string[] allLines, int startIndex, Action<FrameworkElement> registerControlCallback)
+        private void CreateControlFromImport(string vbType, string name, string[] allLines, int startIndex, Action<FrameworkElement> registerControlCallback, Canvas mainCanvas)
         {
             FrameworkElement ctrl = _factory.CreateElementInstance(vbType);
             if (ctrl == null) return;
 
             ctrl.Name = name;
+
+            // Valores por defecto
             double left = 0, top = 0, width = 100, height = 30;
             string caption = name;
+            int tabIndex = 0;
 
+            // Leer propiedades línea por línea hasta encontrar el End del bloque
             for (int j = startIndex + 1; j < allLines.Length; j++)
             {
                 string l = allLines[j].Trim();
                 if (l == "End") break;
-                if (l.StartsWith("Begin ")) break;
+                if (l.StartsWith("Begin ")) break; // Evitar leer hijos anidados en esta versión plana
+
                 if (l.Contains("="))
                 {
-                    string prop = l.Split('=')[0].Trim();
-                    string val = l.Split('=')[1].Trim().Replace("\"", "");
+                    string[] propParts = l.Split('=');
+                    if (propParts.Length < 2) continue;
+
+                    string prop = propParts[0].Trim();
+                    string val = propParts[1].Trim().Replace("\"", "");
+
                     switch (prop)
                     {
                         case "Caption": case "Text": caption = val; break;
-                        case "Left": left = double.Parse(val) / VbHelpers.PixelsToTwips; break;
-                        case "Top": top = double.Parse(val) / VbHelpers.PixelsToTwips; break;
-                        case "Width": width = double.Parse(val) / VbHelpers.PixelsToTwips; break;
-                        case "Height": height = double.Parse(val) / VbHelpers.PixelsToTwips; break;
+                        case "Left":
+                            if (double.TryParse(val, out double lVal)) left = lVal / VbHelpers.PixelsToTwips;
+                            break;
+                        case "Top":
+                            if (double.TryParse(val, out double tVal)) top = tVal / VbHelpers.PixelsToTwips;
+                            break;
+                        case "Width":
+                            if (double.TryParse(val, out double wVal)) width = wVal / VbHelpers.PixelsToTwips;
+                            break;
+                        case "Height":
+                            if (double.TryParse(val, out double hVal)) height = hVal / VbHelpers.PixelsToTwips;
+                            break;
+                        case "TabIndex":
+                            int.TryParse(val, out tabIndex);
+                            break;
                     }
                 }
             }
-            ctrl.Width = width; ctrl.Height = height;
 
+            // Aplicar dimensiones, texto y TabIndex
+            ctrl.Width = width;
+            ctrl.Height = height;
             VbHelpers.SetControlText(ctrl, caption);
 
-            // Establecer posición antes de registrar
+            if (ctrl is Control c) c.TabIndex = tabIndex;
+
+            // Posicionamiento
             Canvas.SetLeft(ctrl, Math.Round(left / 8) * 8);
             Canvas.SetTop(ctrl, Math.Round(top / 8) * 8);
 
+            // Registrar y agregar al canvas
             registerControlCallback(ctrl);
+
+            // Asegurarnos de que se agregue si el callback no lo hizo
+            if (!mainCanvas.Children.Contains(ctrl)) mainCanvas.Children.Add(ctrl);
         }
 
         public string GenerateVb6Code(Canvas canvas, UIElement selectionBox)
@@ -84,21 +115,23 @@ namespace VB6VisualMockupDesigner.Services
             sb.AppendLine("VERSION 5.00");
             sb.AppendLine("Begin VB.Form Form1");
             sb.AppendLine("   Caption         =   \"Mockup\"");
-            sb.AppendLine($"   ClientHeight    =   {canvas.ActualHeight * VbHelpers.PixelsToTwips}");
-            sb.AppendLine($"   ClientWidth     =   {canvas.ActualWidth * VbHelpers.PixelsToTwips}");
+            sb.AppendLine($"   ClientHeight    =   {Math.Round(canvas.ActualHeight * VbHelpers.PixelsToTwips)}");
+            sb.AppendLine($"   ClientWidth     =   {Math.Round(canvas.ActualWidth * VbHelpers.PixelsToTwips)}");
 
             foreach (UIElement child in canvas.Children)
             {
+                // Ignorar el cuadro de selección y elementos que no sean FrameworkElement
                 if (child is FrameworkElement fe && child != selectionBox)
                 {
                     string vbType = VbHelpers.MapWpfToVbType(fe);
                     if (string.IsNullOrEmpty(vbType)) continue;
 
+                    // Caso especial: Menús
                     if (vbType == "Menu")
                     {
                         sb.AppendLine($"   Begin VB.Menu {fe.Name}");
-                        sb.AppendLine($"      Caption = \"{VbHelpers.GetControlText(fe)}\"");
-                        sb.AppendLine("   End");
+                        sb.AppendLine($"      Caption         =   \"{VbHelpers.GetControlText(fe)}\"");
+                        sb.AppendLine($"   End");
                         continue;
                     }
 
@@ -108,11 +141,14 @@ namespace VB6VisualMockupDesigner.Services
                     sb.AppendLine($"      Width           =   {Math.Round(fe.Width * VbHelpers.PixelsToTwips)}");
                     sb.AppendLine($"      Height          =   {Math.Round(fe.Height * VbHelpers.PixelsToTwips)}");
 
+                    if (fe is Control c)
+                        sb.AppendLine($"      TabIndex        =   {c.TabIndex}");
+
                     string txt = VbHelpers.GetControlText(fe);
                     if (fe is TextBox || fe is ComboBox) sb.AppendLine($"      Text            =   \"{txt}\"");
                     else sb.AppendLine($"      Caption         =   \"{txt}\"");
 
-                    sb.AppendLine("   End");
+                    sb.AppendLine($"   End");
                 }
             }
             sb.AppendLine("End");

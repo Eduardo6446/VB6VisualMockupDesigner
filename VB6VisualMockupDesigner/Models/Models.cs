@@ -14,8 +14,8 @@ namespace VB6VisualMockupDesigner.Models
         public double Width { get; set; }
         public double Height { get; set; }
         public string Text { get; set; }
-
         public int ZIndex { get; set; }
+        public int TabIndex { get; set; }
     }
 
     // Datos para Copiar/Pegar/Cortar
@@ -27,7 +27,7 @@ namespace VB6VisualMockupDesigner.Models
         public double Left { get; set; }
         public double Top { get; set; }
         public string Text { get; set; }
-
         public int ZIndex { get; set; }
+        public int TabIndex { get; set; }
     }
 }
