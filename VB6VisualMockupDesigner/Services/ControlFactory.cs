@@ -10,7 +10,7 @@ namespace VB6VisualMockupDesigner.Services
 {
     public class ControlFactory
     {
-        // Contadores encapsulados
+        // Contadores encapsulados para generar nombres únicos
         private int _btnCount = 1; private int _lblCount = 1;
         private int _txtCount = 1; private int _chkCount = 1;
         private int _optCount = 1; private int _frmCount = 1;
@@ -19,45 +19,94 @@ namespace VB6VisualMockupDesigner.Services
         private int _shpCount = 1; private int _linCount = 1;
         private int _scrCount = 1; private int _drvCount = 1;
         private int _dirCount = 1; private int _filCount = 1;
-        private int _imgCount = 1; private int _mnuCount = 1;
-        private int _sbrCount = 1;
+        private int _imgCount = 1;
 
+        // NUEVOS CONTADORES para Menú y Barra de Estado
+        private int _mnuCount = 1; private int _sbrCount = 1;
+
+        /// <summary>
+        /// Crea una nueva instancia visual de un control WPF estilizado como VB6.
+        /// </summary>
+        /// <param name="vbType">El tipo de control VB6 (ej: "CommandButton", "Menu")</param>
         public FrameworkElement CreateElementInstance(string vbType)
         {
             switch (vbType)
             {
-                case "CommandButton": return new Button { Background = VbHelpers.GetVbGray(), BorderThickness = new Thickness(2) };
-                case "Label": return new Label { Background = Brushes.Transparent };
-                case "TextBox": return new TextBox { Background = Brushes.White, BorderBrush = Brushes.Black, BorderThickness = new Thickness(1) };
-                case "CheckBox": return new CheckBox();
-                case "OptionButton": return new RadioButton();
-                case "Frame": return new GroupBox { BorderBrush = Brushes.Gray, BorderThickness = new Thickness(1) };
-                case "ComboBox": return new ComboBox { IsReadOnly = true };
-                case "ListBox": return new ListBox { BorderBrush = Brushes.Black, BorderThickness = new Thickness(1) };
-                case "Timer": return VbHelpers.CreateTimerVisual();
-                case "Shape": return new Rectangle { Stroke = Brushes.Black, StrokeDashArray = new DoubleCollection(new double[] { 2, 2 }) };
-                case "Image": return new Image { Stretch = Stretch.Uniform, Source = null };
-                case "HScrollBar": return new ScrollBar { Orientation = Orientation.Horizontal, Height = 18 };
-                case "VScrollBar": return new ScrollBar { Orientation = Orientation.Vertical, Width = 18 };
-                case "DriveListBox": return new ComboBox { Text = "C: [System]", IsReadOnly = true };
-                case "DirListBox": return new ListBox();
-                case "FileListBox": return new ListBox();
-                case "Line": return new Line { Stroke = Brushes.Black, StrokeThickness = 1, X2 = 80, Y2 = 80 };
-                case "PictureBox": return new Border { Background = VbHelpers.GetVbGray(), BorderBrush = Brushes.Black, BorderThickness = new Thickness(1) };
+                // --- Controles Estándar ---
+                case "CommandButton":
+                    return new Button { Background = VbHelpers.GetVbGray(), BorderThickness = new Thickness(2) };
 
+                case "Label":
+                    return new Label { Background = Brushes.Transparent };
+
+                case "TextBox":
+                    return new TextBox { Background = Brushes.White, BorderBrush = Brushes.Black, BorderThickness = new Thickness(1) };
+
+                case "CheckBox":
+                    return new CheckBox();
+
+                case "OptionButton":
+                    return new RadioButton();
+
+                case "Frame":
+                    return new GroupBox { BorderBrush = Brushes.Gray, BorderThickness = new Thickness(1) };
+
+                case "ComboBox":
+                    return new ComboBox { IsReadOnly = true };
+
+                case "ListBox":
+                    return new ListBox { BorderBrush = Brushes.Black, BorderThickness = new Thickness(1) };
+
+                case "Timer":
+                    return VbHelpers.CreateTimerVisual();
+
+                case "Shape":
+                    return new Rectangle { Stroke = Brushes.Black, StrokeDashArray = new DoubleCollection(new double[] { 2, 2 }) };
+
+                case "Image":
+                    return new Image { Stretch = Stretch.Uniform, Source = null }; // Placeholder
+
+                case "HScrollBar":
+                    return new ScrollBar { Orientation = Orientation.Horizontal, Height = 18 };
+
+                case "VScrollBar":
+                    return new ScrollBar { Orientation = Orientation.Vertical, Width = 18 };
+
+                case "DriveListBox":
+                    return new ComboBox { Text = "C: [System]", IsReadOnly = true };
+
+                case "DirListBox":
+                    return new ListBox();
+
+                case "FileListBox":
+                    return new ListBox();
+
+                case "Line":
+                    return new Line { Stroke = Brushes.Black, StrokeThickness = 1, X2 = 80, Y2 = 80 };
+
+                case "PictureBox":
+                    return new Border { Background = VbHelpers.GetVbGray(), BorderBrush = Brushes.Black, BorderThickness = new Thickness(1) };
+
+                // --- NUEVOS CONTROLES ESPECIALES ---
                 case "Menu":
                     var m = new Menu { Background = Brushes.LightGray, IsMainMenu = true };
+                    // Agregamos un item por defecto para que sea visible al crearlo
                     m.Items.Add(new MenuItem { Header = "File" });
                     return m;
+
                 case "StatusBar":
                     var s = new StatusBar { Background = VbHelpers.GetVbGray() };
                     s.Items.Add(new StatusBarItem { Content = "Status" });
                     return s;
 
-                default: return null;
+                default:
+                    return null;
             }
         }
 
+        /// <summary>
+        /// Genera el siguiente nombre único para un tipo de control (ej: Command1, Command2).
+        /// </summary>
         public string GetNextNameForType(string vbType)
         {
             switch (vbType)
@@ -80,8 +129,11 @@ namespace VB6VisualMockupDesigner.Services
                 case "FileListBox": return "File" + _filCount++;
                 case "Line": return "Line" + _linCount++;
                 case "PictureBox": return "Picture" + _picCount++;
+
+                // Nombres para los nuevos controles
                 case "Menu": return "Menu" + _mnuCount++;
                 case "StatusBar": return "StatusBar" + _sbrCount++;
+
                 default: return vbType + DateTime.Now.Ticks;
             }
         }

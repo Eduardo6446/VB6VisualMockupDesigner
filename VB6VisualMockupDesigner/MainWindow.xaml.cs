@@ -78,6 +78,12 @@ namespace VB6VisualMockupDesigner
                 RecordUndo();
                 DeleteSelectedControls();
             }
+            // Cortar (Ctrl + X)
+            else if (e.Key == Key.X && Keyboard.Modifiers == ModifierKeys.Control)
+            {
+                RecordUndo();
+                CutControls();
+            }
 
             // Copiar (Ctrl + C)
             else if (e.Key == Key.C && Keyboard.Modifiers == ModifierKeys.Control) CopyControls();
@@ -345,6 +351,12 @@ namespace VB6VisualMockupDesigner
                     Text = VbHelpers.GetControlText(fe)
                 });
             }
+        }
+
+        private void CutControls()
+        {
+            CopyControls();
+            DeleteSelectedControls();
         }
 
         private void PasteControls()

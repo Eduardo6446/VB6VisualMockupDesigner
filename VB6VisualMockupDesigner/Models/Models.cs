@@ -16,7 +16,7 @@ namespace VB6VisualMockupDesigner.Models
         public string Text { get; set; }
     }
 
-    // Datos para Copiar/Pegar
+    // Datos para Copiar/Pegar/Cortar
     public class ClipboardData
     {
         public string VbType { get; set; }

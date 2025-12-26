@@ -18,6 +18,7 @@ namespace VB6VisualMockupDesigner.Helpers
         {
             Grid g = new Grid { Width = 32, Height = 32 };
             g.Children.Add(new Ellipse { Stroke = Brushes.Black, StrokeThickness = 1 });
+            // Usamos Geometry.Parse para simplicidad en el helper
             g.Children.Add(new Path { Data = Geometry.Parse("M16,4 L16,16 L22,22"), Stroke = Brushes.Black, StrokeThickness = 1 });
             return g;
         }
@@ -28,12 +29,16 @@ namespace VB6VisualMockupDesigner.Helpers
             if (fe is GroupBox gb) return gb.Header?.ToString();
             if (fe is ContentControl cc) return cc.Content?.ToString(); // Buttons, Labels, CheckBox
             if (fe is ComboBox cmb) return cmb.Text;
+
+            // LOGICA PARA MENU: Devuelve "Item1,Item2,Item3"
             if (fe is Menu mnu)
             {
                 var items = new List<string>();
                 foreach (var item in mnu.Items) if (item is MenuItem mi) items.Add(mi.Header.ToString());
                 return string.Join(",", items);
             }
+
+            // LOGICA PARA STATUSBAR: Devuelve el texto del primer panel
             if (fe is StatusBar sbar)
             {
                 if (sbar.Items.Count > 0 && sbar.Items[0] is StatusBarItem sbi) return sbi.Content.ToString();
@@ -48,12 +53,16 @@ namespace VB6VisualMockupDesigner.Helpers
             else if (fe is GroupBox gb) gb.Header = text;
             else if (fe is ContentControl cc && !(fe is StatusBarItem)) cc.Content = text;
             else if (fe is ComboBox cmb) cmb.Text = text;
+
+            // LOGICA PARA MENU: Reconstruye los items desde texto separado por comas
             else if (fe is Menu mnu)
             {
                 mnu.Items.Clear();
                 string[] items = text.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
                 foreach (string item in items) mnu.Items.Add(new MenuItem { Header = item.Trim() });
             }
+
+            // LOGICA PARA STATUSBAR
             else if (fe is StatusBar sbar)
             {
                 sbar.Items.Clear();
@@ -63,8 +72,10 @@ namespace VB6VisualMockupDesigner.Helpers
 
         public static string MapWpfToVbType(FrameworkElement fe)
         {
+            // Soporte para los nuevos tipos
             if (fe is Menu) return "Menu";
             if (fe is StatusBar) return "StatusBar";
+
             if (fe is Button) return "CommandButton";
             if (fe is TextBox) return "TextBox";
             if (fe is Label) return "Label";

@@ -223,6 +223,29 @@
                             <Button Style="{StaticResource ToolboxButtonStyle}" ToolTip="Image" Click="AddImage_Click">
                                 <Path Data="M4,4 L16,16 M4,16 L16,4" Stroke="Gray" StrokeThickness="1" Margin="4"/>
                             </Button>
+
+                            <!-- NUEVO: Menu Bar -->
+                            <Button Style="{StaticResource ToolboxButtonStyle}" ToolTip="Menu Bar" Click="AddMenu_Click">
+                                <Border BorderBrush="Black" BorderThickness="0,0,0,1" Width="28" Height="20" VerticalAlignment="Top">
+                                    <StackPanel Orientation="Horizontal" Margin="2,2,0,0">
+                                        <Rectangle Width="6" Height="2" Fill="Black" Margin="1"/>
+                                        <Rectangle Width="6" Height="2" Fill="Black" Margin="1"/>
+                                        <Rectangle Width="6" Height="2" Fill="Black" Margin="1"/>
+                                    </StackPanel>
+                                </Border>
+                            </Button>
+
+                            <!-- NUEVO: Status Bar -->
+                            <Button Style="{StaticResource ToolboxButtonStyle}" ToolTip="Status Bar" Click="AddStatusBar_Click">
+                                <Border BorderBrush="Black" BorderThickness="1" Width="28" Height="20">
+                                    <Border BorderBrush="Gray" BorderThickness="0,1,0,0" Height="6" VerticalAlignment="Bottom" Background="#D4D0C8">
+                                        <Grid>
+                                            <Rectangle Width="2" Height="4" HorizontalAlignment="Right" Fill="Gray" Margin="0,0,4,0"/>
+                                        </Grid>
+                                    </Border>
+                                </Border>
+                            </Button>
+
                         </UniformGrid>
                     </ScrollViewer>
                 </DockPanel>
@@ -235,16 +258,14 @@
                         <DropShadowEffect BlurRadius="15" Direction="270" Opacity="0.3" ShadowDepth="5"/>
                     </Border.Effect>
                     <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
-                        <!-- Añadimos MouseMove y MouseUp al Canvas para el rectángulo de selección -->
+                        <!-- El Canvas tiene todos los eventos de ratón necesarios para selección múltiple -->
                         <Canvas Name="DesignCanvas" 
                                 Width="800" Height="600" 
                                 Background="{StaticResource VB6GridBrush}"
                                 MouseDown="DesignCanvas_MouseDown"
                                 MouseMove="DesignCanvas_MouseMove"
                                 MouseUp="DesignCanvas_MouseUp">
-
-                            <!-- Rectángulo de Selección (Lazo azul) -->
-                            <!-- Panel.ZIndex alto para que se dibuje por encima de todo -->
+                            <!-- Rectángulo invisible para el lazo de selección -->
                             <Rectangle x:Name="SelectionBox" 
                                        Stroke="#3399FF" 
                                        StrokeThickness="1" 
