@@ -1,30 +1,38 @@
-﻿VB6 Visual Mockup Designer
+﻿VB6 Visual Mockup Designer v0.7
 
 Herramienta de prototipado moderno para sistemas heredados.
 
 Este proyecto es una aplicación de escritorio desarrollada en WPF (C#) diseñada para modernizar y agilizar el proceso de diseño de interfaces de usuario para Visual Basic 6. Sustituye el uso de editores de imagen estáticos (como Paint) por un entorno de objetos dinámico y editable.
 
-🚀 Funcionalidades Principales
+🚀 Estado Actual (Versión 0.7)
 
-1. Entorno de Diseño "Drag & Drop"
+Esta versión incluye el núcleo funcional completo para editar, importar y exportar diseños, junto con herramientas de productividad esenciales.
 
-Caja de Herramientas (Toolbox): Réplica de los controles estándar de VB6 (CommandButton, TextBox, Label, Frame, etc.).
+Funcionalidades Implementadas
 
-Lienzo Inteligente: Sistema de cuadrícula (Snap-to-Grid) que ajusta los controles cada 8 píxeles para una alineación perfecta.
+Entorno de Diseño: Caja de herramientas completa, lienzo con rejilla (Snap-to-Grid) y panel de propiedades.
 
-Estética Fiel: Los controles imitan el estilo visual de Windows 98/2000 para garantizar que el mockup se vea como el producto final.
+Ingeniería Inversa: Importación de archivos .frm existentes con conversión de Twips a Píxeles.
 
-2. Ciclo de Ingeniería Inversa
+Exportación: Generación de código VB6 válido y exportación a imagen PNG.
 
-Importador de .FRM: Capaz de leer archivos de formulario reales de VB6 y reconstruir la interfaz visualmente en segundos.
+Edición Avanzada:
 
-Conversión Automática: Traduce automáticamente las coordenadas de Twips (VB6) a Píxeles (WPF) y viceversa.
+[x] Selección múltiple (Ctrl+Click y Lazo de selección).
 
-3. Exportación y Documentación
+[x] Historial de cambios (Deshacer/Rehacer con Ctrl+Z/Ctrl+Y).
 
-Generación de Código: Exporta el diseño modificado a un archivo .frm limpio, listo para copiar y pegar en el IDE de Visual Basic.
+[x] Portapapeles (Copiar, Cortar y Pegar).
 
-Exportar a Imagen: Genera archivos PNG del diseño con un solo clic para compartir por correo o Teams sin necesidad de recortes manuales.
+[x] Redimensionamiento visual con ratón.
+
+Herramientas de Diseño:
+
+[x] Barra de herramientas de Alineación (Izquierda, Centro, Arriba, Igualar Tamaño).
+
+[x] Gestión de Orden Z (Traer al frente / Enviar al fondo).
+
+[x] Soporte para Menús y Barras de Estado.
 
 🛠️ Requisitos Técnicos
 
@@ -36,47 +44,24 @@ IDE Recomendado: Visual Studio 2022 Community.
 
 📦 Instalación y Uso
 
-Clonar el repositorio o copiar la carpeta del proyecto.
+Clonar el repositorio.
 
-Abrir la solución VB6MockupDesigner.sln en Visual Studio.
+Abrir VB6MockupDesigner.sln en Visual Studio.
 
 Compilar y ejecutar (F5).
 
-Para empezar:
+🔮 Roadmap hacia la v1.0
 
-Arrastra controles desde la izquierda al centro.
+Para considerar la herramienta completa (v1.0), trabajaremos en las siguientes características pendientes:
 
-Usa el panel derecho para cambiar nombres y textos.
+[ ] Contenedores Reales (Parenting): Que los controles dentro de un Frame o PictureBox se muevan junto con el contenedor.
 
-Usa el menú superior para Importar o Exportar.
+[ ] Editor de TabIndex Visual: Interfaz para establecer el orden de tabulación haciendo clic secuencialmente en los controles.
 
-🔮 Próximos Pasos (Roadmap)
+[ ] Reglas y Guías: Reglas en los bordes y líneas guía arrastrables para mayor precisión.
 
-Implementado:
+[ ] Explorador de Proyecto: Panel lateral para gestionar múltiples formularios a la vez.
 
-[x] Implementar redimensionamiento de controles con el ratón (Resizing handles).
+[ ] Modo Simulación: Vista previa sin rejilla para probar la interfaz.
 
-[x] Selección múltiple de objetos.
-
-[x] Historial (Undo/Redo).
-
-[x] Portapapeles (Copy/Paste/Cut).
-
-[x] Soporte para menús y barras de estado.
-
-[x] Herramientas de Alineación: Barra de herramientas para alinear (Izquierda, Arriba, Centro), igualar tamaño y distribuir espacio entre objetos.
-
-Pendiente:
-
-
-[ ] Orden Z (Capas): Funcionalidad para "Traer al frente" y "Enviar al fondo" (útil para Frames y fondos).
-
-[ ] Contenedores Reales (Parenting): Lógica para que al soltar un control sobre un Frame, este se convierta en su hijo y se muevan juntos.
-
-[ ] Gestión de Proyectos (.VBP): Explorador de soluciones para manejar múltiples formularios y módulos simultáneamente.
-
-[ ] Editor de TabIndex: Modo visual para establecer el orden de tabulación haciendo clic en los controles secuencialmente.
-
-[ ] Reglas y Guías: Reglas en los bordes con medidas en Twips y líneas guía arrastrables para diseño de precisión.
-
-[ ] Modo Simulación: Vista previa interactiva que oculta la rejilla y permite escribir en inputs o probar clicks sin editar.
+Desarrollado como propuesta de mejora interna para optimizar el flujo de trabajo.

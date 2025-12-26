@@ -134,7 +134,7 @@ namespace VB6VisualMockupDesigner
                 {
                     RecordUndo();
                     _fileManager.ParseVb6Frm(ofd.FileName, DesignCanvas, RegisterControl);
-                    // Asegurar que el SelectionBox exista
+                    // Asegurar que el SelectionBox siga existiendo
                     if (!DesignCanvas.Children.Contains(SelectionBox)) DesignCanvas.Children.Add(SelectionBox);
                 }
                 catch (Exception ex) { MessageBox.Show("Error al importar: " + ex.Message); }
@@ -180,7 +180,7 @@ namespace VB6VisualMockupDesigner
 
         #endregion
 
-        #region Barra de Herramientas (Alineación)
+        #region Barra de Herramientas (Alineación y Orden Z)
 
         private FrameworkElement GetAnchorElement()
         {
@@ -188,6 +188,52 @@ namespace VB6VisualMockupDesigner
             return _selectedElements.Last() as FrameworkElement;
         }
 
+        // --- ORDEN Z (CAPAS) ---
+        private void BringToFront_Click(object sender, RoutedEventArgs e)
+        {
+            if (_selectedElements.Count == 0) return;
+            RecordUndo();
+
+            // Buscar el ZIndex máximo actual
+            int maxZ = 0;
+            foreach (UIElement child in DesignCanvas.Children)
+            {
+                if (child == SelectionBox) continue;
+                int z = Panel.GetZIndex(child);
+                if (z > maxZ) maxZ = z;
+            }
+
+            // Poner los seleccionados encima
+            foreach (UIElement el in _selectedElements)
+            {
+                maxZ++;
+                Panel.SetZIndex(el, maxZ);
+            }
+        }
+
+        private void SendToBack_Click(object sender, RoutedEventArgs e)
+        {
+            if (_selectedElements.Count == 0) return;
+            RecordUndo();
+
+            // Buscar el ZIndex mínimo
+            int minZ = 0;
+            foreach (UIElement child in DesignCanvas.Children)
+            {
+                if (child == SelectionBox) continue;
+                int z = Panel.GetZIndex(child);
+                if (z < minZ) minZ = z;
+            }
+
+            // Poner los seleccionados debajo
+            foreach (UIElement el in _selectedElements)
+            {
+                minZ--;
+                Panel.SetZIndex(el, minZ);
+            }
+        }
+
+        // --- ALINEACIÓN ---
         private void AlignLeft_Click(object sender, RoutedEventArgs e)
         {
             var anchor = GetAnchorElement();
@@ -387,7 +433,8 @@ namespace VB6VisualMockupDesigner
                         Top = Canvas.GetTop(fe),
                         Width = fe.Width,
                         Height = fe.Height,
-                        Text = VbHelpers.GetControlText(fe)
+                        Text = VbHelpers.GetControlText(fe),
+                        ZIndex = Panel.GetZIndex(fe)
                     });
                 }
             }
@@ -413,6 +460,7 @@ namespace VB6VisualMockupDesigner
                 RegisterControl(ctrl);
                 Canvas.SetLeft(ctrl, item.Left);
                 Canvas.SetTop(ctrl, item.Top);
+                Panel.SetZIndex(ctrl, item.ZIndex);
             }
         }
 
@@ -436,7 +484,8 @@ namespace VB6VisualMockupDesigner
                     Height = fe.Height,
                     Left = Canvas.GetLeft(fe) - minLeft,
                     Top = Canvas.GetTop(fe) - minTop,
-                    Text = VbHelpers.GetControlText(fe)
+                    Text = VbHelpers.GetControlText(fe),
+                    ZIndex = Panel.GetZIndex(fe)
                 });
             }
         }
@@ -465,6 +514,7 @@ namespace VB6VisualMockupDesigner
                 RegisterControl(newCtrl);
                 Canvas.SetLeft(newCtrl, 50 + data.Left + pasteOffsetX);
                 Canvas.SetTop(newCtrl, 50 + data.Top + pasteOffsetY);
+                Panel.SetZIndex(newCtrl, data.ZIndex + 1); // Poner ligeramente encima
                 AddToSelection(newCtrl);
             }
         }
@@ -586,7 +636,8 @@ namespace VB6VisualMockupDesigner
         private bool AreStatesEqual(List<ControlState> s1, List<ControlState> s2)
         {
             if (s1.Count != s2.Count) return false;
-            for (int i = 0; i < s1.Count; i++) if (s1[i].Left != s2[i].Left || s1[i].Top != s2[i].Top) return false;
+            for (int i = 0; i < s1.Count; i++)
+                if (s1[i].Left != s2[i].Left || s1[i].Top != s2[i].Top || s1[i].ZIndex != s2[i].ZIndex) return false;
             return true;
         }
         private void Control_MouseMove(object sender, MouseEventArgs e) { if (_isDragging) DesignCanvas_MouseMove(sender, e); }

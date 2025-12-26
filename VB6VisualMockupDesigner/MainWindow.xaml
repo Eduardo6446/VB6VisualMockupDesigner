@@ -28,6 +28,22 @@
             </Style.Triggers>
         </Style>
 
+        <!-- Estilo para los botones de la Barra Superior -->
+        <Style x:Key="ToolbarButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="6,4"/>
+            <Setter Property="Margin" Value="1"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#E0E0E0"/>
+                    <Setter Property="BorderBrush" Value="#808080"/>
+                    <Setter Property="BorderThickness" Value="1"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
         <Style x:Key="HeaderTextStyle" TargetType="TextBlock">
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="FontWeight" Value="Bold"/>
@@ -79,10 +95,10 @@
                 </MenuItem>
             </Menu>
 
-            <!-- 2. BARRA DE HERRAMIENTAS (Iconos de Alineación) -->
+            <!-- 2. BARRA DE HERRAMIENTAS (Iconos de Alineación y Orden Z) -->
             <ToolBarTray Background="#D4D0C8">
-                <ToolBar Band="1" BandIndex="1" Header="Alineación">
-                    <!-- Alinear Izquierda -->
+                <ToolBar Band="1" BandIndex="1" Header="Herramientas">
+                    <!-- GRUPO ALINEACIÓN -->
                     <Button Click="AlignLeft_Click" ToolTip="Alinear a la Izquierda">
                         <Canvas Width="16" Height="16">
                             <Line X1="2" Y1="1" X2="2" Y2="15" Stroke="Black" StrokeThickness="1"/>
@@ -90,7 +106,6 @@
                             <Rectangle Canvas.Left="4" Canvas.Top="9" Width="10" Height="4" Stroke="Gray" Fill="#EEE"/>
                         </Canvas>
                     </Button>
-                    <!-- Alinear Centro -->
                     <Button Click="AlignCenter_Click" ToolTip="Centrar Horizontalmente">
                         <Canvas Width="16" Height="16">
                             <Line X1="8" Y1="1" X2="8" Y2="15" Stroke="Black" StrokeThickness="1"/>
@@ -98,7 +113,6 @@
                             <Rectangle Canvas.Left="2" Canvas.Top="9" Width="12" Height="4" Stroke="Gray" Fill="#EEE"/>
                         </Canvas>
                     </Button>
-                    <!-- Alinear Derecha -->
                     <Button Click="AlignRight_Click" ToolTip="Alinear a la Derecha">
                         <Canvas Width="16" Height="16">
                             <Line X1="14" Y1="1" X2="14" Y2="15" Stroke="Black" StrokeThickness="1"/>
@@ -107,7 +121,6 @@
                         </Canvas>
                     </Button>
                     <Separator/>
-                    <!-- Alinear Arriba -->
                     <Button Click="AlignTop_Click" ToolTip="Alinear Arriba">
                         <Canvas Width="16" Height="16">
                             <Line X1="1" Y1="2" X2="15" Y2="2" Stroke="Black" StrokeThickness="1"/>
@@ -115,7 +128,6 @@
                             <Rectangle Canvas.Left="9" Canvas.Top="4" Width="4" Height="6" Stroke="Gray" Fill="#EEE"/>
                         </Canvas>
                     </Button>
-                    <!-- Alinear Medio -->
                     <Button Click="AlignMiddle_Click" ToolTip="Centrar Verticalmente">
                         <Canvas Width="16" Height="16">
                             <Line X1="1" Y1="8" X2="15" Y2="8" Stroke="Black" StrokeThickness="1"/>
@@ -123,7 +135,6 @@
                             <Rectangle Canvas.Left="9" Canvas.Top="2" Width="4" Height="12" Stroke="Gray" Fill="#EEE"/>
                         </Canvas>
                     </Button>
-                    <!-- Alinear Abajo -->
                     <Button Click="AlignBottom_Click" ToolTip="Alinear Abajo">
                         <Canvas Width="16" Height="16">
                             <Line X1="1" Y1="14" X2="15" Y2="14" Stroke="Black" StrokeThickness="1"/>
@@ -132,7 +143,6 @@
                         </Canvas>
                     </Button>
                     <Separator/>
-                    <!-- Igualar Tamaño -->
                     <Button Click="SameWidth_Click" ToolTip="Igualar Ancho">
                         <Canvas Width="16" Height="16">
                             <Rectangle Canvas.Left="2" Canvas.Top="2" Width="12" Height="4" Stroke="Black" StrokeThickness="1" Fill="#EEE"/>
@@ -145,6 +155,24 @@
                             <Rectangle Canvas.Left="2" Canvas.Top="2" Width="4" Height="12" Stroke="Black" StrokeThickness="1" Fill="#EEE"/>
                             <Rectangle Canvas.Left="8" Canvas.Top="2" Width="6" Height="12" Stroke="Black" StrokeThickness="1" Fill="#EEE"/>
                             <Line X1="2" Y1="8" X2="14" Y2="8" Stroke="Blue" StrokeThickness="1" StrokeDashArray="2,2"/>
+                        </Canvas>
+                    </Button>
+
+                    <Separator/>
+
+                    <!-- GRUPO ORDEN Z (Capas) -->
+                    <Button Click="BringToFront_Click" ToolTip="Traer al Frente">
+                        <Canvas Width="16" Height="16">
+                            <Rectangle Canvas.Left="2" Canvas.Top="2" Width="8" Height="8" Fill="LightGray" Stroke="Gray"/>
+                            <Rectangle Canvas.Left="6" Canvas.Top="6" Width="8" Height="8" Fill="White" Stroke="Black" StrokeThickness="1"/>
+                            <Path Data="M 12,2 L 12,6 M 10,4 L 12,2 L 14,4" Stroke="Blue" StrokeThickness="1"/>
+                        </Canvas>
+                    </Button>
+                    <Button Click="SendToBack_Click" ToolTip="Enviar al Fondo">
+                        <Canvas Width="16" Height="16">
+                            <Rectangle Canvas.Left="6" Canvas.Top="6" Width="8" Height="8" Fill="White" Stroke="Black"/>
+                            <Rectangle Canvas.Left="2" Canvas.Top="2" Width="8" Height="8" Fill="LightGray" Stroke="Gray" StrokeThickness="1"/>
+                            <Path Data="M 4,14 L 4,10 M 2,12 L 4,14 L 6,12" Stroke="Blue" StrokeThickness="1"/>
                         </Canvas>
                     </Button>
                 </ToolBar>
@@ -329,14 +357,12 @@
                         <DropShadowEffect BlurRadius="15" Direction="270" Opacity="0.3" ShadowDepth="5"/>
                     </Border.Effect>
                     <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
-                        <!-- El Canvas tiene todos los eventos de ratón necesarios para selección múltiple -->
                         <Canvas Name="DesignCanvas" 
                                 Width="800" Height="600" 
                                 Background="{StaticResource VB6GridBrush}"
                                 MouseDown="DesignCanvas_MouseDown"
                                 MouseMove="DesignCanvas_MouseMove"
                                 MouseUp="DesignCanvas_MouseUp">
-                            <!-- Rectángulo invisible para el lazo de selección -->
                             <Rectangle x:Name="SelectionBox" 
                                        Stroke="#3399FF" 
                                        StrokeThickness="1" 
