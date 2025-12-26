@@ -56,6 +56,10 @@ Posibles mejoras futuras para la herramienta:
 
 [✓] Implementar redimensionamiento de controles con el ratón (Resizing handles).
 
-[ ] Selección múltiple de objetos.
+[✓] Selección múltiple de objetos.
+
+[✓] Historial (Undo/Redo).
+
+[✓] Portapapeles (Copy/Paste).
 
 [ ] Soporte para menús y barras de estado.
