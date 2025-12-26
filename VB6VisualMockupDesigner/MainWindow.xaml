@@ -12,7 +12,7 @@
 
 
     <Window.Resources>
-        <!-- Estilo para los botones de la Toolbox (Cuadrícula de Iconos) -->
+        <!-- Estilo para los botones de la Toolbox -->
         <Style x:Key="ToolboxButtonStyle" TargetType="Button">
             <Setter Property="Width" Value="32"/>
             <Setter Property="Height" Value="32"/>
@@ -28,22 +28,6 @@
             </Style.Triggers>
         </Style>
 
-        <!-- Estilo para los botones de la Barra Superior (Menú) -->
-        <Style x:Key="ToolbarButtonStyle" TargetType="Button">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="12,6"/>
-            <Setter Property="Margin" Value="2"/>
-            <Setter Property="FontSize" Value="12"/>
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#E0E0E0"/>
-                    <Setter Property="BorderBrush" Value="#808080"/>
-                    <Setter Property="BorderThickness" Value="1"/>
-                </Trigger>
-            </Style.Triggers>
-        </Style>
-
         <Style x:Key="HeaderTextStyle" TargetType="TextBlock">
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="FontWeight" Value="Bold"/>
@@ -51,7 +35,7 @@
             <Setter Property="Margin" Value="0,0,0,10"/>
         </Style>
 
-        <!-- Fondo de puntos para el Canvas (Estilo VB6) -->
+        <!-- Fondo de puntos para el Canvas -->
         <VisualBrush x:Key="VB6GridBrush" TileMode="Tile" Viewport="0,0,8,8" ViewportUnits="Absolute">
             <VisualBrush.Visual>
                 <Canvas>
@@ -65,20 +49,107 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <!-- Fila 0: Barra de Herramientas -->
+            <!-- Fila 0: Menú y Toolbar -->
             <RowDefinition Height="*"/>
             <!-- Fila 1: Área de Trabajo -->
         </Grid.RowDefinitions>
 
-        <!-- BARRA DE HERRAMIENTAS SUPERIOR -->
-        <Border Grid.Row="0" Background="#D4D0C8" BorderBrush="#808080" BorderThickness="0,0,0,1" Padding="4">
-            <StackPanel Orientation="Horizontal">
-                <Button Content="📂 Importar .FRM" Click="ImportFrm_Click" Style="{StaticResource ToolbarButtonStyle}" ToolTip="Abrir archivo .frm existente"/>
-                <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="5,0"/>
-                <Button Content="💾 Exportar Código" Click="ExportCode_Click" Style="{StaticResource ToolbarButtonStyle}" ToolTip="Generar código VB6"/>
-                <Button Content="🖼️ Guardar Imagen" Click="ExportImage_Click" Style="{StaticResource ToolbarButtonStyle}" ToolTip="Guardar como PNG"/>
-            </StackPanel>
-        </Border>
+        <!-- SECCIÓN SUPERIOR: MENÚ Y BARRA DE HERRAMIENTAS -->
+        <StackPanel Grid.Row="0">
+
+            <!-- 1. BARRA DE MENÚ ESTÁNDAR -->
+            <Menu Background="#F0F0F0" BorderBrush="#D4D0C8" BorderThickness="0,0,0,1">
+                <MenuItem Header="_Archivo">
+                    <MenuItem Header="_Nuevo Diseño" Click="NewDesign_Click" InputGestureText="Ctrl+N"/>
+                    <Separator/>
+                    <MenuItem Header="_Importar .FRM..." Click="ImportFrm_Click" InputGestureText="Ctrl+O"/>
+                    <Separator/>
+                    <MenuItem Header="_Salir" Click="Exit_Click"/>
+                </MenuItem>
+
+                <MenuItem Header="_Herramientas">
+                    <MenuItem Header="_Exportar">
+                        <MenuItem Header="Exportar a _Código (.frm)..." Click="ExportCode_Click"/>
+                        <MenuItem Header="Exportar a _Imagen (.png)..." Click="ExportImage_Click"/>
+                    </MenuItem>
+                </MenuItem>
+
+                <MenuItem Header="_Ayuda">
+                    <MenuItem Header="Acerca de VB6 Mockup Designer..."/>
+                </MenuItem>
+            </Menu>
+
+            <!-- 2. BARRA DE HERRAMIENTAS (Iconos de Alineación) -->
+            <ToolBarTray Background="#D4D0C8">
+                <ToolBar Band="1" BandIndex="1" Header="Alineación">
+                    <!-- Alinear Izquierda -->
+                    <Button Click="AlignLeft_Click" ToolTip="Alinear a la Izquierda">
+                        <Canvas Width="16" Height="16">
+                            <Line X1="2" Y1="1" X2="2" Y2="15" Stroke="Black" StrokeThickness="1"/>
+                            <Rectangle Canvas.Left="4" Canvas.Top="3" Width="8" Height="4" Stroke="Gray" Fill="#EEE"/>
+                            <Rectangle Canvas.Left="4" Canvas.Top="9" Width="10" Height="4" Stroke="Gray" Fill="#EEE"/>
+                        </Canvas>
+                    </Button>
+                    <!-- Alinear Centro -->
+                    <Button Click="AlignCenter_Click" ToolTip="Centrar Horizontalmente">
+                        <Canvas Width="16" Height="16">
+                            <Line X1="8" Y1="1" X2="8" Y2="15" Stroke="Black" StrokeThickness="1"/>
+                            <Rectangle Canvas.Left="4" Canvas.Top="3" Width="8" Height="4" Stroke="Gray" Fill="#EEE"/>
+                            <Rectangle Canvas.Left="2" Canvas.Top="9" Width="12" Height="4" Stroke="Gray" Fill="#EEE"/>
+                        </Canvas>
+                    </Button>
+                    <!-- Alinear Derecha -->
+                    <Button Click="AlignRight_Click" ToolTip="Alinear a la Derecha">
+                        <Canvas Width="16" Height="16">
+                            <Line X1="14" Y1="1" X2="14" Y2="15" Stroke="Black" StrokeThickness="1"/>
+                            <Rectangle Canvas.Left="4" Canvas.Top="3" Width="8" Height="4" Stroke="Gray" Fill="#EEE"/>
+                            <Rectangle Canvas.Left="2" Canvas.Top="9" Width="10" Height="4" Stroke="Gray" Fill="#EEE"/>
+                        </Canvas>
+                    </Button>
+                    <Separator/>
+                    <!-- Alinear Arriba -->
+                    <Button Click="AlignTop_Click" ToolTip="Alinear Arriba">
+                        <Canvas Width="16" Height="16">
+                            <Line X1="1" Y1="2" X2="15" Y2="2" Stroke="Black" StrokeThickness="1"/>
+                            <Rectangle Canvas.Left="3" Canvas.Top="4" Width="4" Height="8" Stroke="Gray" Fill="#EEE"/>
+                            <Rectangle Canvas.Left="9" Canvas.Top="4" Width="4" Height="6" Stroke="Gray" Fill="#EEE"/>
+                        </Canvas>
+                    </Button>
+                    <!-- Alinear Medio -->
+                    <Button Click="AlignMiddle_Click" ToolTip="Centrar Verticalmente">
+                        <Canvas Width="16" Height="16">
+                            <Line X1="1" Y1="8" X2="15" Y2="8" Stroke="Black" StrokeThickness="1"/>
+                            <Rectangle Canvas.Left="3" Canvas.Top="4" Width="4" Height="8" Stroke="Gray" Fill="#EEE"/>
+                            <Rectangle Canvas.Left="9" Canvas.Top="2" Width="4" Height="12" Stroke="Gray" Fill="#EEE"/>
+                        </Canvas>
+                    </Button>
+                    <!-- Alinear Abajo -->
+                    <Button Click="AlignBottom_Click" ToolTip="Alinear Abajo">
+                        <Canvas Width="16" Height="16">
+                            <Line X1="1" Y1="14" X2="15" Y2="14" Stroke="Black" StrokeThickness="1"/>
+                            <Rectangle Canvas.Left="3" Canvas.Top="4" Width="4" Height="8" Stroke="Gray" Fill="#EEE"/>
+                            <Rectangle Canvas.Left="9" Canvas.Top="6" Width="4" Height="6" Stroke="Gray" Fill="#EEE"/>
+                        </Canvas>
+                    </Button>
+                    <Separator/>
+                    <!-- Igualar Tamaño -->
+                    <Button Click="SameWidth_Click" ToolTip="Igualar Ancho">
+                        <Canvas Width="16" Height="16">
+                            <Rectangle Canvas.Left="2" Canvas.Top="2" Width="12" Height="4" Stroke="Black" StrokeThickness="1" Fill="#EEE"/>
+                            <Rectangle Canvas.Left="2" Canvas.Top="8" Width="12" Height="6" Stroke="Black" StrokeThickness="1" Fill="#EEE"/>
+                            <Line X1="8" Y1="2" X2="8" Y2="14" Stroke="Blue" StrokeThickness="1" StrokeDashArray="2,2"/>
+                        </Canvas>
+                    </Button>
+                    <Button Click="SameHeight_Click" ToolTip="Igualar Alto">
+                        <Canvas Width="16" Height="16">
+                            <Rectangle Canvas.Left="2" Canvas.Top="2" Width="4" Height="12" Stroke="Black" StrokeThickness="1" Fill="#EEE"/>
+                            <Rectangle Canvas.Left="8" Canvas.Top="2" Width="6" Height="12" Stroke="Black" StrokeThickness="1" Fill="#EEE"/>
+                            <Line X1="2" Y1="8" X2="14" Y2="8" Stroke="Blue" StrokeThickness="1" StrokeDashArray="2,2"/>
+                        </Canvas>
+                    </Button>
+                </ToolBar>
+            </ToolBarTray>
+        </StackPanel>
 
         <!-- ÁREA DE TRABAJO (3 Columnas) -->
         <Grid Grid.Row="1">
@@ -224,7 +295,7 @@
                                 <Path Data="M4,4 L16,16 M4,16 L16,4" Stroke="Gray" StrokeThickness="1" Margin="4"/>
                             </Button>
 
-                            <!-- NUEVO: Menu Bar -->
+                            <!-- Menu Bar -->
                             <Button Style="{StaticResource ToolboxButtonStyle}" ToolTip="Menu Bar" Click="AddMenu_Click">
                                 <Border BorderBrush="Black" BorderThickness="0,0,0,1" Width="28" Height="20" VerticalAlignment="Top">
                                     <StackPanel Orientation="Horizontal" Margin="2,2,0,0">
@@ -235,7 +306,7 @@
                                 </Border>
                             </Button>
 
-                            <!-- NUEVO: Status Bar -->
+                            <!-- Status Bar -->
                             <Button Style="{StaticResource ToolboxButtonStyle}" ToolTip="Status Bar" Click="AddStatusBar_Click">
                                 <Border BorderBrush="Black" BorderThickness="1" Width="28" Height="20">
                                     <Border BorderBrush="Gray" BorderThickness="0,1,0,0" Height="6" VerticalAlignment="Bottom" Background="#D4D0C8">

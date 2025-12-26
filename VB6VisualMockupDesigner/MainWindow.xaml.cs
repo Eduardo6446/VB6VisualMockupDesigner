@@ -49,8 +49,7 @@ namespace VB6VisualMockupDesigner
             InitializeComponent();
 
             // Inicializar Servicios
-            _controlFactory = new ControlFactory();
-            _fileManager = new Vb6FileManager(_controlFactory);
+            InitializeServices();
 
             // Cargar Icono
             try { this.Icon = new BitmapImage(new Uri("pack://application:,,,/Resource/icon.ico")); }
@@ -60,71 +59,71 @@ namespace VB6VisualMockupDesigner
             this.Loaded += (s, e) => _adornerLayer = AdornerLayer.GetAdornerLayer(DesignCanvas);
         }
 
+        private void InitializeServices()
+        {
+            // Reiniciar servicios (útil para "Nuevo Diseño")
+            _controlFactory = new ControlFactory();
+            _fileManager = new Vb6FileManager(_controlFactory);
+        }
+
         #region Eventos de Teclado (Globales)
 
         protected override void OnKeyDown(KeyEventArgs e)
         {
             base.OnKeyDown(e);
 
-            // Undo (Ctrl + Z)
+            // Edición
             if (e.Key == Key.Z && Keyboard.Modifiers == ModifierKeys.Control) Undo();
-
-            // Redo (Ctrl + Y)
             else if (e.Key == Key.Y && Keyboard.Modifiers == ModifierKeys.Control) Redo();
-
-            // Eliminar (Delete o Backspace)
-            else if (e.Key == Key.Delete || e.Key == Key.Back)
-            {
-                RecordUndo();
-                DeleteSelectedControls();
-            }
-            // Cortar (Ctrl + X)
-            else if (e.Key == Key.X && Keyboard.Modifiers == ModifierKeys.Control)
-            {
-                RecordUndo();
-                CutControls();
-            }
-
-            // Copiar (Ctrl + C)
+            else if (e.Key == Key.Delete || e.Key == Key.Back) { RecordUndo(); DeleteSelectedControls(); }
             else if (e.Key == Key.C && Keyboard.Modifiers == ModifierKeys.Control) CopyControls();
+            else if (e.Key == Key.X && Keyboard.Modifiers == ModifierKeys.Control) { RecordUndo(); CutControls(); }
+            else if (e.Key == Key.V && Keyboard.Modifiers == ModifierKeys.Control) { RecordUndo(); PasteControls(); }
 
-            // Pegar (Ctrl + V)
-            else if (e.Key == Key.V && Keyboard.Modifiers == ModifierKeys.Control)
-            {
-                RecordUndo();
-                PasteControls();
-            }
+            // Archivo (Atajos)
+            else if (e.Key == Key.N && Keyboard.Modifiers == ModifierKeys.Control) NewDesign_Click(null, null);
+            else if (e.Key == Key.O && Keyboard.Modifiers == ModifierKeys.Control) ImportFrm_Click(null, null);
         }
 
         #endregion
 
-        #region Botones de la Toolbox (Delegados)
+        #region Menú Archivo
 
-        // Todos estos botones llaman al método genérico de creación manual
-        private void AddButton_Click(object sender, RoutedEventArgs e) => CreateControlManual("CommandButton");
-        private void AddLabel_Click(object sender, RoutedEventArgs e) => CreateControlManual("Label");
-        private void AddTextBox_Click(object sender, RoutedEventArgs e) => CreateControlManual("TextBox");
-        private void AddFrame_Click(object sender, RoutedEventArgs e) => CreateControlManual("Frame");
-        private void AddCheckBox_Click(object sender, RoutedEventArgs e) => CreateControlManual("CheckBox");
-        private void AddOptionButton_Click(object sender, RoutedEventArgs e) => CreateControlManual("OptionButton");
-        private void AddComboBox_Click(object sender, RoutedEventArgs e) => CreateControlManual("ComboBox");
-        private void AddListBox_Click(object sender, RoutedEventArgs e) => CreateControlManual("ListBox");
-        private void AddPictureBox_Click(object sender, RoutedEventArgs e) => CreateControlManual("PictureBox");
-        private void AddTimer_Click(object sender, RoutedEventArgs e) => CreateControlManual("Timer");
-        private void AddHScrollBar_Click(object sender, RoutedEventArgs e) => CreateControlManual("HScrollBar");
-        private void AddVScrollBar_Click(object sender, RoutedEventArgs e) => CreateControlManual("VScrollBar");
-        private void AddDriveListBox_Click(object sender, RoutedEventArgs e) => CreateControlManual("DriveListBox");
-        private void AddDirListBox_Click(object sender, RoutedEventArgs e) => CreateControlManual("DirListBox");
-        private void AddFileListBox_Click(object sender, RoutedEventArgs e) => CreateControlManual("FileListBox");
-        private void AddShape_Click(object sender, RoutedEventArgs e) => CreateControlManual("Shape");
-        private void AddLine_Click(object sender, RoutedEventArgs e) => CreateControlManual("Line");
-        private void AddImage_Click(object sender, RoutedEventArgs e) => CreateControlManual("Image");
-        private void AddMenu_Click(object sender, RoutedEventArgs e) => CreateControlManual("Menu");
-        private void AddStatusBar_Click(object sender, RoutedEventArgs e) => CreateControlManual("StatusBar");
+        private void NewDesign_Click(object sender, RoutedEventArgs e)
+        {
+            if (DesignCanvas.Children.Count > 1) // Más de 1 por el SelectionBox
+            {
+                if (MessageBox.Show("¿Deseas comenzar un nuevo diseño? Se perderán los cambios no guardados.",
+                                    "Nuevo Diseño", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.No)
+                {
+                    return;
+                }
+            }
+
+            // Limpieza completa
+            RecordUndo(); // Opcional: guardar estado anterior por si se arrepiente
+            ClearSelection();
+
+            // Mantener solo el SelectionBox
+            var selectionBox = DesignCanvas.Children.OfType<Rectangle>().FirstOrDefault(r => r.Name == "SelectionBox");
+            DesignCanvas.Children.Clear();
+            if (selectionBox != null) DesignCanvas.Children.Add(selectionBox);
+
+            // Reiniciar contadores y pilas
+            InitializeServices();
+            _undoStack.Clear();
+            _redoStack.Clear();
+            UpdatePropertyPanel();
+        }
+
+        private void Exit_Click(object sender, RoutedEventArgs e)
+        {
+            Application.Current.Shutdown();
+        }
 
         #endregion
 
-        #region Archivo (Importar / Exportar)
+        #region Menú Herramientas / Archivo (Importar/Exportar)
 
         private void ImportFrm_Click(object sender, RoutedEventArgs e)
         {
@@ -133,15 +132,10 @@ namespace VB6VisualMockupDesigner
             {
                 try
                 {
-                    RecordUndo(); // Guardar estado antes de importar
-                    // El FileManager necesita el Canvas y el método para registrar eventos
+                    RecordUndo();
                     _fileManager.ParseVb6Frm(ofd.FileName, DesignCanvas, RegisterControl);
-
-                    // Asegurarnos que el SelectionBox siga existiendo (ParseVb6Frm limpia el canvas)
-                    if (!DesignCanvas.Children.Contains(SelectionBox))
-                    {
-                        DesignCanvas.Children.Add(SelectionBox);
-                    }
+                    // Asegurar que el SelectionBox exista
+                    if (!DesignCanvas.Children.Contains(SelectionBox)) DesignCanvas.Children.Add(SelectionBox);
                 }
                 catch (Exception ex) { MessageBox.Show("Error al importar: " + ex.Message); }
             }
@@ -167,14 +161,10 @@ namespace VB6VisualMockupDesigner
             SaveFileDialog sfd = new SaveFileDialog { Filter = "PNG (*.png)|*.png", FileName = "Mockup.png" };
             if (sfd.ShowDialog() == true)
             {
-                // Ocultar la caja de selección antes de la foto
                 SelectionBox.Visibility = Visibility.Collapsed;
 
-                // Renderizar
                 Size size = new Size(DesignCanvas.ActualWidth, DesignCanvas.ActualHeight);
-                DesignCanvas.Measure(size);
-                DesignCanvas.Arrange(new Rect(size));
-
+                DesignCanvas.Measure(size); DesignCanvas.Arrange(new Rect(size));
                 RenderTargetBitmap rtb = new RenderTargetBitmap((int)size.Width, (int)size.Height, 96d, 96d, PixelFormats.Pbgra32);
                 rtb.Render(DesignCanvas);
 
@@ -184,26 +174,133 @@ namespace VB6VisualMockupDesigner
                     encoder.Frames.Add(BitmapFrame.Create(rtb));
                     encoder.Save(fs);
                 }
-
                 MessageBox.Show("Imagen guardada.");
             }
         }
 
         #endregion
 
-        #region Creación y Registro de Controles
+        #region Barra de Herramientas (Alineación)
+
+        private FrameworkElement GetAnchorElement()
+        {
+            if (_selectedElements.Count == 0) return null;
+            return _selectedElements.Last() as FrameworkElement;
+        }
+
+        private void AlignLeft_Click(object sender, RoutedEventArgs e)
+        {
+            var anchor = GetAnchorElement();
+            if (anchor == null || _selectedElements.Count < 2) return;
+            RecordUndo();
+            double target = Canvas.GetLeft(anchor);
+            foreach (FrameworkElement fe in _selectedElements) Canvas.SetLeft(fe, target);
+            UpdatePropertyPanel();
+        }
+
+        private void AlignRight_Click(object sender, RoutedEventArgs e)
+        {
+            var anchor = GetAnchorElement();
+            if (anchor == null || _selectedElements.Count < 2) return;
+            RecordUndo();
+            double target = Canvas.GetLeft(anchor) + anchor.Width;
+            foreach (FrameworkElement fe in _selectedElements) Canvas.SetLeft(fe, target - fe.Width);
+            UpdatePropertyPanel();
+        }
+
+        private void AlignCenter_Click(object sender, RoutedEventArgs e)
+        {
+            var anchor = GetAnchorElement();
+            if (anchor == null || _selectedElements.Count < 2) return;
+            RecordUndo();
+            double center = Canvas.GetLeft(anchor) + (anchor.Width / 2);
+            foreach (FrameworkElement fe in _selectedElements) Canvas.SetLeft(fe, center - (fe.Width / 2));
+            UpdatePropertyPanel();
+        }
+
+        private void AlignTop_Click(object sender, RoutedEventArgs e)
+        {
+            var anchor = GetAnchorElement();
+            if (anchor == null || _selectedElements.Count < 2) return;
+            RecordUndo();
+            double target = Canvas.GetTop(anchor);
+            foreach (FrameworkElement fe in _selectedElements) Canvas.SetTop(fe, target);
+            UpdatePropertyPanel();
+        }
+
+        private void AlignBottom_Click(object sender, RoutedEventArgs e)
+        {
+            var anchor = GetAnchorElement();
+            if (anchor == null || _selectedElements.Count < 2) return;
+            RecordUndo();
+            double target = Canvas.GetTop(anchor) + anchor.Height;
+            foreach (FrameworkElement fe in _selectedElements) Canvas.SetTop(fe, target - fe.Height);
+            UpdatePropertyPanel();
+        }
+
+        private void AlignMiddle_Click(object sender, RoutedEventArgs e)
+        {
+            var anchor = GetAnchorElement();
+            if (anchor == null || _selectedElements.Count < 2) return;
+            RecordUndo();
+            double middle = Canvas.GetTop(anchor) + (anchor.Height / 2);
+            foreach (FrameworkElement fe in _selectedElements) Canvas.SetTop(fe, middle - (fe.Height / 2));
+            UpdatePropertyPanel();
+        }
+
+        private void SameWidth_Click(object sender, RoutedEventArgs e)
+        {
+            var anchor = GetAnchorElement();
+            if (anchor == null || _selectedElements.Count < 2) return;
+            RecordUndo();
+            foreach (FrameworkElement fe in _selectedElements) fe.Width = anchor.Width;
+            UpdatePropertyPanel();
+        }
+
+        private void SameHeight_Click(object sender, RoutedEventArgs e)
+        {
+            var anchor = GetAnchorElement();
+            if (anchor == null || _selectedElements.Count < 2) return;
+            RecordUndo();
+            foreach (FrameworkElement fe in _selectedElements) fe.Height = anchor.Height;
+            UpdatePropertyPanel();
+        }
+
+        #endregion
+
+        #region Toolbox (Creación Manual)
+
+        private void AddButton_Click(object sender, RoutedEventArgs e) => CreateControlManual("CommandButton");
+        private void AddLabel_Click(object sender, RoutedEventArgs e) => CreateControlManual("Label");
+        private void AddTextBox_Click(object sender, RoutedEventArgs e) => CreateControlManual("TextBox");
+        private void AddFrame_Click(object sender, RoutedEventArgs e) => CreateControlManual("Frame");
+        private void AddCheckBox_Click(object sender, RoutedEventArgs e) => CreateControlManual("CheckBox");
+        private void AddOptionButton_Click(object sender, RoutedEventArgs e) => CreateControlManual("OptionButton");
+        private void AddComboBox_Click(object sender, RoutedEventArgs e) => CreateControlManual("ComboBox");
+        private void AddListBox_Click(object sender, RoutedEventArgs e) => CreateControlManual("ListBox");
+        private void AddPictureBox_Click(object sender, RoutedEventArgs e) => CreateControlManual("PictureBox");
+        private void AddTimer_Click(object sender, RoutedEventArgs e) => CreateControlManual("Timer");
+        private void AddHScrollBar_Click(object sender, RoutedEventArgs e) => CreateControlManual("HScrollBar");
+        private void AddVScrollBar_Click(object sender, RoutedEventArgs e) => CreateControlManual("VScrollBar");
+        private void AddDriveListBox_Click(object sender, RoutedEventArgs e) => CreateControlManual("DriveListBox");
+        private void AddDirListBox_Click(object sender, RoutedEventArgs e) => CreateControlManual("DirListBox");
+        private void AddFileListBox_Click(object sender, RoutedEventArgs e) => CreateControlManual("FileListBox");
+        private void AddShape_Click(object sender, RoutedEventArgs e) => CreateControlManual("Shape");
+        private void AddLine_Click(object sender, RoutedEventArgs e) => CreateControlManual("Line");
+        private void AddImage_Click(object sender, RoutedEventArgs e) => CreateControlManual("Image");
+        private void AddMenu_Click(object sender, RoutedEventArgs e) => CreateControlManual("Menu");
+        private void AddStatusBar_Click(object sender, RoutedEventArgs e) => CreateControlManual("StatusBar");
 
         private void CreateControlManual(string vbType)
         {
-            RecordUndo(); // Guardar estado antes de crear
-
+            RecordUndo();
             FrameworkElement ctrl = _controlFactory.CreateElementInstance(vbType);
             if (ctrl == null) return;
 
             string name = _controlFactory.GetNextNameForType(vbType);
             ctrl.Name = name;
 
-            // Lógica de posicionamiento y tamaño por defecto
+            // Posicionamiento por defecto
             if (vbType == "Menu")
             {
                 ctrl.Width = 400; ctrl.Height = 25;
@@ -223,7 +320,6 @@ namespace VB6VisualMockupDesigner
                 if (vbType == "ListBox") { ctrl.Width = 100; ctrl.Height = 80; }
                 if (!(vbType == "Timer" || vbType == "Shape" || vbType == "Image" || vbType.Contains("Scroll")))
                 {
-                    // Ajuste fino para TextBox y ComboBox
                     if (ctrl.Height == 30) ctrl.Height = (vbType == "TextBox" || vbType == "ComboBox") ? 24 : 35;
                 }
 
@@ -232,30 +328,24 @@ namespace VB6VisualMockupDesigner
             }
 
             VbHelpers.SetControlText(ctrl, (vbType == "Menu") ? "File,Edit" : (vbType == "StatusBar" ? "Ready" : name));
-
             RegisterControl(ctrl);
-
-            // Seleccionar el nuevo control automáticamente
             ClearSelection();
             AddToSelection(ctrl);
         }
 
-        // Este método se pasa al FileManager para registrar eventos en los controles importados
         private void RegisterControl(FrameworkElement ctrl)
         {
             ctrl.PreviewMouseLeftButtonDown += Control_MouseLeftButtonDown;
             ctrl.PreviewMouseMove += Control_MouseMove;
             ctrl.PreviewMouseLeftButtonUp += Control_MouseLeftButtonUp;
 
-            // Aplicar fuente MS Sans Serif si es un control estándar
             if (ctrl is Control c && !(ctrl is Label))
             {
                 c.FontFamily = new FontFamily("MS Sans Serif");
                 c.FontSize = 11;
             }
 
-            if (!DesignCanvas.Children.Contains(ctrl))
-                DesignCanvas.Children.Add(ctrl);
+            if (!DesignCanvas.Children.Contains(ctrl)) DesignCanvas.Children.Add(ctrl);
         }
 
         #endregion
@@ -330,8 +420,6 @@ namespace VB6VisualMockupDesigner
         {
             if (_selectedElements.Count == 0) return;
             _internalClipboard.Clear();
-
-            // Calcular origen relativo
             double minLeft = double.MaxValue; double minTop = double.MaxValue;
             foreach (FrameworkElement fe in _selectedElements)
             {
@@ -362,7 +450,6 @@ namespace VB6VisualMockupDesigner
         private void PasteControls()
         {
             if (_internalClipboard.Count == 0) return;
-
             ClearSelection();
             double pasteOffsetX = 20; double pasteOffsetY = 20;
 
@@ -376,11 +463,8 @@ namespace VB6VisualMockupDesigner
                 VbHelpers.SetControlText(newCtrl, data.Text);
 
                 RegisterControl(newCtrl);
-
-                // Pegar desplazado
                 Canvas.SetLeft(newCtrl, 50 + data.Left + pasteOffsetX);
                 Canvas.SetTop(newCtrl, 50 + data.Top + pasteOffsetY);
-
                 AddToSelection(newCtrl);
             }
         }
@@ -398,7 +482,7 @@ namespace VB6VisualMockupDesigner
 
         private void Control_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            _stateBeforeDrag = GetCurrentState(); // Guardar para posible Undo
+            _stateBeforeDrag = GetCurrentState();
             var clickedElement = (UIElement)sender;
 
             if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
@@ -454,10 +538,9 @@ namespace VB6VisualMockupDesigner
                     if (_initialPositions.ContainsKey(el))
                     {
                         Point init = _initialPositions[el];
-                        double nl = Math.Round((init.X + deltaX) / 8) * 8; // Snap to grid
+                        double nl = Math.Round((init.X + deltaX) / 8) * 8;
                         double nt = Math.Round((init.Y + deltaY) / 8) * 8;
                         if (nl < 0) nl = 0; if (nt < 0) nt = 0;
-
                         Canvas.SetLeft(el, nl); Canvas.SetTop(el, nt);
                     }
                 }
@@ -481,7 +564,6 @@ namespace VB6VisualMockupDesigner
                 _isDragging = false;
                 foreach (var el in _selectedElements) el.ReleaseMouseCapture();
 
-                // Si hubo movimiento real, registrar Undo
                 var currentState = GetCurrentState();
                 if (_stateBeforeDrag != null && !AreStatesEqual(_stateBeforeDrag, currentState))
                 {
@@ -501,17 +583,12 @@ namespace VB6VisualMockupDesigner
             }
         }
 
-        // Helpers para comparar estados
         private bool AreStatesEqual(List<ControlState> s1, List<ControlState> s2)
         {
             if (s1.Count != s2.Count) return false;
-            // Comparación simple de posición
-            for (int i = 0; i < s1.Count; i++)
-                if (s1[i].Left != s2[i].Left || s1[i].Top != s2[i].Top) return false;
+            for (int i = 0; i < s1.Count; i++) if (s1[i].Left != s2[i].Left || s1[i].Top != s2[i].Top) return false;
             return true;
         }
-
-        // Redirecciones de eventos de controles individuales al Canvas
         private void Control_MouseMove(object sender, MouseEventArgs e) { if (_isDragging) DesignCanvas_MouseMove(sender, e); }
         private void Control_MouseLeftButtonUp(object sender, MouseButtonEventArgs e) { if (_isDragging) DesignCanvas_MouseUp(sender, e); }
 
@@ -581,8 +658,7 @@ namespace VB6VisualMockupDesigner
                     PropHeaderTitle.Text = "Propiedades - " + el.Name;
                     PropName.Text = el.Name;
 
-                    double leftPx = Canvas.GetLeft(el);
-                    double topPx = Canvas.GetTop(el);
+                    double leftPx = Canvas.GetLeft(el); double topPx = Canvas.GetTop(el);
                     PropLeft.Text = (Math.Round(leftPx) * VbHelpers.PixelsToTwips).ToString();
                     PropTop.Text = (Math.Round(topPx) * VbHelpers.PixelsToTwips).ToString();
 

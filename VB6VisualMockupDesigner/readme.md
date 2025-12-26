@@ -64,9 +64,10 @@ Implementado:
 
 [x] Soporte para menús y barras de estado.
 
+[x] Herramientas de Alineación: Barra de herramientas para alinear (Izquierda, Arriba, Centro), igualar tamaño y distribuir espacio entre objetos.
+
 Pendiente:
 
-[ ] Herramientas de Alineación: Barra de herramientas para alinear (Izquierda, Arriba, Centro), igualar tamaño y distribuir espacio entre objetos.
 
 [ ] Orden Z (Capas): Funcionalidad para "Traer al frente" y "Enviar al fondo" (útil para Frames y fondos).
 
