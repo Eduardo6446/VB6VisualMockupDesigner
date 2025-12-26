@@ -52,14 +52,30 @@ Usa el menú superior para Importar o Exportar.
 
 🔮 Próximos Pasos (Roadmap)
 
-Posibles mejoras futuras para la herramienta:
+Implementado:
 
-[✓] Implementar redimensionamiento de controles con el ratón (Resizing handles).
+[x] Implementar redimensionamiento de controles con el ratón (Resizing handles).
 
-[✓] Selección múltiple de objetos.
+[x] Selección múltiple de objetos.
 
-[✓] Historial (Undo/Redo).
+[x] Historial (Undo/Redo).
 
-[✓] Portapapeles (Copy/Paste).
+[x] Portapapeles (Copy/Paste/Cut).
 
-[ ] Soporte para menús y barras de estado.
+[x] Soporte para menús y barras de estado.
+
+Pendiente:
+
+[ ] Herramientas de Alineación: Barra de herramientas para alinear (Izquierda, Arriba, Centro), igualar tamaño y distribuir espacio entre objetos.
+
+[ ] Orden Z (Capas): Funcionalidad para "Traer al frente" y "Enviar al fondo" (útil para Frames y fondos).
+
+[ ] Contenedores Reales (Parenting): Lógica para que al soltar un control sobre un Frame, este se convierta en su hijo y se muevan juntos.
+
+[ ] Gestión de Proyectos (.VBP): Explorador de soluciones para manejar múltiples formularios y módulos simultáneamente.
+
+[ ] Editor de TabIndex: Modo visual para establecer el orden de tabulación haciendo clic en los controles secuencialmente.
+
+[ ] Reglas y Guías: Reglas en los bordes con medidas en Twips y líneas guía arrastrables para diseño de precisión.
+
+[ ] Modo Simulación: Vista previa interactiva que oculta la rejilla y permite escribir en inputs o probar clicks sin editar.
