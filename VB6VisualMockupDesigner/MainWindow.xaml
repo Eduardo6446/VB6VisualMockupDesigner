@@ -175,6 +175,16 @@
                             <Path Data="M 4,14 L 4,10 M 2,12 L 4,14 L 6,12" Stroke="Blue" StrokeThickness="1"/>
                         </Canvas>
                     </Button>
+
+                    <Separator/>
+
+                    <ToggleButton x:Name="BtnSimulate" Click="BtnSimulate_Click" ToolTip="Modo Simulación (F5)">
+                        <Canvas Width="16" Height="16">
+                            <Polygon Points="4,2 14,8 4,14" Fill="Green" Stroke="DarkGreen" StrokeThickness="1"/>
+                        </Canvas>
+                    </ToggleButton>
+
+
                 </ToolBar>
             </ToolBarTray>
         </StackPanel>

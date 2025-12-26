@@ -1,10 +1,10 @@
-﻿VB6 Visual Mockup Designer v0.7
+﻿VB6 Visual Mockup Designer v0.8
 
 Herramienta de prototipado moderno para sistemas heredados.
 
 Este proyecto es una aplicación de escritorio desarrollada en WPF (C#) diseñada para modernizar y agilizar el proceso de diseño de interfaces de usuario para Visual Basic 6. Sustituye el uso de editores de imagen estáticos (como Paint) por un entorno de objetos dinámico y editable.
 
-🚀 Estado Actual (Versión 0.7)
+Estado Actual (Versión 0.8)
 
 Esta versión incluye el núcleo funcional completo para editar, importar y exportar diseños, junto con herramientas de productividad esenciales.
 
@@ -16,7 +16,7 @@ Ingeniería Inversa: Importación de archivos .frm existentes con conversión de
 
 Exportación: Generación de código VB6 válido y exportación a imagen PNG.
 
-Edición Avanzada:
+Edición Avanzada
 
 [x] Selección múltiple (Ctrl+Click y Lazo de selección).
 
@@ -26,7 +26,7 @@ Edición Avanzada:
 
 [x] Redimensionamiento visual con ratón.
 
-Herramientas de Diseño:
+Herramientas de Diseño
 
 [x] Barra de herramientas de Alineación (Izquierda, Centro, Arriba, Igualar Tamaño).
 
@@ -34,7 +34,11 @@ Herramientas de Diseño:
 
 [x] Soporte para Menús y Barras de Estado.
 
-🛠️ Requisitos Técnicos
+Simulación
+
+[x] Modo de prueba (F5) sin rejilla para interactuar con los controles.
+
+Requisitos Técnicos
 
 Sistema Operativo: Windows 10 o superior.
 
@@ -42,7 +46,7 @@ Framework: .NET 6.0 o superior (incluido en .NET Desktop Runtime).
 
 IDE Recomendado: Visual Studio 2022 Community.
 
-📦 Instalación y Uso
+Instalación y Uso
 
 Clonar el repositorio.
 
@@ -50,7 +54,7 @@ Abrir VB6MockupDesigner.sln en Visual Studio.
 
 Compilar y ejecutar (F5).
 
-🔮 Roadmap hacia la v1.0
+Roadmap hacia la v1.0
 
 Para considerar la herramienta completa (v1.0), trabajaremos en las siguientes características pendientes:
 
@@ -61,7 +65,5 @@ Para considerar la herramienta completa (v1.0), trabajaremos en las siguientes c
 [ ] Reglas y Guías: Reglas en los bordes y líneas guía arrastrables para mayor precisión.
 
 [ ] Explorador de Proyecto: Panel lateral para gestionar múltiples formularios a la vez.
-
-[ ] Modo Simulación: Vista previa sin rejilla para probar la interfaz.
 
 Desarrollado como propuesta de mejora interna para optimizar el flujo de trabajo.

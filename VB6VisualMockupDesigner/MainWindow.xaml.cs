@@ -44,6 +44,9 @@ namespace VB6VisualMockupDesigner
         private Point _selectionStartPoint;
         private AdornerLayer _adornerLayer;
 
+        // --- SIMULACIÓN ---
+        private bool _isSimulationMode = false;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -72,6 +75,16 @@ namespace VB6VisualMockupDesigner
         {
             base.OnKeyDown(e);
 
+            if (e.Key == Key.F5)
+            {
+                BtnSimulate.IsChecked = !BtnSimulate.IsChecked;
+                ToggleSimulationMode(BtnSimulate.IsChecked == true);
+                return;
+            }
+
+            // Si estamos simulando, bloquear atajos de edición
+            if (_isSimulationMode) return;
+
             // Edición
             if (e.Key == Key.Z && Keyboard.Modifiers == ModifierKeys.Control) Undo();
             else if (e.Key == Key.Y && Keyboard.Modifiers == ModifierKeys.Control) Redo();
@@ -86,6 +99,65 @@ namespace VB6VisualMockupDesigner
         }
 
         #endregion
+
+        #region Modo Simulación (NUEVO)
+
+        private void BtnSimulate_Click(object sender, RoutedEventArgs e)
+        {
+            ToggleSimulationMode(BtnSimulate.IsChecked == true);
+        }
+
+        private void ToggleSimulationMode(bool enable)
+        {
+            _isSimulationMode = enable;
+
+            if (_isSimulationMode)
+            {
+                ClearSelection(); // Quitar selección actual
+                DesignCanvas.Background = Brushes.White; // Quitar rejilla
+
+                // CAMBIAR ICONO A STOP (Cuadrado Rojo)
+                var stopIcon = new Canvas { Width = 16, Height = 16 };
+                var rect = new Rectangle { Width = 10, Height = 10, Fill = Brushes.Red, Stroke = Brushes.DarkRed, StrokeThickness = 1 };
+                Canvas.SetLeft(rect, 3); Canvas.SetTop(rect, 3);
+                stopIcon.Children.Add(rect);
+                BtnSimulate.Content = stopIcon;
+                BtnSimulate.ToolTip = "Detener Simulación (F5)";
+
+                // Permitir interacción nativa (escribir, clicar)
+                foreach (UIElement child in DesignCanvas.Children)
+                {
+                    if (child is Control c && child != SelectionBox)
+                    {
+                        c.Focusable = true; // Habilitar foco para escribir
+                        c.IsHitTestVisible = true;
+                    }
+                }
+            }
+            else
+            {
+                DesignCanvas.Background = (VisualBrush)this.Resources["VB6GridBrush"]; // Restaurar rejilla
+
+                // RESTAURAR ICONO A PLAY (Triángulo Verde)
+                var playIcon = new Canvas { Width = 16, Height = 16 };
+                var poly = new Polygon { Points = new PointCollection { new Point(4, 2), new Point(14, 8), new Point(4, 14) }, Fill = Brushes.Green, Stroke = Brushes.DarkGreen, StrokeThickness = 1 };
+                playIcon.Children.Add(poly);
+                BtnSimulate.Content = playIcon;
+                BtnSimulate.ToolTip = "Modo Simulación (F5)";
+
+                // Bloquear interacción nativa para permitir arrastre
+                foreach (UIElement child in DesignCanvas.Children)
+                {
+                    if (child is Control c)
+                    {
+                        c.Focusable = false; // Deshabilitar foco para que no atrape el teclado
+                    }
+                }
+            }
+        }
+
+        #endregion
+
 
         #region Menú Archivo
 
@@ -385,10 +457,13 @@ namespace VB6VisualMockupDesigner
             ctrl.PreviewMouseMove += Control_MouseMove;
             ctrl.PreviewMouseLeftButtonUp += Control_MouseLeftButtonUp;
 
+            // Para Modo Simulación: Por defecto no tienen foco para poder arrastrarlos
+            // Si _isSimulationMode se activa, esto cambiará.
             if (ctrl is Control c && !(ctrl is Label))
             {
                 c.FontFamily = new FontFamily("MS Sans Serif");
                 c.FontSize = 11;
+                c.Focusable = false; // Importante para que no roben el foco al hacer clic
             }
 
             if (!DesignCanvas.Children.Contains(ctrl)) DesignCanvas.Children.Add(ctrl);
@@ -532,6 +607,9 @@ namespace VB6VisualMockupDesigner
 
         private void Control_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
+
+            if (_isSimulationMode) return;
+
             _stateBeforeDrag = GetCurrentState();
             var clickedElement = (UIElement)sender;
 
@@ -563,6 +641,9 @@ namespace VB6VisualMockupDesigner
 
         private void DesignCanvas_MouseDown(object sender, MouseButtonEventArgs e)
         {
+
+            if (_isSimulationMode) return;
+
             ClearSelection();
             _isSelecting = true;
             _selectionStartPoint = e.GetPosition(DesignCanvas);
@@ -577,6 +658,9 @@ namespace VB6VisualMockupDesigner
 
         private void DesignCanvas_MouseMove(object sender, MouseEventArgs e)
         {
+
+            if (_isSimulationMode) return;
+
             if (_isDragging)
             {
                 Point currentMousePos = e.GetPosition(DesignCanvas);
@@ -609,6 +693,9 @@ namespace VB6VisualMockupDesigner
 
         private void DesignCanvas_MouseUp(object sender, MouseButtonEventArgs e)
         {
+
+            if (_isSimulationMode) return;
+
             if (_isDragging)
             {
                 _isDragging = false;
