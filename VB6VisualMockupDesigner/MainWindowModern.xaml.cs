@@ -1,26 +1,35 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Windows;
-using System.Windows.Controls;
+﻿using System.Windows;
 using System.Windows.Controls.Primitives;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
+
+
 
 namespace VB6VisualMockupDesigner
 {
+
     /// <summary>
     /// Interaction logic for MainWindowModern.xaml
     /// </summary>
     public partial class MainWindowModern : Window
     {
+        private ToolboxView _toolboxView; // Instancia única para no recrearla siempre
         public MainWindowModern()
         {
             InitializeComponent();
+
+            // Inicializamos el toolbox
+            _toolboxView = new ToolboxView();
+            _toolboxView.OnControlSelected += Toolbox_ControlSelected;
+
+            // ESTADO INICIAL: Deshabilitado porque no hay proyecto abierto
+            _toolboxView.EnableTools(false);
+        }
+
+        // Evento cuando se hace clic en un control del toolbox
+        private void Toolbox_ControlSelected(object sender, string controlName)
+        {
+            // Aquí iría tu lógica para agregar el control al lienzo
+            MessageBox.Show($"Seleccionaste: {controlName}");
         }
 
         // ============================================
@@ -111,13 +120,16 @@ namespace VB6VisualMockupDesigner
                 case "Toolbox":
                     SideBarTitle.Text = "CAJA DE HERRAMIENTAS";
                     // Aquí cargarías tu UserControl del Toolbox existente
-                    SideBarContent.Content = new System.Windows.Controls.TextBlock
-                    {
-                        Text = "Lista de Controles VB6...",
-                        Foreground = System.Windows.Media.Brushes.White
-                    };
+                    SideBarContent.Content = _toolboxView; // Cargamos la vista
                     break;
             }
+        }
+
+        // MÉTODO SIMULADO: Llama a esto cuando el usuario cree o abra un .frm
+        public void OnProjectOpened()
+        {
+            _toolboxView.EnableTools(true);
+            // Cambiar la vista central del icono vacío al Canvas de diseño...
         }
 
         private void CloseSideBar()
