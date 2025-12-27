@@ -30,6 +30,40 @@ namespace VB6VisualMockupDesigner
 
             // ESTADO INICIAL: Deshabilitado porque no hay proyecto abierto
             _toolboxView.EnableTools(false);
+
+            MainTabControl.SelectionChanged += MainTabControl_SelectionChanged;
+        }
+
+        private void MainTabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            // Verificamos que el origen sea el TabControl y no un control hijo
+            if (e.Source is TabControl && MainTabControl.SelectedItem is TabItem selectedTab)
+            {
+                // Obtenemos el nombre del archivo del Header de la pestaña
+                string fileName = selectedTab.Header.ToString();
+
+                // Le decimos al explorador que destaque ese archivo
+                _explorerView.SelectFile(fileName);
+            }
+        }
+
+        public void LoadProject(string fullPath)
+        {
+            if (string.IsNullOrEmpty(fullPath)) return;
+
+            // 1. Obtener solo el nombre del archivo para el título de la pestaña
+            string fileName = System.IO.Path.GetFileName(fullPath);
+
+            // 2. Abrir la pestaña de diseño (Usando el método que creamos en el paso anterior)
+            OpenFileTab(fileName);
+
+            // 3. Registrar en archivos recientes (Persistencia JSON)
+            // Asegúrate de tener la clase RecentFilesManager que creamos antes
+            RecentFilesManager.AddToRecents(fullPath);
+
+            // 4. (Opcional) Simular que el explorador selecciona este archivo
+            // Esto es visual, para que coincida la pestaña con el árbol
+            _explorerView.SelectFile(fileName); // Implementaremos esto si quieres detalle fino
         }
 
         // ============================================
@@ -227,6 +261,16 @@ namespace VB6VisualMockupDesigner
             // Colapsamos el panel
             SideBarContainer.Width = 0;
             SideBarContent.Content = null;
+        }
+
+        private void BtnCloseProject_Click(object sender, RoutedEventArgs e)
+        {
+            // Instanciar y mostrar la pantalla de inicio de nuevo
+            StartScreen start = new StartScreen();
+            start.Show();
+
+            // Cerrar el editor actual
+            this.Close();
         }
     }
 }

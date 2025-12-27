@@ -194,6 +194,7 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     <MenuItem Header="Nuevo Proyecto..."/>
                     <MenuItem Header="Abrir..."/>
                     <Separator Background="{StaticResource BorderColor}"/>
+                    <MenuItem Header="Cerrar Proyecto" Click="BtnCloseProject_Click"/>
                     <MenuItem Header="Salir" Click="BtnClose_Click"/>
                 </MenuItem>
                 <MenuItem Header="Editar">

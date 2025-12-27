@@ -57,18 +57,19 @@ namespace VB6VisualMockupDesigner
         // Método centralizado para abrir el editor
         private void OpenEditor(string filePath = null)
         {
-            MainWindow editor = new MainWindow();
-            
+            // 1. Instanciamos la NUEVA ventana moderna
+            MainWindowModern editor = new MainWindowModern();
+
+            // 2. Si hay un archivo, lo cargamos
             if (!string.IsNullOrEmpty(filePath))
             {
-                // ASUMIENDO QUE TIENES UN MÉTODO PÚBLICO EN MainWindow PARA CARGAR
-                // editor.LoadFile(filePath); 
-                
-                // Actualizamos la lista de recientes "just in case" para refrescar la fecha
-                RecentFilesManager.AddToRecents(filePath);
+                editor.LoadProject(filePath);
             }
 
+            // 3. Mostramos la nueva ventana
             editor.Show();
+
+            // 4. Cerramos la pantalla de inicio
             this.Close();
         }
 
