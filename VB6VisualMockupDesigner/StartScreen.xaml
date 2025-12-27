@@ -66,8 +66,10 @@
                         <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}" Margin="0,0,0,5">
                             <StackPanel>
                                 <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="Medium"/>
-                                <TextBlock Text="{Binding Path}" FontSize="11" Foreground="#888888"/>
-                                <TextBlock Text="{Binding Date}" FontSize="11" Foreground="#888888"/>
+
+                                <TextBlock Text="{Binding FullPath}" FontSize="11" Foreground="#888888" TextTrimming="CharacterEllipsis"/>
+
+                                <TextBlock Text="{Binding LastAccess, StringFormat='{}{0:dd/MM/yyyy HH:mm}'}" FontSize="11" Foreground="#666666"/>
                             </StackPanel>
                         </Border>
                         <ControlTemplate.Triggers>
@@ -104,10 +106,33 @@
             <ListBox Grid.Row="2" x:Name="RecentProjectsList" 
                      Background="Transparent" BorderThickness="0" 
                      ItemContainerStyle="{StaticResource RecentItemStyle}">
-                <ListBox.Items>
-                    <sys:String xmlns:sys="clr-namespace:System;assembly=mscorlib">DummyItem</sys:String>
-                </ListBox.Items>
             </ListBox>
+            <StackPanel Grid.Row="2" x:Name="EmptyRecentState" 
+            VerticalAlignment="Center" 
+            HorizontalAlignment="Center"
+            Visibility="Collapsed">
+                <TextBlock Text="&#xE81C;" 
+               FontFamily="Segoe MDL2 Assets" 
+               FontSize="48" 
+               Foreground="#3E3E42"
+               HorizontalAlignment="Center" 
+               Margin="0,0,0,15"/>
+
+                <TextBlock Text="No hay elementos recientes" 
+               FontSize="16" 
+               Foreground="White" 
+               FontWeight="SemiBold"
+               HorizontalAlignment="Center"/>
+
+                <TextBlock Text="Tus proyectos aparecerán aquí una vez que los abras." 
+               FontSize="12" 
+               Foreground="#888888" 
+               HorizontalAlignment="Center" 
+               Margin="0,5,0,0"
+               TextWrapping="Wrap" 
+               MaxWidth="250" 
+               TextAlignment="Center"/>
+            </StackPanel>
         </Grid>
 
         <Border Grid.Column="1" Background="#252526" Padding="40">

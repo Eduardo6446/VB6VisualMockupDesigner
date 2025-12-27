@@ -1,14 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
+using VB6VisualMockupDesigner.Models;
 
 namespace VB6VisualMockupDesigner
 {
@@ -20,45 +14,81 @@ namespace VB6VisualMockupDesigner
         public StartScreen()
         {
             InitializeComponent();
-            LoadRecentMockups();
+            LoadRecentsToUI();
         }
 
         // Clase simple para poblar la UI de ejemplo
-        public class RecentFile
+        private void LoadRecentsToUI()
         {
-            public string Name { get; set; }
-            public string Path { get; set; }
-            public string Date { get; set; }
+            var recents = RecentFilesManager.LoadRecents();
+
+            if (recents.Count == 0)
+            {
+                // CASO VACÍO:
+                // Ocultamos la lista para que no ocupe clicks
+                RecentProjectsList.Visibility = Visibility.Collapsed;
+
+                // Mostramos el mensaje amigable
+                EmptyRecentState.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                // CASO CON DATOS:
+                EmptyRecentState.Visibility = Visibility.Collapsed;
+                RecentProjectsList.Visibility = Visibility.Visible;
+
+                // Cargamos los datos
+                RecentProjectsList.ItemsSource = recents;
+            }
         }
 
-        private void LoadRecentMockups()
+        // Evento para cuando el usuario hace clic en un ítem de la lista
+        private void RecentProjectsList_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            // AQUÍ cargarías desde un JSON o Settings en el futuro
-            var dummyData = new List<RecentFile>
+            if (RecentProjectsList.SelectedItem is RecentFile selectedFile)
             {
-                new RecentFile { Name = "frmLogin.frm", Path = "C:\\Sistemas\\VentasLegacy", Date = "Hoy, 10:30 AM" },
-                new RecentFile { Name = "frmFacturacion.frm", Path = "C:\\Sistemas\\VentasLegacy", Date = "Ayer, 4:15 PM" },
-                new RecentFile { Name = "frmClientes_Old.frm", Path = "D:\\Backups\\2005", Date = "23/12/2025" }
+                OpenEditor(selectedFile.FullPath);
+                
+                // Limpiar selección por si vuelven a esta pantalla (si no la cierras)
+                RecentProjectsList.SelectedItem = null; 
+            }
+        }
+
+        // Método centralizado para abrir el editor
+        private void OpenEditor(string filePath = null)
+        {
+            MainWindow editor = new MainWindow();
+            
+            if (!string.IsNullOrEmpty(filePath))
+            {
+                // ASUMIENDO QUE TIENES UN MÉTODO PÚBLICO EN MainWindow PARA CARGAR
+                // editor.LoadFile(filePath); 
+                
+                // Actualizamos la lista de recientes "just in case" para refrescar la fecha
+                RecentFilesManager.AddToRecents(filePath);
+            }
+
+            editor.Show();
+            this.Close();
+        }
+
+        // Botón "Abrir Archivo .frm"
+        private void BtnOpen_Click(object sender, RoutedEventArgs e)
+        {
+            var openFileDialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Filter = "VB6 Forms (*.frm)|*.frm|All Files (*.*)|*.*"
             };
 
-            //RecentProjectsList.ItemsSource = dummyData;
+            if (openFileDialog.ShowDialog() == true)
+            {
+                OpenEditor(openFileDialog.FileName);
+            }
         }
 
         private void BtnNew_Click(object sender, RoutedEventArgs e)
         {
-            // Abrir el editor vacío
-            MainWindow editor = new MainWindow();
-            editor.Show();
-            this.Close();
-        }
-
-        private void BtnOpen_Click(object sender, RoutedEventArgs e)
-        {
-            // Lógica para abrir OpenFileDialog y pasarle el archivo al MainWindow
-            // Por ahora solo abrimos el editor
-            MainWindow editor = new MainWindow();
-            editor.Show();
-            this.Close();
+            OpenEditor(null); // Abre vacío
         }
 
         private void BtnClose_Click(object sender, RoutedEventArgs e)
