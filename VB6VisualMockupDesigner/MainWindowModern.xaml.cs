@@ -1,4 +1,5 @@
 ﻿using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 
@@ -13,6 +14,8 @@ namespace VB6VisualMockupDesigner
     public partial class MainWindowModern : Window
     {
         private ToolboxView _toolboxView; // Instancia única para no recrearla siempre
+        private ProjectExplorerView _explorerView; // Nueva referencia
+
         public MainWindowModern()
         {
             InitializeComponent();
@@ -21,8 +24,103 @@ namespace VB6VisualMockupDesigner
             _toolboxView = new ToolboxView();
             _toolboxView.OnControlSelected += Toolbox_ControlSelected;
 
+            _explorerView = new ProjectExplorerView();
+            _explorerView.OnFileOpened += Explorer_OnFileOpened;
+
+
             // ESTADO INICIAL: Deshabilitado porque no hay proyecto abierto
             _toolboxView.EnableTools(false);
+        }
+
+        // ============================================
+        // GESTIÓN DE PESTAÑAS
+        // ============================================
+
+        private void Explorer_OnFileOpened(object sender, string fileName)
+        {
+            OpenFileTab(fileName);
+        }
+
+        private void OpenFileTab(string title)
+        {
+            // 1. Verificar si ya está abierta para seleccionarla en vez de duplicar
+            foreach (TabItem tab in MainTabControl.Items)
+            {
+                if (tab.Header.ToString() == title)
+                {
+                    MainTabControl.SelectedItem = tab;
+                    return;
+                }
+            }
+
+            // 2. Crear nueva pestaña
+            var newTab = new TabItem
+            {
+                Header = title
+            };
+
+            // 3. Crear el contenido (AQUÍ IRÍA TU CANVAS DEL DESIGNER REAL)
+            // Por ahora ponemos un placeholder grid
+            var contentGrid = new Grid { Background = (System.Windows.Media.Brush)FindResource("BgColor") };
+            contentGrid.Children.Add(new TextBlock
+            {
+                Text = $"Editando: {title}",
+                Foreground = System.Windows.Media.Brushes.White,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                FontSize = 24
+            });
+
+            newTab.Content = contentGrid;
+
+            // 4. Agregar y seleccionar
+            MainTabControl.Items.Add(newTab);
+            MainTabControl.SelectedItem = newTab;
+
+            // 5. Configurar botón de cerrar (Buscamos el botón dentro del template una vez cargado)
+            // NOTA: Una forma más limpia en WPF puro es usar MVVM, pero aquí lo haremos con eventos directos.
+            // Necesitamos esperar a que se aplique el template o usar un evento en el estilo.
+            // TRUCO: Hemos definido el Click en el XAML, pero necesitamos capturarlo globalmente o en el estilo.
+            // Vamos a asignar el evento 'Loaded' al TabItem para buscar su botón.
+            newTab.Loaded += NewTab_Loaded;
+
+            UpdateTabVisibility();
+
+            // Habilitar Toolbox
+            _toolboxView.EnableTools(true);
+        }
+
+        private void NewTab_Loaded(object sender, RoutedEventArgs e)
+        {
+            var tab = sender as TabItem;
+            // Buscar el botón "CloseBtn" dentro del Template del TabItem
+            if (tab.Template.FindName("CloseBtn", tab) is Button closeBtn)
+            {
+                closeBtn.Click += (s, args) => CloseTab(tab);
+            }
+        }
+
+        private void CloseTab(TabItem tab)
+        {
+            MainTabControl.Items.Remove(tab);
+            UpdateTabVisibility();
+        }
+
+        private void UpdateTabVisibility()
+        {
+            if (MainTabControl.Items.Count > 0)
+            {
+                MainTabControl.Visibility = Visibility.Visible;
+                EmptyStateOverlay.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                MainTabControl.Visibility = Visibility.Hidden;
+                EmptyStateOverlay.Visibility = Visibility.Visible;
+
+                // Deshabilitar Toolbox si no hay pestañas
+                _toolboxView.EnableTools(false);
+            }
         }
 
         // Evento cuando se hace clic en un control del toolbox
@@ -111,12 +209,10 @@ namespace VB6VisualMockupDesigner
                 case "Explorer":
                     SideBarTitle.Text = "EXPLORADOR DE PROYECTOS";
                     // Aquí cargarías tu UserControl del Explorador
-                    SideBarContent.Content = new System.Windows.Controls.TextBlock
-                    {
-                        Text = "Vista del Árbol de Archivos...",
-                        Foreground = System.Windows.Media.Brushes.White
-                    };
+                    SideBarContent.Content = new System.Windows.Controls.TextBlock();
+                    SideBarContent.Content = _explorerView; // Usamos la instancia real
                     break;
+
                 case "Toolbox":
                     SideBarTitle.Text = "CAJA DE HERRAMIENTAS";
                     // Aquí cargarías tu UserControl del Toolbox existente

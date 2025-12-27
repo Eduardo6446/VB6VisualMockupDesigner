@@ -109,6 +109,71 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
             </Setter>
         </Style>
 
+        <Style x:Key="TabCloseBtnStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Width" Value="18"/>
+            <Setter Property="Height" Value="18"/>
+            <Setter Property="Margin" Value="5,0,0,0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="2">
+                            <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="10" 
+                               Foreground="#CCCCCC" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#454545"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="VsCodeTabStyle" TargetType="TabItem">
+            <Setter Property="Background" Value="#2D2D2D"/>
+            <Setter Property="Foreground" Value="#969696"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Height" Value="35"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Grid>
+                            <Border x:Name="TopIndicator" VerticalAlignment="Top" Height="1" Background="Transparent" Panel.ZIndex="10"/>
+
+                            <Border x:Name="Border" Background="{TemplateBinding Background}" 
+                            BorderBrush="#252526" BorderThickness="0,0,1,0" 
+                            Padding="10,0">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="&#xE8A5;" FontFamily="Segoe MDL2 Assets" 
+                                       Foreground="{TemplateBinding Foreground}" Margin="0,1,5,0" FontSize="12"/>
+
+                                    <ContentPresenter ContentSource="Header" VerticalAlignment="Center"/>
+
+                                    <Button x:Name="CloseBtn" Style="{StaticResource TabCloseBtnStyle}" 
+                                    Tag="{Binding RelativeSource={RelativeSource TemplatedParent}}"/>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Background" Value="#1E1E1E"/>
+                                <Setter Property="Foreground" Value="White"/>
+                                <Setter TargetName="TopIndicator" Property="Background" Value="{StaticResource BrandColor}"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
     </Window.Resources>
 
     <Grid>
@@ -196,10 +261,23 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
 
 
             <Grid Grid.Column="2" Background="{StaticResource BgColor}">
-                <TextBlock Text="&#xE70C;" FontFamily="Segoe MDL2 Assets" 
-                           FontSize="150" Foreground="{StaticResource HoverColor}"
-                           VerticalAlignment="Center" HorizontalAlignment="Center"
-                           Opacity="0.3"/>
+
+                <Grid x:Name="EmptyStateOverlay" Panel.ZIndex="0">
+                    <TextBlock Text="&#xE70C;" FontFamily="Segoe MDL2 Assets" 
+                   FontSize="150" Foreground="{StaticResource HoverColor}"
+                   VerticalAlignment="Center" HorizontalAlignment="Center"
+                   Opacity="0.3"/>
+                    <TextBlock Text="Selecciona un archivo del explorador para editar" 
+                   Foreground="#666666" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,200,0,0"/>
+                </Grid>
+
+                <TabControl x:Name="MainTabControl" 
+                Background="Transparent" 
+                BorderThickness="0" 
+                Padding="0"
+                ItemContainerStyle="{StaticResource VsCodeTabStyle}"
+                Visibility="Hidden"></TabControl>
+
             </Grid>
 
         </Grid>
