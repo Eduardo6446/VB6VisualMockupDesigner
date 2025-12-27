@@ -8,10 +8,17 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         Title="VB6 Visual Mockup Designer" Height="720" Width="1080"
         WindowStartupLocation="CenterScreen"
         WindowStyle="None"
-        AllowsTransparency="True"
         ResizeMode="CanResizeWithGrip"
         Background="{DynamicResource BgColor}"
         FontFamily="Segoe UI">
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome 
+            CaptionHeight="32"  
+            ResizeBorderThickness="5" 
+            CornerRadius="0"
+            GlassFrameThickness="0"/>
+    </WindowChrome.WindowChrome>
 
     <Window.Resources>
 
@@ -233,7 +240,17 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         </Style>
     </Window.Resources>
 
-    <Grid>
+    <Grid x:Name="RootGrid">
+
+        <Grid.Style>
+            <Style TargetType="Grid">
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=WindowState}" Value="Maximized">
+                        <Setter Property="Margin" Value="8"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+        </Grid.Style>
         <Grid.RowDefinitions>
             <RowDefinition Height="32"/>
             <RowDefinition Height="*"/>
@@ -246,12 +263,10 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            
-            
 
-            <Border Grid.ColumnSpan="3" Background="Transparent" MouseDown="TitleBar_MouseDown"/>
-
-            <Menu Grid.Column="0" Style="{StaticResource TopMenuStyle}" VerticalAlignment="Center" Margin="5,0,0,0">
+            <Menu Grid.Column="0" Style="{StaticResource TopMenuStyle}" 
+              VerticalAlignment="Center" Margin="5,0,0,0"
+              WindowChrome.IsHitTestVisibleInChrome="True">
                 <MenuItem Header="Archivo">
                     <MenuItem Header="Nuevo Proyecto..." Click="BtnNew_Click"/>
                     <MenuItem Header="Abrir..." Click="BtnOpen_Click"/>
@@ -273,11 +288,12 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
             </Menu>
 
             <TextBlock Grid.Column="1" Text="VB6 Visual Mockup Designer" 
-               Foreground="{StaticResource MutedTextColor}" FontSize="12"
-               VerticalAlignment="Center" HorizontalAlignment="Center" 
-               IsHitTestVisible="False"/>
+                   Foreground="{StaticResource MutedTextColor}" FontSize="12"
+                   VerticalAlignment="Center" HorizontalAlignment="Center" 
+                   IsHitTestVisible="False"/>
 
-            <StackPanel Grid.Column="2" Orientation="Horizontal">
+            <StackPanel Grid.Column="2" Orientation="Horizontal"
+                    WindowChrome.IsHitTestVisibleInChrome="True">
                 <Button Content="&#xE921;" Style="{StaticResource WindowControlButtonStyle}" Click="BtnMinimize_Click"/>
                 <Button Content="&#xE922;" Style="{StaticResource WindowControlButtonStyle}" Click="BtnMaximize_Click" x:Name="BtnMaximize"/>
                 <Button Content="&#xE8BB;" Style="{StaticResource CloseButtonStyle}" Click="BtnClose_Click"/>

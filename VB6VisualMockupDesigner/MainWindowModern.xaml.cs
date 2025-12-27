@@ -33,6 +33,8 @@ namespace VB6VisualMockupDesigner
             _toolboxView.EnableTools(false);
 
             MainTabControl.SelectionChanged += MainTabControl_SelectionChanged;
+
+            this.StateChanged += MainWindowModern_StateChanged;
         }
 
         private void MainTabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -203,16 +205,6 @@ namespace VB6VisualMockupDesigner
             MessageBox.Show($"Seleccionaste: {controlName}");
         }
 
-        // ============================================
-        // LÓGICA DE LA BARRA DE TÍTULO PERSONALIZADA
-        // ============================================
-        private void TitleBar_MouseDown(object sender, MouseButtonEventArgs e)
-        {
-            if (e.ChangedButton == MouseButton.Left)
-            {
-                this.DragMove();
-            }
-        }
 
         private void BtnClose_Click(object sender, RoutedEventArgs e)
         {
@@ -224,12 +216,22 @@ namespace VB6VisualMockupDesigner
             if (this.WindowState == WindowState.Maximized)
             {
                 this.WindowState = WindowState.Normal;
-                BtnMaximize.Content = "\xE922"; // Icono Maximizar
             }
             else
             {
                 this.WindowState = WindowState.Maximized;
+            }
+        }
+
+        private void MainWindowModern_StateChanged(object sender, EventArgs e)
+        {
+            if (this.WindowState == WindowState.Maximized)
+            {
                 BtnMaximize.Content = "\xE923"; // Icono Restaurar
+            }
+            else
+            {
+                BtnMaximize.Content = "\xE922"; // Icono Maximizar
             }
         }
 
