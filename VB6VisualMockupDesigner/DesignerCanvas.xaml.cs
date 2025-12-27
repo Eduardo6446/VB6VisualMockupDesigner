@@ -32,6 +32,40 @@ namespace VB6VisualMockupDesigner
             InitializeComponent();
         }
 
+        public void ClearCanvas()
+        {
+            DesignSurface.Children.Clear();
+            // Opcional: Resetear tamaño por defecto
+            RetroFormContainer.Width = 480;
+            RetroFormContainer.Height = 360;
+        }
+
+        // 2. Método para redimensionar la "Ventana VB6" (El borde gris)
+        public void SetFormDimensions(double width, double height)
+        {
+            // En VB6 ClientWidth/Height son Twips. Aquí recibiremos Píxeles.
+            // Sumamos un poco para bordes y título simulados
+            RetroFormContainer.Width = width + 10;
+            RetroFormContainer.Height = height + 30;
+        }
+
+        public void AddControlToCanvas(UIElement control, double x, double y)
+        {
+            if (control == null) return;
+
+            // Ajustar a rejilla
+            double snappedX = SnapToGrid(x);
+            double snappedY = SnapToGrid(y);
+
+            Canvas.SetLeft(control, snappedX);
+            Canvas.SetTop(control, snappedY);
+
+            DesignSurface.Children.Add(control);
+        }
+
+
+
+
         // Propiedad para establecer el título del formulario simulado
         public string FormTitle
         {
@@ -82,7 +116,7 @@ namespace VB6VisualMockupDesigner
         }
 
         // FÁBRICA DE CONTROLES RETRO (Simulación Visual)
-        private UIElement CreateRetroControl(string type)
+        public UIElement CreateRetroControl(string type)
         {
             Control control = null;
 

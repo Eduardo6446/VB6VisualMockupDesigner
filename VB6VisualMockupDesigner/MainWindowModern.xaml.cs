@@ -68,7 +68,7 @@ namespace VB6VisualMockupDesigner
                 // CASO 2: Archivo suelto (.frm)
                 // Lo abrimos directo en pestaña
                 string fileName = System.IO.Path.GetFileName(fullPath);
-                OpenFileTab(fileName);
+                OpenFileTab(fullPath);
 
                 // Y lo agregamos al explorador como un archivo único (modo simple)
                 // Para esto podrías crear un método "AddSingleFile" en ExplorerView si quisieras
@@ -107,6 +107,30 @@ namespace VB6VisualMockupDesigner
             };
 
             var designer = new DesignerCanvas();
+
+            // === NUEVO: CARGAR EL CONTENIDO DEL ARCHIVO ===
+
+            // 1. Buscamos la ruta completa. 
+            // Como OpenFileTab a veces solo recibe el nombre (desde el Tab), 
+            // necesitamos asegurarnos de tener la ruta completa.
+            // TRUCO: Modifica OpenFileTab para recibir la ruta completa, 
+            // o búscalo en tu lista de recientes/explorador.
+
+            // Asumiremos que 'title' es la ruta completa o que tienes acceso a ella.
+            // SI NO TIENES LA RUTA COMPLETA AQUÍ, DEBES PASARLA.
+            // Vamos a asumir que cambias la firma del método o pasas el path.
+
+            string fullPath = title; // Asumiendo que ahora pasas el path completo
+
+            // Si solo pasaste el nombre, el parser fallará gracefully (File.Exists check).
+            // Lo ideal es cambiar la llamada OpenFileTab(fileName) a OpenFileTab(fullPath) en todo el código.
+
+            FrmParser.Parse(fullPath, designer);
+
+            // Ajustar el título de la pestaña para que solo muestre el nombre del archivo
+            newTab.Header = System.IO.Path.GetFileName(fullPath);
+
+            // === FIN NUEVO ===
 
             designer.ControlSelected += (s, control) =>
             {
