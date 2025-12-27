@@ -5,6 +5,7 @@ using System.Windows.Input;
 
 
 
+
 namespace VB6VisualMockupDesigner
 {
 
@@ -106,6 +107,14 @@ namespace VB6VisualMockupDesigner
             };
 
             var designer = new DesignerCanvas();
+
+            designer.ControlSelected += (s, control) =>
+            {
+                PropertiesPanel.InspectObject(control);
+            };
+            // =========================================================
+
+            newTab.Content = designer;
 
             // Configurar el título interno de la ventana VB6
             designer.FormTitle = title;

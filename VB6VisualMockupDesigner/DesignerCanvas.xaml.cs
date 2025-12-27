@@ -45,6 +45,8 @@ namespace VB6VisualMockupDesigner
             return DesignSurface;
         }
 
+        public event EventHandler<FrameworkElement> ControlSelected;
+
         // Deseleccionar al hacer clic fuera (opcional para el futuro)
         private void Grid_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
@@ -209,6 +211,9 @@ namespace VB6VisualMockupDesigner
 
             // Detenemos la propagación para que no seleccione el fondo
             e.Handled = true;
+
+            ControlSelected?.Invoke(this, control as FrameworkElement);
+        
         }
 
         // 2. MOVER (Mientras arrastras)
@@ -263,6 +268,8 @@ namespace VB6VisualMockupDesigner
             // Si hago clic en el vacío, quito la selección
             ShowSelectionIndicator(null);
             _selectedControl = null;
+
+            ControlSelected?.Invoke(this, null);
         }
 
 
