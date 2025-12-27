@@ -51,19 +51,31 @@ namespace VB6VisualMockupDesigner
         {
             if (string.IsNullOrEmpty(fullPath)) return;
 
-            // 1. Obtener solo el nombre del archivo para el título de la pestaña
-            string fileName = System.IO.Path.GetFileName(fullPath);
+            // Detectar si es un proyecto (.vbp) o un formulario suelto (.frm)
+            string ext = System.IO.Path.GetExtension(fullPath).ToLower();
 
-            // 2. Abrir la pestaña de diseño (Usando el método que creamos en el paso anterior)
-            OpenFileTab(fileName);
+            if (ext == ".vbp")
+            {
+                // CASO 1: Cargar Proyecto Completo
+                _explorerView.LoadProjectStructure(fullPath);
 
-            // 3. Registrar en archivos recientes (Persistencia JSON)
-            // Asegúrate de tener la clase RecentFilesManager que creamos antes
+                // Opcional: Expandir el explorador automáticamente
+                OpenSideBar("Explorer");
+            }
+            else
+            {
+                // CASO 2: Archivo suelto (.frm)
+                // Lo abrimos directo en pestaña
+                string fileName = System.IO.Path.GetFileName(fullPath);
+                OpenFileTab(fileName);
+
+                // Y lo agregamos al explorador como un archivo único (modo simple)
+                // Para esto podrías crear un método "AddSingleFile" en ExplorerView si quisieras
+                // O simplemente dejar que el explorador se quede vacío si no hay proyecto.
+            }
+
+            // Registrar en recientes
             RecentFilesManager.AddToRecents(fullPath);
-
-            // 4. (Opcional) Simular que el explorador selecciona este archivo
-            // Esto es visual, para que coincida la pestaña con el árbol
-            _explorerView.SelectFile(fileName); // Implementaremos esto si quieres detalle fino
         }
 
         // ============================================

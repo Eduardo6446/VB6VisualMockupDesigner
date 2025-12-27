@@ -1,5 +1,6 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 
 
 namespace VB6VisualMockupDesigner
@@ -27,6 +28,24 @@ namespace VB6VisualMockupDesigner
         private void SendControl(string controlName)
         {
             OnControlSelected?.Invoke(this, controlName);
+        }
+
+        private void ToolboxButton_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is Button btn && btn.ToolTip != null)
+            {
+                // Obtenemos el nombre del control (ej: "CommandButton") desde el ToolTip
+                string controlType = btn.ToolTip.ToString();
+
+                // Empaquetamos los datos para el viaje
+                DataObject data = new DataObject("ControlToolboxItem", controlType);
+
+                // Iniciamos la operación de arrastre
+                DragDrop.DoDragDrop(btn, data, DragDropEffects.Copy);
+
+                // Marcamos el evento como manejado para que no interfiera con el Click normal si lo hubiera
+                e.Handled = true;
+            }
         }
 
         private void AddPictureBox_Click(object sender, RoutedEventArgs e) => SendControl("PictureBox");

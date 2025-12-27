@@ -13,13 +13,7 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         FontFamily="Segoe UI">
 
     <Window.Resources>
-        <SolidColorBrush x:Key="BrandColor" Color="#005A9E"/>
-        <SolidColorBrush x:Key="BgColor" Color="#1E1E1E"/>
-        <SolidColorBrush x:Key="SideBarColor" Color="#252526"/>
-        <SolidColorBrush x:Key="HoverColor" Color="#3E3E42"/>
-        <SolidColorBrush x:Key="BorderColor" Color="#3E3E42"/>
-        <SolidColorBrush x:Key="TextColor" Color="#F1F1F1"/>
-        <SolidColorBrush x:Key="MutedTextColor" Color="#969696"/>
+
 
         <Style TargetType="Separator">
             <Setter Property="Background" Value="#3E3E42"/>
