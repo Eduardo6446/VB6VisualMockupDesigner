@@ -104,8 +104,10 @@
                      Padding="5" Text="Buscar recientes..." Opacity="0.5"/>
 
             <ListBox Grid.Row="2" x:Name="RecentProjectsList" 
-                     Background="Transparent" BorderThickness="0" 
-                     ItemContainerStyle="{StaticResource RecentItemStyle}">
+                 Background="Transparent" BorderThickness="0" 
+                 ItemContainerStyle="{StaticResource RecentItemStyle}"
+                 SelectionChanged="RecentProjectsList_SelectionChanged">
+                
             </ListBox>
             <StackPanel Grid.Row="2" x:Name="EmptyRecentState" 
             VerticalAlignment="Center" 

@@ -20,30 +20,103 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         <SolidColorBrush x:Key="BorderColor" Color="#3E3E42"/>
         <SolidColorBrush x:Key="TextColor" Color="#F1F1F1"/>
         <SolidColorBrush x:Key="MutedTextColor" Color="#969696"/>
+
+        <Style TargetType="Separator">
+            <Setter Property="Background" Value="#3E3E42"/>
+            <Setter Property="Margin" Value="0,4,0,4"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Separator">
+                        <Border BorderBrush="{TemplateBinding Background}" 
+                            BorderThickness="1" 
+                            Height="1" 
+                            SnapsToDevicePixels="true"/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <Style x:Key="TopMenuStyle" TargetType="Menu">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="{StaticResource TextColor}"/>
             <Setter Property="FontSize" Value="13"/>
         </Style>
+
         <Style TargetType="MenuItem">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="{StaticResource TextColor}"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Padding" Value="10,5"/>
             <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="MenuItem">
-                        <Border x:Name="Border" Padding="8,5" Background="{TemplateBinding Background}">
-                            <ContentPresenter Content="{TemplateBinding Header}" 
-                                              VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsHighlighted" Value="True">
-                                <Setter TargetName="Border" Property="Background" Value="{StaticResource HoverColor}"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
+            <Style.Triggers>
+                <Trigger Property="Role" Value="TopLevelHeader">
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="MenuItem">
+                                <Grid>
+                                    <Border x:Name="Border" Background="{TemplateBinding Background}" 
+                                        BorderBrush="{TemplateBinding BorderBrush}" 
+                                        BorderThickness="{TemplateBinding BorderThickness}" 
+                                        Padding="{TemplateBinding Padding}" 
+                                        SnapsToDevicePixels="True">
+                                        <ContentPresenter ContentSource="Header" 
+                                                      VerticalAlignment="Center" 
+                                                      HorizontalAlignment="Left"
+                                                      RecognizesAccessKey="True"/>
+                                    </Border>
+
+                                    <Popup x:Name="Popup" Placement="Bottom" 
+                                       IsOpen="{TemplateBinding IsSubmenuOpen}" 
+                                       AllowsTransparency="True" 
+                                       Focusable="False" 
+                                       PopupAnimation="Fade">
+                                        <Border x:Name="SubmenuBorder" SnapsToDevicePixels="True" 
+                                            Background="#1E1E1E" 
+                                            BorderBrush="#3E3E42" 
+                                            BorderThickness="1" 
+                                            Padding="2">
+                                            <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Cycle"/>
+                                        </Border>
+                                    </Popup>
+                                </Grid>
+
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsHighlighted" Value="True">
+                                        <Setter TargetName="Border" Property="Background" Value="#3E3E42"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Trigger>
+                <Trigger Property="Role" Value="SubmenuItem">
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="MenuItem">
+                                <Border x:Name="Border" Background="{TemplateBinding Background}" Padding="10,5">
+                                    <DockPanel>
+                                        <ContentPresenter ContentSource="Icon" Margin="0,0,10,0" Width="16" Height="16"/>
+                                        <ContentPresenter ContentSource="Header"/>
+                                        <TextBlock Text="{TemplateBinding InputGestureText}" 
+                                               Foreground="#888888" Margin="20,0,0,0" 
+                                               HorizontalAlignment="Right" DockPanel.Dock="Right"/>
+                                    </DockPanel>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsHighlighted" Value="True">
+                                        <Setter TargetName="Border" Property="Background" Value="#005A9E"/>
+                                        <Setter Property="Foreground" Value="White"/>
+                                    </Trigger>
+                                    <Trigger Property="IsEnabled" Value="False">
+                                        <Setter Property="Opacity" Value="0.5"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Trigger>
+            </Style.Triggers>
         </Style>
 
         <Style x:Key="WindowControlButtonStyle" TargetType="Button">
@@ -58,8 +131,7 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border Background="{TemplateBinding Background}">
-                            <TextBlock Text="{TemplateBinding Content}" 
-                                       VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                            <TextBlock Text="{TemplateBinding Content}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
@@ -71,6 +143,7 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                 </Setter.Value>
             </Setter>
         </Style>
+
         <Style x:Key="CloseButtonStyle" TargetType="Button" BasedOn="{StaticResource WindowControlButtonStyle}">
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
@@ -90,10 +163,8 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     <ControlTemplate TargetType="ToggleButton">
                         <Grid Background="{TemplateBinding Background}">
                             <Border x:Name="Indicator" Width="2" HorizontalAlignment="Left" Background="Transparent"/>
-                            <TextBlock Text="{TemplateBinding Content}" 
-                                       FontFamily="Segoe MDL2 Assets" FontSize="20"
-                                       VerticalAlignment="Center" HorizontalAlignment="Center"
-                                       Foreground="{TemplateBinding Foreground}"/>
+                            <TextBlock Text="{TemplateBinding Content}" FontFamily="Segoe MDL2 Assets" FontSize="20"
+                                   VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="{TemplateBinding Foreground}"/>
                         </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
@@ -120,7 +191,7 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     <ControlTemplate TargetType="Button">
                         <Border Background="{TemplateBinding Background}" CornerRadius="2">
                             <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="10" 
-                               Foreground="#CCCCCC" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                    Foreground="#CCCCCC" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
@@ -143,22 +214,14 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     <ControlTemplate TargetType="TabItem">
                         <Grid>
                             <Border x:Name="TopIndicator" VerticalAlignment="Top" Height="1" Background="Transparent" Panel.ZIndex="10"/>
-
-                            <Border x:Name="Border" Background="{TemplateBinding Background}" 
-                            BorderBrush="#252526" BorderThickness="0,0,1,0" 
-                            Padding="10,0">
+                            <Border x:Name="Border" Background="{TemplateBinding Background}" BorderBrush="#252526" BorderThickness="0,0,1,0" Padding="10,0">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <TextBlock Text="&#xE8A5;" FontFamily="Segoe MDL2 Assets" 
-                                       Foreground="{TemplateBinding Foreground}" Margin="0,1,5,0" FontSize="12"/>
-
+                                    <TextBlock Text="&#xE8A5;" FontFamily="Segoe MDL2 Assets" Foreground="{TemplateBinding Foreground}" Margin="0,1,5,0" FontSize="12"/>
                                     <ContentPresenter ContentSource="Header" VerticalAlignment="Center"/>
-
-                                    <Button x:Name="CloseBtn" Style="{StaticResource TabCloseBtnStyle}" 
-                                    Tag="{Binding RelativeSource={RelativeSource TemplatedParent}}"/>
+                                    <Button x:Name="CloseBtn" Style="{StaticResource TabCloseBtnStyle}"/>
                                 </StackPanel>
                             </Border>
                         </Grid>
-
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsSelected" Value="True">
                                 <Setter Property="Background" Value="#1E1E1E"/>
@@ -173,7 +236,6 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                 </Setter.Value>
             </Setter>
         </Style>
-
     </Window.Resources>
 
     <Grid>
@@ -182,17 +244,19 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <Grid Grid.Row="0" Background="{StaticResource BgColor}" MouseDown="TitleBar_MouseDown">
+        <Grid Grid.Row="0" Background="{StaticResource BgColor}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
+            <Border Grid.ColumnSpan="3" Background="Transparent" MouseDown="TitleBar_MouseDown"/>
+
             <Menu Grid.Column="0" Style="{StaticResource TopMenuStyle}" VerticalAlignment="Center" Margin="5,0,0,0">
                 <MenuItem Header="Archivo">
-                    <MenuItem Header="Nuevo Proyecto..."/>
-                    <MenuItem Header="Abrir..."/>
+                    <MenuItem Header="Nuevo Proyecto..." Click="BtnNew_Click"/>
+                    <MenuItem Header="Abrir..." Click="BtnOpen_Click"/>
                     <Separator Background="{StaticResource BorderColor}"/>
                     <MenuItem Header="Cerrar Proyecto" Click="BtnCloseProject_Click"/>
                     <MenuItem Header="Salir" Click="BtnClose_Click"/>
@@ -211,8 +275,9 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
             </Menu>
 
             <TextBlock Grid.Column="1" Text="VB6 Visual Mockup Designer" 
-                       Foreground="{StaticResource MutedTextColor}" FontSize="12"
-                       VerticalAlignment="Center" HorizontalAlignment="Center" IsHitTestVisible="False"/>
+               Foreground="{StaticResource MutedTextColor}" FontSize="12"
+               VerticalAlignment="Center" HorizontalAlignment="Center" 
+               IsHitTestVisible="False"/>
 
             <StackPanel Grid.Column="2" Orientation="Horizontal">
                 <Button Content="&#xE921;" Style="{StaticResource WindowControlButtonStyle}" Click="BtnMinimize_Click"/>

@@ -263,14 +263,41 @@ namespace VB6VisualMockupDesigner
             SideBarContent.Content = null;
         }
 
+        // 1. MENÚ ARCHIVO > NUEVO PROYECTO
+        private void BtnNew_Click(object sender, RoutedEventArgs e)
+        {
+            // Por ahora, "Nuevo Proyecto" creará un formulario en blanco por defecto
+            // Puedes mejorar esto luego para limpiar todo el entorno si ya había algo abierto
+            LoadProject("Form1.frm");
+        }
+
+        // 2. MENÚ ARCHIVO > ABRIR
+        private void BtnOpen_Click(object sender, RoutedEventArgs e)
+        {
+            var openFileDialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Filter = "VB6 Forms (*.frm)|*.frm|All Files (*.*)|*.*",
+                Title = "Abrir formulario VB6 existente"
+            };
+
+            if (openFileDialog.ShowDialog() == true)
+            {
+                // Usamos el método LoadProject que creamos antes
+                LoadProject(openFileDialog.FileName);
+            }
+        }
+
+        // 3. MENÚ ARCHIVO > CERRAR PROYECTO
         private void BtnCloseProject_Click(object sender, RoutedEventArgs e)
         {
-            // Instanciar y mostrar la pantalla de inicio de nuevo
+            // Regresar a la pantalla de inicio
             StartScreen start = new StartScreen();
             start.Show();
 
-            // Cerrar el editor actual
+            // Cerrar esta ventana de edición
             this.Close();
         }
     }
+
+
 }
