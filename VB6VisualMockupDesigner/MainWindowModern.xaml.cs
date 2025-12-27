@@ -326,9 +326,9 @@ namespace VB6VisualMockupDesigner
             // IMPORTANTE: Aquí definimos el tamaño del scrollbar
             Grid workspace = new Grid
             {
-                Width = 3000,   // <--- ESTO CONTROLA EL TAMAÑO DEL SCROLL HORIZONTAL
+                Width = 2000,   // <--- ESTO CONTROLA EL TAMAÑO DEL SCROLL HORIZONTAL
                 Height = 2000,  // <--- ESTO CONTROLA EL TAMAÑO DEL SCROLL VERTICAL
-                Background = (Brush)FindResource("DotPatternBrush") // Tu patrón de puntos
+                //Background = (Brush)FindResource("DotPatternBrush") // Tu patrón de puntos
             };
 
             // 3. Crear el "Formulario" Mockup (centrado visualmente en el workspace)

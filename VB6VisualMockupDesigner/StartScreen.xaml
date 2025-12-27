@@ -10,7 +10,9 @@
         WindowStyle="None"
         ResizeMode="NoResize"
         Background="#1E1E1E"
-        FontFamily="Segoe UI">
+        FontFamily="Segoe UI"
+        Icon="/Resource/icon.ico"
+        >
 
     <Window.Resources>
         <SolidColorBrush x:Key="BrandBrush" Color="#005A9E"/>
