@@ -59,19 +59,13 @@ namespace VB6VisualMockupDesigner
                 Header = title
             };
 
-            // 3. Crear el contenido (AQUÍ IRÍA TU CANVAS DEL DESIGNER REAL)
-            // Por ahora ponemos un placeholder grid
-            var contentGrid = new Grid { Background = (System.Windows.Media.Brush)FindResource("BgColor") };
-            contentGrid.Children.Add(new TextBlock
-            {
-                Text = $"Editando: {title}",
-                Foreground = System.Windows.Media.Brushes.White,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Center,
-                FontSize = 24
-            });
+            var designer = new DesignerCanvas();
 
-            newTab.Content = contentGrid;
+            // Configurar el título interno de la ventana VB6
+            designer.FormTitle = title;
+
+            // Asignamos el designer como contenido de la pestaña
+            newTab.Content = designer;
 
             // 4. Agregar y seleccionar
             MainTabControl.Items.Add(newTab);
