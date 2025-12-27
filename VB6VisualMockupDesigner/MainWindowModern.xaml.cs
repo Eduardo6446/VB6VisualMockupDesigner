@@ -2,6 +2,7 @@
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using System.Windows.Media;
 
 
 
@@ -313,9 +314,38 @@ namespace VB6VisualMockupDesigner
         // 1. MENÚ ARCHIVO > NUEVO PROYECTO
         private void BtnNew_Click(object sender, RoutedEventArgs e)
         {
-            // Por ahora, "Nuevo Proyecto" creará un formulario en blanco por defecto
-            // Puedes mejorar esto luego para limpiar todo el entorno si ya había algo abierto
-            LoadProject("Form1.frm");
+            // 1. Crear el ScrollViewer (La ventana al mundo)
+            ScrollViewer scroller = new ScrollViewer
+            {
+                HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                Background = new SolidColorBrush(Color.FromRgb(50, 50, 50)) // Fondo gris oscuro
+            };
+
+            // 2. Crear el Lienzo de Trabajo (El área total disponible)
+            // IMPORTANTE: Aquí definimos el tamaño del scrollbar
+            Grid workspace = new Grid
+            {
+                Width = 3000,   // <--- ESTO CONTROLA EL TAMAÑO DEL SCROLL HORIZONTAL
+                Height = 2000,  // <--- ESTO CONTROLA EL TAMAÑO DEL SCROLL VERTICAL
+                Background = (Brush)FindResource("DotPatternBrush") // Tu patrón de puntos
+            };
+
+            // 3. Crear el "Formulario" Mockup (centrado visualmente en el workspace)
+            Border mockForm = new Border
+            {
+                Width = 600,
+                Height = 400,
+                Background = Brushes.White,
+                BorderBrush = Brushes.Navy,
+                BorderThickness = new Thickness(2),
+                // Truco para que aparezca "en medio" del lienzo grande al inicio
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+
+            workspace.Children.Add(mockForm);
+            scroller.Content = workspace;
         }
 
         // 2. MENÚ ARCHIVO > ABRIR
