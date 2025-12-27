@@ -30,8 +30,31 @@ namespace VB6VisualMockupDesigner
         public DesignerCanvas()
         {
             InitializeComponent();
+
+            this.Loaded += DesignerCanvas_Loaded;
         }
 
+        private void DesignerCanvas_Loaded(object sender, RoutedEventArgs e)
+        {
+            CenterView();
+            // Nos desuscribimos para que solo ocurra la primera vez que se muestra
+            this.Loaded -= DesignerCanvas_Loaded;
+        }
+
+        // NUEVO MÉTODO: Calcula el centro y mueve los scrollbars
+        private void CenterView()
+        {
+            // Asegurarnos de que los controles existen y tienen tamaño
+            if (MainScrollViewer == null || DesignGrid == null || MainScrollViewer.ViewportWidth == 0) return;
+
+            // Cálculo del centro: (AnchoTotal / 2) - (AnchoVisible / 2)
+            double horizontalOffset = (DesignGrid.Width / 2) - (MainScrollViewer.ViewportWidth / 2);
+            double verticalOffset = (DesignGrid.Height / 2) - (MainScrollViewer.ViewportHeight / 2);
+
+            // Aplicar el desplazamiento
+            MainScrollViewer.ScrollToHorizontalOffset(horizontalOffset);
+            MainScrollViewer.ScrollToVerticalOffset(verticalOffset);
+        }
         public void ClearCanvas()
         {
             DesignSurface.Children.Clear();

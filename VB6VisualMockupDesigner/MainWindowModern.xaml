@@ -7,8 +7,8 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         mc:Ignorable="d"
         Title="VB6 Visual Mockup Designer" Height="720" Width="1080"
         WindowStartupLocation="CenterScreen"
-        WindowStyle="None"
-        ResizeMode="CanResizeWithGrip"
+        WindowStyle="SingleBorderWindow"
+        ResizeMode="CanResize"
         Background="{DynamicResource BgColor}"
         FontFamily="Segoe UI">
 
@@ -17,7 +17,7 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
             CaptionHeight="32"  
             ResizeBorderThickness="5" 
             CornerRadius="0"
-            GlassFrameThickness="0"/>
+            GlassFrameThickness="1"/>
     </WindowChrome.WindowChrome>
 
     <Window.Resources>
@@ -251,10 +251,12 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                 </Style.Triggers>
             </Style>
         </Grid.Style>
+
+
         <Grid.RowDefinitions>
             <RowDefinition Height="32"/>
             <RowDefinition Height="*"/>
-            
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <Grid Grid.Row="0" Background="{StaticResource BgColor}">
@@ -364,5 +366,17 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                                    BorderBrush="#3E3E42" 
                                    BorderThickness="1,0,0,0"/>
         </Grid>
+        <StatusBar Grid.Row="2" Background="#007ACC" Foreground="White" Padding="10,0">
+            <StatusBarItem>
+                <TextBlock Text="Listo"/>
+            </StatusBarItem>
+
+            <StatusBarItem HorizontalAlignment="Right">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="Ln 1, Col 1" Margin="0,0,15,0"/>
+                    <TextBlock Text="VB6 Mockup"/>
+                </StackPanel>
+            </StatusBarItem>
+        </StatusBar>
     </Grid>
 </Window>
