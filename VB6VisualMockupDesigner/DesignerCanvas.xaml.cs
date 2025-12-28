@@ -191,23 +191,50 @@ namespace VB6VisualMockupDesigner
             return Math.Round(val / 8.0) * 8.0;
         }
 
-        // FÁBRICA DE CONTROLES RETRO (Simulación Visual)
+        // FÁBRICA DE CONTROLES RETRO (Simulación Visual Completa)
         public UIElement CreateRetroControl(string type)
         {
             Control control = null;
+            FrameworkElement element = null; // Usamos FrameworkElement para abarcar Shapes y Controles
+
+            // Estilos comunes (para no repetir tanto código)
+            var fontParams = new { Family = new FontFamily("Microsoft Sans Serif"), Size = 11.0 };
+            var vbGray = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#D4D0C8"));
+            var vbWhite = Brushes.White;
+            var vbBlack = Brushes.Black;
 
             switch (type)
             {
-                case "CommandButton":
-                    control = new Button
+                // --- POINTER (No crea control) ---
+                case "Pointer":
+                    return null;
+
+                // --- STANDARD CONTROLS ---
+                case "PictureBox":
+                    // PictureBox en VB6 es un contenedor con borde 3D
+                    var picBorder = new Border
                     {
-                        Content = "Command1",
-                        Width = 121,
-                        Height = 33, // Tamaños default VB6
-                        Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#D4D0C8")),
+                        Width = 100,
+                        Height = 100,
+                        Background = vbGray,
+                        BorderBrush = Brushes.Gray,
                         BorderThickness = new Thickness(2),
-                        FontFamily = new FontFamily("Microsoft Sans Serif"),
-                        FontSize = 11
+                        // Simulación de borde 'Sunken' (Hundido)
+                        Effect = new System.Windows.Media.Effects.DropShadowEffect
+                        { ShadowDepth = 0, BlurRadius = 0 }
+                    };
+                    element = picBorder;
+                    break;
+
+                case "Label":
+                    control = new Label
+                    {
+                        Content = "Label1",
+                        Width = 121,
+                        Height = 25,
+                        FontFamily = fontParams.Family,
+                        FontSize = fontParams.Size,
+                        Padding = new Thickness(2)
                     };
                     break;
 
@@ -217,21 +244,36 @@ namespace VB6VisualMockupDesigner
                         Text = "Text1",
                         Width = 121,
                         Height = 25,
-                        FontFamily = new FontFamily("Microsoft Sans Serif"),
-                        FontSize = 11,
+                        FontFamily = fontParams.Family,
+                        FontSize = fontParams.Size,
+                        BorderBrush = Brushes.Gray,
+                        BorderThickness = new Thickness(1)
+                    };
+                    break;
+
+                case "Frame":
+                    // El GroupBox de WPF es el equivalente al Frame
+                    control = new GroupBox
+                    {
+                        Header = "Frame1",
+                        Width = 150,
+                        Height = 100,
+                        FontFamily = fontParams.Family,
+                        FontSize = fontParams.Size,
+                        Background = vbGray,
                         BorderBrush = Brushes.Gray
                     };
                     break;
 
-                case "Label":
-                    control = new Label
+                case "CommandButton":
+                    control = new Button
                     {
-                        Content = "Label1",
+                        Content = "Command1",
                         Width = 121,
-                        Height = 25,
-                        FontFamily = new FontFamily("Microsoft Sans Serif"),
-                        FontSize = 11,
-                        Padding = new Thickness(0) // Label VB6 no tiene mucho padding
+                        Height = 33,
+                        Background = vbGray,
+                        FontFamily = fontParams.Family,
+                        FontSize = fontParams.Size
                     };
                     break;
 
@@ -241,30 +283,251 @@ namespace VB6VisualMockupDesigner
                         Content = "Check1",
                         Width = 121,
                         Height = 25,
-                        FontFamily = new FontFamily("Microsoft Sans Serif"),
-                        FontSize = 11
+                        FontFamily = fontParams.Family,
+                        FontSize = fontParams.Size,
+                        VerticalContentAlignment = VerticalAlignment.Center
                     };
                     break;
 
-                // Agregar más casos según necesites...
+                case "OptionButton": // RadioButton en .NET
+                    control = new RadioButton
+                    {
+                        Content = "Option1",
+                        Width = 121,
+                        Height = 25,
+                        FontFamily = fontParams.Family,
+                        FontSize = fontParams.Size,
+                        VerticalContentAlignment = VerticalAlignment.Center
+                    };
+                    break;
+
+                case "ComboBox":
+                    var combo = new ComboBox
+                    {
+                        Width = 121,
+                        Height = 21,
+                        FontFamily = fontParams.Family,
+                        FontSize = fontParams.Size,
+                        IsEditable = true,
+                        Text = "Combo1"
+                    };
+                    control = combo;
+                    break;
+
+                case "ListBox":
+                    var list = new ListBox
+                    {
+                        Width = 121,
+                        Height = 100,
+                        FontFamily = fontParams.Family,
+                        FontSize = fontParams.Size,
+                        BorderBrush = Brushes.Gray,
+                        BorderThickness = new Thickness(1)
+                    };
+                    list.Items.Add("List1"); // Item de muestra
+                    control = list;
+                    break;
+
+                case "HScrollBar":
+                    control = new System.Windows.Controls.Primitives.ScrollBar
+                    {
+                        Orientation = Orientation.Horizontal,
+                        Width = 100,
+                        Height = 17,
+                        Value = 50,
+                        Maximum = 100
+                    };
+                    break;
+
+                case "VScrollBar":
+                    control = new System.Windows.Controls.Primitives.ScrollBar
+                    {
+                        Orientation = Orientation.Vertical,
+                        Width = 17,
+                        Height = 100,
+                        Value = 50,
+                        Maximum = 100
+                    };
+                    break;
+
+                // --- SYSTEM / FILE CONTROLS ---
+                case "Timer":
+                    // El Timer es invisible en runtime, pero visual en diseño.
+                    // Usaremos un borde con un texto pequeño o imagen.
+                    var timerBorder = new Border
+                    {
+                        Width = 34,
+                        Height = 34,
+                        Background = vbGray,
+                        BorderBrush = Brushes.Black,
+                        BorderThickness = new Thickness(1),
+                        Child = new TextBlock { Text = "Timer", FontSize = 8, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center }
+                    };
+                    element = timerBorder;
+                    break;
+
+                case "DriveListBox":
+                    var driveCombo = new ComboBox
+                    {
+                        Width = 121,
+                        Height = 21,
+                        FontFamily = fontParams.Family,
+                        FontSize = fontParams.Size,
+                        Text = @"c: [OS]"
+                    };
+                    control = driveCombo;
+                    break;
+
+                case "DirListBox":
+                    var dirList = new ListBox
+                    {
+                        Width = 121,
+                        Height = 100,
+                        FontFamily = fontParams.Family,
+                        FontSize = fontParams.Size,
+                        BorderBrush = Brushes.Gray
+                    };
+                    dirList.Items.Add(@"c:\");
+                    dirList.Items.Add(@"  Windows");
+                    dirList.Items.Add(@"    System32");
+                    control = dirList;
+                    break;
+
+                case "FileListBox":
+                    var fileList = new ListBox
+                    {
+                        Width = 121,
+                        Height = 100,
+                        FontFamily = fontParams.Family,
+                        FontSize = fontParams.Size,
+                        BorderBrush = Brushes.Gray
+                    };
+                    fileList.Items.Add("archivo1.txt");
+                    fileList.Items.Add("project.vbp");
+                    control = fileList;
+                    break;
+
+                // --- GRAPHICAL CONTROLS ---
+                case "Shape":
+                    // Simulamos el Shape default (Rectángulo)
+                    var shape = new System.Windows.Shapes.Rectangle
+                    {
+                        Width = 50,
+                        Height = 50,
+                        Stroke = vbBlack,
+                        StrokeThickness = 1,
+                        Fill = Brushes.Transparent
+                    };
+                    element = shape;
+                    break;
+
+                case "Line":
+                    // Line es difícil de manejar con Width/Height estándar, 
+                    // simularemos una línea horizontal básica dentro de un canvas o caja
+                    var line = new System.Windows.Shapes.Rectangle
+                    {
+                        Width = 100,
+                        Height = 2,
+                        Fill = vbBlack
+                    };
+                    element = line;
+                    break;
+
+                case "Image":
+                    // En WPF, 'Border' no soporta líneas punteadas. 
+                    // Usamos un Grid que contiene un Rectangle (que sí soporta StrokeDashArray)
+                    var imgGrid = new Grid
+                    {
+                        Width = 100,
+                        Height = 100,
+                        Background = Brushes.Transparent // Necesario para detectar clics dentro
+                    };
+
+                    // 1. El borde punteado
+                    var dashedRect = new System.Windows.Shapes.Rectangle
+                    {
+                        Stroke = Brushes.Gray,
+                        StrokeThickness = 1,
+                        StrokeDashArray = new DoubleCollection() { 4, 2 }, // Patrón punteado
+                        Fill = Brushes.Transparent,
+                        IsHitTestVisible = false // Dejamos que el Grid capture el mouse
+                    };
+
+                    // 2. El texto "Image" centrado
+                    var imgText = new TextBlock
+                    {
+                        Text = "Image",
+                        Foreground = Brushes.Gray,
+                        HorizontalAlignment = HorizontalAlignment.Center,
+                        VerticalAlignment = VerticalAlignment.Center,
+                        IsHitTestVisible = false
+                    };
+
+                    imgGrid.Children.Add(dashedRect);
+                    imgGrid.Children.Add(imgText);
+
+                    element = imgGrid;
+                    break;
+
+                // --- DATA ---
+                case "Data":
+                    // Control Data (DAO) - Botones de navegación
+                    var dataGrid = new Grid { Width = 150, Height = 25, Background = vbGray };
+                    dataGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(20) }); // <|
+                    dataGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(20) }); // <
+                    dataGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) }); // Label
+                    dataGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(20) }); // >
+                    dataGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(20) }); // |>
+
+                    // Simular botones (simplificado con bordes)
+                    var btn1 = new Border { Background = vbGray, BorderBrush = Brushes.Gray, BorderThickness = new Thickness(1) };
+                    var btn2 = new Border { Background = vbGray, BorderBrush = Brushes.Gray, BorderThickness = new Thickness(1) };
+                    var lblData = new TextBlock { Text = "Data1", VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center };
+
+                    Grid.SetColumn(btn1, 0); dataGrid.Children.Add(btn1);
+                    Grid.SetColumn(lblData, 2); dataGrid.Children.Add(lblData);
+
+                    element = dataGrid;
+                    break;
+
+                case "OLE":
+                    var oleBorder = new Border
+                    {
+                        Width = 75,
+                        Height = 75,
+                        BorderBrush = Brushes.Gray,
+                        BorderThickness = new Thickness(1),
+                        Background = Brushes.LightGray,
+                        Child = new TextBlock { Text = "OLE", HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center }
+                    };
+                    element = oleBorder;
+                    break;
+
                 default:
-                    // Placeholder para controles no implementados
-                    control = new Button { Content = type, Width = 100, Height = 30, Background = Brushes.Red };
+                    // Fallback
+                    control = new Button { Content = type, Width = 80, Height = 30, Background = Brushes.Red };
                     break;
             }
 
-            if (control != null)
+            // Unificación de referencias
+            if (control != null && element == null)
             {
-                // === NUEVO: CONECTAR EVENTOS DE MOVIMIENTO ===
-                control.PreviewMouseDown += Control_PreviewMouseDown;
-                control.PreviewMouseMove += Control_PreviewMouseMove;
-                control.PreviewMouseUp += Control_PreviewMouseUp;
-
-                // Cursor de movimiento al pasar por encima
-                control.Cursor = Cursors.SizeAll;
+                element = control;
             }
 
-            return control;
+            // Configuración común de eventos y cursores
+            if (element != null)
+            {
+                element.PreviewMouseDown += Control_PreviewMouseDown;
+                element.PreviewMouseMove += Control_PreviewMouseMove;
+                element.PreviewMouseUp += Control_PreviewMouseUp;
+                element.Cursor = Cursors.SizeAll;
+
+                // Asignar Tag para identificar tipo luego (útil para propiedades)
+                element.Tag = type;
+            }
+
+            return element;
         }
 
         private void ShowSelectionIndicator(UIElement control)
