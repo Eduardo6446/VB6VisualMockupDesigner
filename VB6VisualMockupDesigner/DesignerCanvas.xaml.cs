@@ -27,6 +27,59 @@ namespace VB6VisualMockupDesigner
         // CAPA VISUAL DE SELECCIÓN (Simularemos los 8 cuadraditos más tarde)
         private Border _selectionBorder;
 
+        // VARIABLES PARA REDIMENSIÓN DE VENTANA
+        private bool _isResizingForm = false;
+        private Point _resizeClickStart;
+        private double _initialFormWidth;
+        private double _initialFormHeight;
+
+        private void ResizeGrip_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            var grip = sender as UIElement;
+            _isResizingForm = true;
+            _resizeClickStart = e.GetPosition(this); // Posición relativa al UserControl completo
+
+            // Guardamos tamaño actual
+            _initialFormWidth = WindowResizerGrid.Width;
+            _initialFormHeight = WindowResizerGrid.Height;
+
+            grip.CaptureMouse();
+            e.Handled = true;
+        }
+
+        private void ResizeGrip_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (_isResizingForm)
+            {
+                Point currentPos = e.GetPosition(this);
+
+                // Calcular delta
+                double deltaX = currentPos.X - _resizeClickStart.X;
+                double deltaY = currentPos.Y - _resizeClickStart.Y;
+
+                // Calcular nuevo tamaño (con SnapToGrid opcional para la ventana también)
+                double newWidth = _initialFormWidth + deltaX;
+                double newHeight = _initialFormHeight + deltaY;
+
+                // Limites mínimos (para que no desaparezca la ventana)
+                if (newWidth < 100) newWidth = 100;
+                if (newHeight < 100) newHeight = 100;
+
+                // Aplicar al Grid contenedor (y el Border se estirará para llenarlo)
+                WindowResizerGrid.Width = SnapToGrid(newWidth);
+                WindowResizerGrid.Height = SnapToGrid(newHeight);
+            }
+        }
+
+        private void ResizeGrip_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            if (_isResizingForm)
+            {
+                _isResizingForm = false;
+                (sender as UIElement).ReleaseMouseCapture();
+            }
+        }
+
         public DesignerCanvas()
         {
             InitializeComponent();
@@ -278,26 +331,39 @@ namespace VB6VisualMockupDesigner
         {
             if (_isDragging && _selectedControl != null)
             {
-                // Obtenemos la posición actual del mouse en el CANVAS
+                // 1. Calcular posición cruda
                 Point currentPos = e.GetPosition(DesignSurface);
-
-                // Calculamos la nueva posición restando el offset inicial
                 double newLeft = currentPos.X - _clickOffset.X;
                 double newTop = currentPos.Y - _clickOffset.Y;
 
-                // APLICAMOS EL SNAP-TO-GRID (Tu función existente)
+                // 2. Snap to Grid
                 newLeft = SnapToGrid(newLeft);
                 newTop = SnapToGrid(newTop);
 
-                // Evitar coordenadas negativas (irse fuera del formulario por arriba/izquierda)
-                if (newLeft < 0) newLeft = 0;
-                if (newTop < 0) newTop = 0;
+                // 3. Obtener dimensiones para calcular límites
+                var frameworkControl = _selectedControl as FrameworkElement;
+                double controlWidth = frameworkControl.ActualWidth;
+                double controlHeight = frameworkControl.ActualHeight;
 
-                // Movemos el control
+                // Limite derecho e inferior del contenedor (Canvas)
+                double maxLeft = DesignSurface.ActualWidth - controlWidth;
+                double maxTop = DesignSurface.ActualHeight - controlHeight;
+
+                // 4. Aplicar Restricciones (Clamping)
+                // Izquierda
+                if (newLeft < 0) newLeft = 0;
+                // Arriba
+                if (newTop < 0) newTop = 0;
+                // Derecha (Solo si el control cabe, si es más grande que el canvas, permitimos 0)
+                if (newLeft > maxLeft && maxLeft > 0) newLeft = maxLeft;
+                // Abajo
+                if (newTop > maxTop && maxTop > 0) newTop = maxTop;
+
+                // 5. Mover el control
                 Canvas.SetLeft(_selectedControl, newLeft);
                 Canvas.SetTop(_selectedControl, newTop);
 
-                // Actualizamos también el borde de selección para que siga al control
+                // 6. Mover el borde de selección
                 if (_selectionBorder != null)
                 {
                     Canvas.SetLeft(_selectionBorder, newLeft - 3);
