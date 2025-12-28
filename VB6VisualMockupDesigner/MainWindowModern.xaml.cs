@@ -91,12 +91,13 @@ namespace VB6VisualMockupDesigner
             OpenFileTab(fileName);
         }
 
-        private void OpenFileTab(string title)
+        private void OpenFileTab(string fullPath)
         {
-            // 1. Verificar si ya está abierta para seleccionarla en vez de duplicar
+            // 1. Verificar si ya está abierta
             foreach (TabItem tab in MainTabControl.Items)
             {
-                if (tab.Header.ToString() == title)
+                // Comparamos el ToolTip o guardamos el path en el Tag para ser más precisos
+                if (tab.Tag?.ToString() == fullPath)
                 {
                     MainTabControl.SelectedItem = tab;
                     return;
@@ -106,63 +107,48 @@ namespace VB6VisualMockupDesigner
             // 2. Crear nueva pestaña
             var newTab = new TabItem
             {
-                Header = title
+                Header = System.IO.Path.GetFileName(fullPath), // Solo nombre en la pestaña
+                Tag = fullPath // Guardamos ruta completa en el Tag
             };
 
+            // 3. Instanciar el Diseñador
             var designer = new DesignerCanvas();
 
-            // === NUEVO: CARGAR EL CONTENIDO DEL ARCHIVO ===
+            // === CORRECCIÓN AQUÍ ===
+            // En lugar de FrmParser.Parse, leemos el archivo y usamos el método interno del designer
+            if (System.IO.File.Exists(fullPath))
+            {
+                try
+                {
+                    string fileContent = System.IO.File.ReadAllText(fullPath);
+                    designer.LoadForm(fileContent); // <--- ESTA ES LA CLAVE
+                }
+                catch (System.Exception ex)
+                {
+                    MessageBox.Show("Error al leer el formulario: " + ex.Message);
+                }
+            }
+            // =======================
 
-            // 1. Buscamos la ruta completa. 
-            // Como OpenFileTab a veces solo recibe el nombre (desde el Tab), 
-            // necesitamos asegurarnos de tener la ruta completa.
-            // TRUCO: Modifica OpenFileTab para recibir la ruta completa, 
-            // o búscalo en tu lista de recientes/explorador.
+            // Configurar título interno (Overlay del form)
+            designer.FormTitle = System.IO.Path.GetFileNameWithoutExtension(fullPath);
 
-            // Asumiremos que 'title' es la ruta completa o que tienes acceso a ella.
-            // SI NO TIENES LA RUTA COMPLETA AQUÍ, DEBES PASARLA.
-            // Vamos a asumir que cambias la firma del método o pasas el path.
-
-            string fullPath = title; // Asumiendo que ahora pasas el path completo
-
-            // Si solo pasaste el nombre, el parser fallará gracefully (File.Exists check).
-            // Lo ideal es cambiar la llamada OpenFileTab(fileName) a OpenFileTab(fullPath) en todo el código.
-
-            FrmParser.Parse(fullPath, designer);
-
-            // Ajustar el título de la pestaña para que solo muestre el nombre del archivo
-            newTab.Header = System.IO.Path.GetFileName(fullPath);
-
-            // === FIN NUEVO ===
-
+            // Evento de selección para propiedades
             designer.ControlSelected += (s, control) =>
             {
-                PropertiesPanel.InspectObject(control);
+                // PropertiesPanel.InspectObject(control); // Descomenta cuando tengas el panel
             };
-            // =========================================================
 
-            newTab.Content = designer;
-
-            // Configurar el título interno de la ventana VB6
-            designer.FormTitle = title;
-
-            // Asignamos el designer como contenido de la pestaña
             newTab.Content = designer;
 
             // 4. Agregar y seleccionar
             MainTabControl.Items.Add(newTab);
             MainTabControl.SelectedItem = newTab;
 
-            // 5. Configurar botón de cerrar (Buscamos el botón dentro del template una vez cargado)
-            // NOTA: Una forma más limpia en WPF puro es usar MVVM, pero aquí lo haremos con eventos directos.
-            // Necesitamos esperar a que se aplique el template o usar un evento en el estilo.
-            // TRUCO: Hemos definido el Click en el XAML, pero necesitamos capturarlo globalmente o en el estilo.
-            // Vamos a asignar el evento 'Loaded' al TabItem para buscar su botón.
+            // 5. Configurar botón de cerrar
             newTab.Loaded += NewTab_Loaded;
 
             UpdateTabVisibility();
-
-            // Habilitar Toolbox
             _toolboxView.EnableTools(true);
         }
 

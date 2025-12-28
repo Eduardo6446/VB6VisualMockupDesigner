@@ -19,6 +19,16 @@ namespace VB6VisualMockupDesigner
     public partial class DesignerCanvas : UserControl
     {
 
+        public class VbControlModel
+        {
+            public string Type { get; set; }        // Ej: VB.PictureBox
+            public string Name { get; set; }        // Ej: picBoxMain
+            public int Index { get; set; } = -1;    // Para arrays de controles
+            public Dictionary<string, string> Properties { get; set; } = new Dictionary<string, string>();
+            public List<VbControlModel> Children { get; set; } = new List<VbControlModel>();
+            public VbControlModel Parent { get; set; }
+        }
+
         // VARIABLES DE ESTADO PARA ARRASTRE
         private bool _isDragging = false;
         private Point _clickOffset;       // Dónde hice clic dentro del control
@@ -117,12 +127,26 @@ namespace VB6VisualMockupDesigner
         }
 
         // 2. Método para redimensionar la "Ventana VB6" (El borde gris)
+        // Método para redimensionar la "Ventana VB6" simulada
         public void SetFormDimensions(double width, double height)
         {
-            // En VB6 ClientWidth/Height son Twips. Aquí recibiremos Píxeles.
-            // Sumamos un poco para bordes y título simulados
-            RetroFormContainer.Width = width + 10;
-            RetroFormContainer.Height = height + 30;
+            // Validaciones para evitar crashes con tamaños inválidos
+            if (width < 100) width = 100;
+            if (height < 100) height = 100;
+
+            // Redimensionamos el Grid contenedor (que contiene los Grips de redimensión)
+            if (WindowResizerGrid != null)
+            {
+                WindowResizerGrid.Width = width;
+                WindowResizerGrid.Height = height;
+            }
+
+            // Si usas el Borde interno (RetroFormContainer), asegúrate que se ajuste o herede
+            if (RetroFormContainer != null)
+            {
+                RetroFormContainer.Width = width;
+                RetroFormContainer.Height = height;
+            }
         }
 
         public void AddControlToCanvas(UIElement control, double x, double y)
@@ -137,6 +161,69 @@ namespace VB6VisualMockupDesigner
             Canvas.SetTop(control, snappedY);
 
             DesignSurface.Children.Add(control);
+        }
+
+        public VbControlModel ParseVb6Form(string fileContent)
+        {
+            var lines = fileContent.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
+            VbControlModel root = null;
+            VbControlModel current = null;
+            Stack<VbControlModel> stack = new Stack<VbControlModel>();
+
+            foreach (var rawLine in lines)
+            {
+                string line = rawLine.Trim();
+                if (string.IsNullOrWhiteSpace(line)) continue;
+
+                // 1. Detectar Inicio de Control
+                if (line.StartsWith("Begin "))
+                {
+                    // Formato: Begin Libreria.Tipo Nombre 
+                    var parts = line.Substring(6).Split(' ');
+                    string type = parts[0];
+                    string name = parts.Length > 1 ? parts[1] : type;
+
+                    var newControl = new VbControlModel { Type = type, Name = name, Parent = current };
+
+                    if (current != null)
+                    {
+                        current.Children.Add(newControl);
+                    }
+                    else
+                    {
+                        root = newControl; // El primer Begin es el Form
+                    }
+
+                    current = newControl;
+                    stack.Push(current);
+                }
+                // 2. Detectar Fin de Bloque
+                else if (line == "End")
+                {
+                    if (stack.Count > 0)
+                    {
+                        stack.Pop();
+                        current = stack.Count > 0 ? stack.Peek() : null;
+                    }
+                }
+                // 3. Propiedades
+                else if (line.Contains("=") && current != null)
+                {
+                    var eqIndex = line.IndexOf('=');
+                    string propName = line.Substring(0, eqIndex).Trim();
+                    string propValue = line.Substring(eqIndex + 1).Trim();
+
+                    // Limpieza básica de comillas y comentarios
+                    if (propValue.Contains("'")) propValue = propValue.Substring(0, propValue.IndexOf("'")).Trim();
+                    propValue = propValue.Replace("\"", "");
+
+                    if (!current.Properties.ContainsKey(propName))
+                    {
+                        current.Properties.Add(propName, propValue);
+                    }
+                }
+            }
+            return root;
         }
 
 
@@ -211,7 +298,7 @@ namespace VB6VisualMockupDesigner
 
                 // --- STANDARD CONTROLS ---
                 case "PictureBox":
-                    // PictureBox en VB6 es un contenedor con borde 3D
+                    // PictureBox ahora es un Canvas dentro de un Border
                     var picBorder = new Border
                     {
                         Width = 100,
@@ -219,10 +306,13 @@ namespace VB6VisualMockupDesigner
                         Background = vbGray,
                         BorderBrush = Brushes.Gray,
                         BorderThickness = new Thickness(2),
-                        // Simulación de borde 'Sunken' (Hundido)
-                        Effect = new System.Windows.Media.Effects.DropShadowEffect
-                        { ShadowDepth = 0, BlurRadius = 0 }
+                        Effect = new System.Windows.Media.Effects.DropShadowEffect { ShadowDepth = 0, BlurRadius = 0 } // Sunken effect
                     };
+                    // IMPORTANTE: El hijo es un Canvas para poder meterle cosas adentro
+                    var picCanvas = new Canvas();
+                    picBorder.Child = picCanvas;
+
+                    // Le ponemos nombre al Canvas para recuperarlo luego o usamos el Border
                     element = picBorder;
                     break;
 
@@ -252,8 +342,7 @@ namespace VB6VisualMockupDesigner
                     break;
 
                 case "Frame":
-                    // El GroupBox de WPF es el equivalente al Frame
-                    control = new GroupBox
+                    var grp = new GroupBox
                     {
                         Header = "Frame1",
                         Width = 150,
@@ -263,6 +352,11 @@ namespace VB6VisualMockupDesigner
                         Background = vbGray,
                         BorderBrush = Brushes.Gray
                     };
+                    // El GroupBox necesita un Canvas como contenido para posicionamiento absoluto
+                    var frmCanvas = new Canvas();
+                    grp.Content = frmCanvas;
+
+                    control = grp;
                     break;
 
                 case "CommandButton":
@@ -657,6 +751,136 @@ namespace VB6VisualMockupDesigner
 
             ControlSelected?.Invoke(this, null);
         }
+
+
+        public void LoadForm(string vb6Content)
+        {
+            ClearCanvas();
+
+            var rootModel = ParseVb6Form(vb6Content);
+            if (rootModel == null) return;
+
+            // Configurar Tamaño del Formulario
+            double fWidth = 600; // Valor default (en pixeles)
+            double fHeight = 450;
+
+            if (rootModel.Properties.ContainsKey("ClientWidth")) fWidth = TwipsToPixels(rootModel.Properties["ClientWidth"]);
+            else if (rootModel.Properties.ContainsKey("ScaleWidth")) fWidth = TwipsToPixels(rootModel.Properties["ScaleWidth"]);
+
+            if (rootModel.Properties.ContainsKey("ClientHeight")) fHeight = TwipsToPixels(rootModel.Properties["ClientHeight"]);
+            else if (rootModel.Properties.ContainsKey("ScaleHeight")) fHeight = TwipsToPixels(rootModel.Properties["ScaleHeight"]);
+
+            if (fWidth > 0 && fHeight > 0) SetFormDimensions(fWidth, fHeight);
+
+            if (rootModel.Properties.ContainsKey("Caption"))
+                FormTitle = rootModel.Properties["Caption"];
+
+            // Iniciar renderizado recursivo en el Canvas principal
+            RenderChildren(rootModel, DesignSurface);
+        }
+
+        private void RenderChildren(VbControlModel model, FrameworkElement container)
+        {
+            // PASO A: Determinar cuál es el Canvas real donde vamos a agregar los hijos.
+            // PictureBox es un Border que tiene un Canvas adentro (Child).
+            // Frame es un GroupBox que tiene un Canvas adentro (Content).
+            // El formulario principal es un Canvas directo.
+
+            Panel targetPanel = null;
+
+            if (container is Panel p)
+            {
+                targetPanel = p; // Es un Canvas o Grid directo
+            }
+            else if (container is Border b && b.Child is Panel childPanel)
+            {
+                targetPanel = childPanel; // Es un PictureBox, usamos su Canvas interno
+            }
+            else if (container is GroupBox g && g.Content is Panel contentPanel)
+            {
+                targetPanel = contentPanel; // Es un Frame, usamos su Canvas interno
+            }
+
+            // Si no encontramos un lugar donde poner controles hijos, salimos.
+            if (targetPanel == null) return;
+
+            // PASO B: Recorrer y crear hijos
+            foreach (var child in model.Children)
+            {
+                // Filtros (Menús, Timers, etc. que no se dibujan igual)
+                if (child.Type.Contains("Menu")) continue;
+
+                // Limpiar nombre del tipo
+                string type = child.Type.Contains(".") ? child.Type.Split('.')[1] : child.Type;
+
+                // Fallbacks para controles desconocidos o user controls
+                if (child.Type.Contains("ucBtnSkin") || child.Type.Contains("Toolbar")) type = "CommandButton";
+                if (child.Type.Contains("ListView")) type = "ListBox";
+                if (child.Type.Contains("ImageList")) type = "Timer"; // Usamos Timer como placeholder de control invisible
+
+                // 1. Crear Control
+                UIElement element = CreateRetroControl(type);
+
+                if (element != null)
+                {
+                    var frameworkElement = element as FrameworkElement;
+
+                    // 2. Dimensiones y Posición (Convertir Twips a Pixels)
+                    double left = TwipsToPixels(GetPropVal(child, "Left"));
+                    double top = TwipsToPixels(GetPropVal(child, "Top"));
+                    double w = TwipsToPixels(GetPropVal(child, "Width"));
+                    double h = TwipsToPixels(GetPropVal(child, "Height"));
+
+                    if (w > 0) frameworkElement.Width = w;
+                    if (h > 0) frameworkElement.Height = h;
+
+                    // 3. Propiedades Básicas
+                    if (element is ContentControl cc && child.Properties.ContainsKey("Caption"))
+                        cc.Content = child.Properties["Caption"];
+
+                    if (element is TextBox tb && child.Properties.ContainsKey("Text"))
+                        tb.Text = child.Properties["Text"];
+
+                    if (child.Properties.ContainsKey("Index"))
+                        frameworkElement.Tag = "Array: " + child.Properties["Index"]; // Para saber si es array
+
+                    // 4. Agregar al Panel correcto
+                    targetPanel.Children.Add(element);
+                    Canvas.SetLeft(element, left);
+                    Canvas.SetTop(element, top);
+
+                    // 5. RECURSIVIDAD: Si este hijo tiene sus propios hijos (ej: es un PictureBox con botones)
+                    if (child.Children.Count > 0)
+                    {
+                        // Pasamos este nuevo control como contenedor para la siguiente vuelta
+                        RenderChildren(child, frameworkElement);
+                    }
+                }
+            }
+        }
+
+        // Helpers
+        private double GetPropVal(VbControlModel m, string key)
+        {
+            if (m.Properties.ContainsKey(key) && double.TryParse(m.Properties[key], out double val))
+                return val;
+            return 0;
+        }
+
+        private double TwipsToPixels(double twips)
+        {
+            return twips / 15.0; // Conversión aproximada estándar
+        }
+
+        private double TwipsToPixels(string twipsStr)
+        {
+            if (double.TryParse(twipsStr, out double d)) return d / 15.0;
+            return 0;
+        }
+
+
+
+
 
 
     }
