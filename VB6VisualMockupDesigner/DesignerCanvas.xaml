@@ -65,7 +65,7 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                   Background="Transparent">
 
             <Grid x:Name="DesignGrid" Width="2000" Height="2000" 
-                  Background="{StaticResource GridPatternBrush}" 
+                  Background="Transparent" 
                   MouseLeftButtonDown="Grid_MouseLeftButtonDown">
 
                 <Grid x:Name="WindowResizerGrid" 
@@ -131,7 +131,7 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
 
                             <Grid Grid.Row="1" Margin="2">
                                 <Canvas x:Name="DesignSurface" 
-                                        Background="{StaticResource GridPatternBrush}" 
+                                        Background="Transparent" 
                                         ClipToBounds="True"
                                         AllowDrop="True"  
                                         Drop="DesignSurface_Drop"
