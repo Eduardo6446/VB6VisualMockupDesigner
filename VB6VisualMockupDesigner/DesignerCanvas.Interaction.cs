@@ -310,16 +310,7 @@ namespace VB6VisualMockupDesigner
         }
 
         private double SnapToGrid(double val) => Math.Round(val / 8.0) * 8.0;
-        private void DesignSurface_Drop(object sender, DragEventArgs e)
-        {
-            // Implementar Drop si se requiere agregar desde Toolbox
-            if (e.Data.GetDataPresent("ControlToolboxItem"))
-            {
-                string type = e.Data.GetData("ControlToolboxItem") as string;
-                Point p = e.GetPosition(DesignSurface);
-                AddControlToCanvas(RetroControlFactory.Create(type), p.X, p.Y);
-            }
-        }
+
 
         public void AddControlToCanvas(UIElement control, double x, double y)
         {
@@ -340,6 +331,86 @@ namespace VB6VisualMockupDesigner
         {
             return RetroControlFactory.Create(type);
         }
+
+
+        private void DesignSurface_DragOver(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent("ControlToolboxItem"))
+            {
+                e.Effects = DragDropEffects.Copy;
+                e.Handled = true;
+            }
+            else
+            {
+                e.Effects = DragDropEffects.None;
+            }
+        }
+
+
+        private void DesignSurface_Drop(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent("ControlToolboxItem"))
+            {
+                string controlType = e.Data.GetData("ControlToolboxItem") as string;
+                Point dropPosition = e.GetPosition(DesignSurface);
+
+                // Crear el control usando nuestra Factory
+                // Usamos el método puente CreateRetroControl o directamente la Factory
+                UIElement newControl = RetroControlFactory.Create(controlType);
+
+                if (newControl != null)
+                {
+                    // Posicionar donde cayó el mouse (con SnapToGrid)
+                    double x = SnapToGrid(dropPosition.X);
+                    double y = SnapToGrid(dropPosition.Y);
+
+                    // Ajuste fino: Centrar el control en el mouse (opcional)
+                    // Si quieres que el mouse quede en la esquina superior izquierda del control, déjalo así.
+                    // Si quieres centrarlo:
+                    // if (newControl is FrameworkElement fe) { x -= fe.Width / 2; y -= fe.Height / 2; }
+
+                    Canvas.SetLeft(newControl, x);
+                    Canvas.SetTop(newControl, y);
+
+                    // Agregar al Canvas
+                    AddControlToCanvas(newControl, x, y);
+
+                    // Seleccionarlo automáticamente
+                    // (Simulamos un click para activar los handles)
+                    _selectedControl = newControl;
+
+                    // 2. Dibujar los 8 puntos azules/blancos
+                    ShowSelectionIndicator(newControl);
+
+                    // 3. Avisar a la ventana principal (para que cargue el Panel de Propiedades)
+                    ControlSelected?.Invoke(this, newControl as FrameworkElement);
+                }
+
+                e.Handled = true;
+            }
+        }
+
+        // EN DesignerCanvas.Interaction.cs
+
+        public void DeleteSelectedControl()
+        {
+            if (_selectedControl != null)
+            {
+                // 1. Quitar del Canvas visual
+                DesignSurface.Children.Remove(_selectedControl);
+
+                // 2. Limpiar la selección visual (puntos azules)
+                ShowSelectionIndicator(null);
+
+                // 3. Notificar a la ventana principal (para limpiar el panel de propiedades)
+                ControlSelected?.Invoke(this, null);
+
+                // 4. Olvidar la referencia
+                _selectedControl = null;
+            }
+        }
+
+
 
 
     }

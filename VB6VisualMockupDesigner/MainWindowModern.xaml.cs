@@ -464,6 +464,23 @@ namespace VB6VisualMockupDesigner
             }
         }
 
+
+
+        private void Window_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            // Verificar si la tecla es SUPR (Delete)
+            if (e.Key == System.Windows.Input.Key.Delete || e.Key == System.Windows.Input.Key.Back)
+            {
+                // Verificar si tenemos una pestaña abierta con un DesignerCanvas
+                if (MainTabControl.SelectedItem is TabItem tab && tab.Content is DesignerCanvas designer)
+                {
+                    // Mandar la orden de borrado
+                    designer.DeleteSelectedControl();
+                }
+            }
+        }
+
+
     }
 
 
