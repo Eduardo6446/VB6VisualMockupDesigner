@@ -3,6 +3,8 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using System;
+using System.IO;
 
 
 
@@ -17,6 +19,9 @@ namespace VB6VisualMockupDesigner
     {
         private ToolboxView _toolboxView; // Instancia única para no recrearla siempre
         private ProjectExplorerView _explorerView; // Nueva referencia
+
+        private void MnuSave_Click(object sender, RoutedEventArgs e) => SaveProject(false);
+        private void MnuSaveAs_Click(object sender, RoutedEventArgs e) => SaveProject(true);
 
         public MainWindowModern()
         {
@@ -505,15 +510,82 @@ namespace VB6VisualMockupDesigner
                     case Key.Y: // REHACER
                         designer.Redo();
                         break;
+
+                    case Key.S: // GUARDAR
+                        SaveProject(false);
+                        e.Handled = true; // Evitar bubbling
+                        break;
                 }
+            }
+
+
+
+
+
+
+
+        }
+
+
+        private void SaveProject(bool forceSaveAs)
+        {
+            // 1. Validar que haya algo abierto
+            if (!(MainTabControl.SelectedItem is TabItem tab) || !(tab.Content is DesignerCanvas designer))
+            {
+                MessageBox.Show("No hay ningún formulario abierto para guardar.", "Información", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            // 2. Generar el código VB6
+            string vbCode = Vb6Generator.GenerateFrmCode(designer.GetDesignSurface(), designer.FormTitle);
+
+            // 3. Determinar la ruta destino
+            string currentPath = tab.Tag as string;
+            string targetPath = currentPath;
+
+            // Abrimos diálogo si: Forzamos "Guardar Como" O no tenemos ruta guardada
+            if (forceSaveAs || string.IsNullOrEmpty(currentPath))
+            {
+                var sfd = new Microsoft.Win32.SaveFileDialog
+                {
+                    Filter = "VB6 Form (*.frm)|*.frm|All Files (*.*)|*.*",
+                    FileName = designer.FormTitle + ".frm",
+                    Title = forceSaveAs ? "Guardar copia como..." : "Guardar proyecto"
+                };
+
+                if (sfd.ShowDialog() == true)
+                {
+                    targetPath = sfd.FileName;
+
+                    // Actualizamos la pestaña con los nuevos datos
+                    tab.Tag = targetPath;
+                    tab.Header = System.IO.Path.GetFileName(targetPath);
+                    designer.FormTitle = System.IO.Path.GetFileNameWithoutExtension(targetPath);
+                }
+                else
+                {
+                    return; // Usuario canceló
+                }
+            }
+
+            // 4. Escribir en disco
+            try
+            {
+                File.WriteAllText(targetPath, vbCode);
+
+                // Feedback visual en la barra de estado (Opcional, si tienes una)
+                // StatusBarText.Text = $"Guardado: {System.DateTime.Now.ToShortTimeString()}";
+
+                // Solo mostramos MessageBox si fue "Guardar Como" para confirmar
+                if (forceSaveAs)
+                    MessageBox.Show("Formulario guardado correctamente.", "Éxito", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (System.Exception ex)
+            {
+                MessageBox.Show("Error al guardar: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
 
     }
-
-
-
-
-
 }

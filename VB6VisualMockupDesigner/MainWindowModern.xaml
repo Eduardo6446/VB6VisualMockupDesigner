@@ -273,8 +273,15 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                 <MenuItem Header="Archivo">
                     <MenuItem Header="Nuevo Proyecto..." Click="BtnNew_Click"/>
                     <MenuItem Header="Abrir..." Click="BtnOpen_Click"/>
+
                     <Separator Background="{StaticResource BorderColor}"/>
-                    <MenuItem Header="Cerrar Proyecto" Click="BtnCloseProject_Click"/>
+
+                    <MenuItem Header="Guardar" InputGestureText="Ctrl+S" Click="MnuSave_Click"/>
+                    <MenuItem Header="Guardar como..." Click="MnuSaveAs_Click"/>
+
+                    <Separator Background="{StaticResource BorderColor}"/>
+
+                    <MenuItem Header="Cerrar Pestaña" Click="BtnCloseProject_Click"/>
                     <MenuItem Header="Salir" Click="BtnClose_Click"/>
                 </MenuItem>
                 <MenuItem Header="Editar">

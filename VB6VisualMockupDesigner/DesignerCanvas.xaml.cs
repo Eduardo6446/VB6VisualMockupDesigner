@@ -25,6 +25,11 @@ namespace VB6VisualMockupDesigner
             set { FormTitleText.Text = value; }
         }
 
+        public Canvas GetDesignSurface()
+        {
+            return DesignSurface;
+        }
+
         private void CenterView()
         {
             if (MainScrollViewer == null || DesignGrid == null || MainScrollViewer.ViewportWidth == 0) return;
