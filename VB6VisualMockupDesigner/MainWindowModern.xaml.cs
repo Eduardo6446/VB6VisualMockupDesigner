@@ -466,16 +466,45 @@ namespace VB6VisualMockupDesigner
 
 
 
-        private void Window_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            // Verificar si la tecla es SUPR (Delete)
-            if (e.Key == System.Windows.Input.Key.Delete || e.Key == System.Windows.Input.Key.Back)
+            // Verificamos si hay un diseñador activo
+            if (!(MainTabControl.SelectedItem is TabItem tab) || !(tab.Content is DesignerCanvas designer))
+                return;
+
+            // Detectar Control presionado
+            bool isCtrl = (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control;
+
+            // 1. SUPRIMIR (Delete)
+            if (e.Key == Key.Delete || e.Key == Key.Back)
             {
-                // Verificar si tenemos una pestaña abierta con un DesignerCanvas
-                if (MainTabControl.SelectedItem is TabItem tab && tab.Content is DesignerCanvas designer)
+                designer.DeleteSelectedControl();
+            }
+
+            // 2. COMBINACIONES CON CTRL
+            if (isCtrl)
+            {
+                switch (e.Key)
                 {
-                    // Mandar la orden de borrado
-                    designer.DeleteSelectedControl();
+                    case Key.C: // COPIAR
+                        designer.CopySelected();
+                        break;
+
+                    case Key.X: // CORTAR
+                        designer.CutSelected();
+                        break;
+
+                    case Key.V: // PEGAR
+                        designer.Paste();
+                        break;
+
+                    case Key.Z: // DESHACER
+                        designer.Undo();
+                        break;
+
+                    case Key.Y: // REHACER
+                        designer.Redo();
+                        break;
                 }
             }
         }

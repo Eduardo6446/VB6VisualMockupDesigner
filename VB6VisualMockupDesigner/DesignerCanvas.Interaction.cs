@@ -33,6 +33,8 @@ namespace VB6VisualMockupDesigner
         // EVENTOS DE CONTROL (Arrastre y Selección)
         private void Control_PreviewMouseDown(object sender, MouseButtonEventArgs e)
         {
+            SaveUndoSnapshot();
+
             var control = sender as UIElement;
             _selectedControl = control;
             _isDragging = true;
@@ -181,6 +183,8 @@ namespace VB6VisualMockupDesigner
         // LÓGICA DE REDIMENSIÓN DE CONTROL
         private void Handle_MouseDown(object sender, MouseButtonEventArgs e)
         {
+            SaveUndoSnapshot();
+
             var rect = sender as Rectangle;
             _currentResizeDir = (ResizeDirection)rect.Tag;
             _isDragging = false;
@@ -351,6 +355,9 @@ namespace VB6VisualMockupDesigner
         {
             if (e.Data.GetDataPresent("ControlToolboxItem"))
             {
+
+                SaveUndoSnapshot();
+
                 string controlType = e.Data.GetData("ControlToolboxItem") as string;
                 Point dropPosition = e.GetPosition(DesignSurface);
 
@@ -396,6 +403,7 @@ namespace VB6VisualMockupDesigner
         {
             if (_selectedControl != null)
             {
+                SaveUndoSnapshot();
                 // 1. Quitar del Canvas visual
                 DesignSurface.Children.Remove(_selectedControl);
 
