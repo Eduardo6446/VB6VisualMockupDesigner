@@ -11,6 +11,15 @@ namespace VB6VisualMockupDesigner
     // PARTIAL CLASS: Manejo de Interacción con Controles
     public partial class DesignerCanvas
     {
+
+
+        // Variables para guardar el estado inicial del control al empezar a redimensionar
+        private double _initSelLeft;
+        private double _initSelTop;
+        private double _initSelWidth;
+        private double _initSelHeight;
+
+
         private bool _isDragging = false;
         private Point _clickOffset;
         private UIElement _selectedControl;
@@ -78,60 +87,93 @@ namespace VB6VisualMockupDesigner
         // LÓGICA DE HANDLES (Los 8 cuadritos)
         private void ShowSelectionIndicator(UIElement control)
         {
-            if (_selectionBorder != null) { DesignSurface.Children.Remove(_selectionBorder); _selectionBorder = null; }
-            foreach (var r in _resizeHandles) DesignSurface.Children.Remove(r);
-            _resizeHandles.Clear();
-
-            if (control == null) return;
-
-            // Borde visual
-            var fe = control as FrameworkElement;
-            _selectionBorder = new Border
+            // CASO 1: Deseleccionar (Borrar todo)
+            if (control == null)
             {
-                BorderBrush = Brushes.Gray,
-                BorderThickness = new Thickness(1),
-                Width = fe.ActualWidth + 6,
-                Height = fe.ActualHeight + 6,
-                IsHitTestVisible = false
-            };
-            double l = Canvas.GetLeft(control), t = Canvas.GetTop(control);
-            Canvas.SetLeft(_selectionBorder, l - 3); Canvas.SetTop(_selectionBorder, t - 3);
-            DesignSurface.Children.Add(_selectionBorder);
+                if (_selectionBorder != null) DesignSurface.Children.Remove(_selectionBorder);
+                _selectionBorder = null;
+                foreach (var r in _resizeHandles) DesignSurface.Children.Remove(r);
+                _resizeHandles.Clear();
+                return;
+            }
 
-            // Crear 8 Handles
-            CreateHandle(control, ResizeDirection.TopLeft, Cursors.SizeNWSE);
-            CreateHandle(control, ResizeDirection.Top, Cursors.SizeNS);
-            CreateHandle(control, ResizeDirection.TopRight, Cursors.SizeNESW);
-            CreateHandle(control, ResizeDirection.Right, Cursors.SizeWE);
-            CreateHandle(control, ResizeDirection.BottomRight, Cursors.SizeNWSE);
-            CreateHandle(control, ResizeDirection.Bottom, Cursors.SizeNS);
-            CreateHandle(control, ResizeDirection.BottomLeft, Cursors.SizeNESW);
-            CreateHandle(control, ResizeDirection.Left, Cursors.SizeWE);
+            // Datos del control actual
+            var item = control as FrameworkElement;
+            double l = Canvas.GetLeft(item);
+            double t = Canvas.GetTop(item);
+            double w = item.Width;  // Usamos Width/Height explícitos
+            double h = item.Height;
+
+            // CASO 2: Crear visuales (Solo si no existen)
+            if (_selectionBorder == null)
+            {
+                // Crear Borde
+                _selectionBorder = new Border
+                {
+                    BorderBrush = Brushes.Gray,
+                    BorderThickness = new Thickness(1),
+                    IsHitTestVisible = false
+                };
+                DesignSurface.Children.Add(_selectionBorder);
+
+                // Crear los 8 Handles (Solo se crean una vez)
+                CreateHandle(ResizeDirection.TopLeft, Cursors.SizeNWSE);
+                CreateHandle(ResizeDirection.Top, Cursors.SizeNS);
+                CreateHandle(ResizeDirection.TopRight, Cursors.SizeNESW);
+                CreateHandle(ResizeDirection.Right, Cursors.SizeWE);
+                CreateHandle(ResizeDirection.BottomRight, Cursors.SizeNWSE);
+                CreateHandle(ResizeDirection.Bottom, Cursors.SizeNS);
+                CreateHandle(ResizeDirection.BottomLeft, Cursors.SizeNESW);
+                CreateHandle(ResizeDirection.Left, Cursors.SizeWE);
+            }
+
+            // CASO 3: ACTUALIZAR POSICIONES (Se ejecuta siempre al mover/redimensionar)
+
+            // Actualizar tamaño y posición del borde
+            _selectionBorder.Width = w + 6;
+            _selectionBorder.Height = h + 6;
+            Canvas.SetLeft(_selectionBorder, l - 3);
+            Canvas.SetTop(_selectionBorder, t - 3);
+
+            // Actualizar posición de cada handle existente
+            foreach (var rect in _resizeHandles)
+            {
+                ResizeDirection dir = (ResizeDirection)rect.Tag;
+                double x = 0, y = 0;
+
+                switch (dir)
+                {
+                    case ResizeDirection.TopLeft: x = l - 3; y = t - 3; break;
+                    case ResizeDirection.Top: x = l + w / 2 - 3; y = t - 3; break;
+                    case ResizeDirection.TopRight: x = l + w - 3; y = t - 3; break;
+                    case ResizeDirection.Right: x = l + w - 3; y = t + h / 2 - 3; break;
+                    case ResizeDirection.BottomRight: x = l + w - 3; y = t + h - 3; break;
+                    case ResizeDirection.Bottom: x = l + w / 2 - 3; y = t + h - 3; break;
+                    case ResizeDirection.BottomLeft: x = l - 3; y = t + h - 3; break;
+                    case ResizeDirection.Left: x = l - 3; y = t + h / 2 - 3; break;
+                }
+                Canvas.SetLeft(rect, x);
+                Canvas.SetTop(rect, y);
+            }
         }
 
-        private void CreateHandle(UIElement control, ResizeDirection dir, Cursor cursor)
+        private void CreateHandle(ResizeDirection dir, Cursor cursor)
         {
-            var rect = new Rectangle { Width = 6, Height = 6, Fill = Brushes.Navy, Stroke = Brushes.White, StrokeThickness = 1, Cursor = cursor, Tag = dir };
+            var rect = new Rectangle
+            {
+                Width = 6,
+                Height = 6,
+                Fill = Brushes.Navy,
+                Stroke = Brushes.White,
+                StrokeThickness = 1,
+                Cursor = cursor,
+                Tag = dir
+            };
+
             rect.MouseLeftButtonDown += Handle_MouseDown;
             rect.MouseLeftButtonUp += Handle_MouseUp;
             rect.MouseMove += Handle_MouseMove;
 
-            double l = Canvas.GetLeft(control), t = Canvas.GetTop(control);
-            double w = ((FrameworkElement)control).ActualWidth, h = ((FrameworkElement)control).ActualHeight;
-            double x = 0, y = 0;
-
-            switch (dir)
-            {
-                case ResizeDirection.TopLeft: x = l - 3; y = t - 3; break;
-                case ResizeDirection.Top: x = l + w / 2 - 3; y = t - 3; break;
-                case ResizeDirection.TopRight: x = l + w - 3; y = t - 3; break;
-                case ResizeDirection.Right: x = l + w - 3; y = t + h / 2 - 3; break;
-                case ResizeDirection.BottomRight: x = l + w - 3; y = t + h - 3; break;
-                case ResizeDirection.Bottom: x = l + w / 2 - 3; y = t + h - 3; break;
-                case ResizeDirection.BottomLeft: x = l - 3; y = t + h - 3; break;
-                case ResizeDirection.Left: x = l - 3; y = t + h / 2 - 3; break;
-            }
-            Canvas.SetLeft(rect, x); Canvas.SetTop(rect, y);
             DesignSurface.Children.Add(rect);
             _resizeHandles.Add(rect);
         }
@@ -142,33 +184,121 @@ namespace VB6VisualMockupDesigner
             var rect = sender as Rectangle;
             _currentResizeDir = (ResizeDirection)rect.Tag;
             _isDragging = false;
+
+            // Capturamos el punto de inicio del mouse
+            _resizeClickStart = e.GetPosition(DesignSurface);
+
+            // --- CORRECCIÓN: Guardar estado inicial del control ---
+            if (_selectedControl is FrameworkElement item)
+            {
+                _initSelLeft = Canvas.GetLeft(item);
+                _initSelTop = Canvas.GetTop(item);
+                _initSelWidth = item.ActualWidth;   // Aquí sí es seguro leer ActualWidth
+                _initSelHeight = item.ActualHeight;
+            }
+
             rect.CaptureMouse();
             e.Handled = true;
         }
 
         private void Handle_MouseMove(object sender, MouseEventArgs e)
         {
+
+            if (e.LeftButton != MouseButtonState.Pressed)
+            {
+                _currentResizeDir = ResizeDirection.None;
+                var r = sender as Rectangle;
+                if (r != null) r.ReleaseMouseCapture();
+                return;
+            }
+
+
             if (_currentResizeDir != ResizeDirection.None && _selectedControl != null)
             {
-                Point pos = e.GetPosition(DesignSurface);
-                double destX = SnapToGrid(pos.X);
-                double destY = SnapToGrid(pos.Y);
                 var item = _selectedControl as FrameworkElement;
-                double oldL = Canvas.GetLeft(item), oldT = Canvas.GetTop(item);
 
-                if (_currentResizeDir == ResizeDirection.Right || _currentResizeDir == ResizeDirection.BottomRight)
-                {
-                    double newW = destX - oldL;
-                    if (newW >= 8) item.Width = newW;
-                }
-                if (_currentResizeDir == ResizeDirection.Bottom || _currentResizeDir == ResizeDirection.BottomRight)
-                {
-                    double newH = destY - oldT;
-                    if (newH >= 8) item.Height = newH;
-                }
-                // (Agregar lógica para Left/Top si es necesario)
+                // 1. Calcular cuánto se ha movido el mouse desde el clic inicial (Delta)
+                Point currentPos = e.GetPosition(DesignSurface);
 
-                ShowSelectionIndicator(_selectedControl);
+                // Aplicamos SnapToGrid a la posición actual para que el movimiento sea "a saltos"
+                double snappedCurrentX = SnapToGrid(currentPos.X);
+                double snappedCurrentY = SnapToGrid(currentPos.Y);
+
+                // El punto de inicio también debería considerarse "snapped" para que el delta sea exacto
+                double startX = SnapToGrid(_resizeClickStart.X);
+                double startY = SnapToGrid(_resizeClickStart.Y);
+
+                double deltaX = snappedCurrentX - startX;
+                double deltaY = snappedCurrentY - startY;
+
+                // 2. Calcular nuevos valores basándonos en los INICIALES + DELTA
+                double newLeft = _initSelLeft;
+                double newTop = _initSelTop;
+                double newWidth = _initSelWidth;
+                double newHeight = _initSelHeight;
+
+                switch (_currentResizeDir)
+                {
+                    case ResizeDirection.Right:
+                        newWidth = _initSelWidth + deltaX;
+                        break;
+
+                    case ResizeDirection.Bottom:
+                        newHeight = _initSelHeight + deltaY;
+                        break;
+
+                    case ResizeDirection.BottomRight:
+                        newWidth = _initSelWidth + deltaX;
+                        newHeight = _initSelHeight + deltaY;
+                        break;
+
+                    case ResizeDirection.Left:
+                        // Al estirar a la izquierda: El ancho crece (restando delta) y la posición X se mueve
+                        // Nota: deltaX será negativo si voy a la izquierda
+                        newWidth = _initSelWidth - deltaX;
+                        newLeft = _initSelLeft + deltaX;
+                        break;
+
+                    case ResizeDirection.Top:
+                        newHeight = _initSelHeight - deltaY;
+                        newTop = _initSelTop + deltaY;
+                        break;
+
+                    case ResizeDirection.TopRight:
+                        newWidth = _initSelWidth + deltaX;
+                        newHeight = _initSelHeight - deltaY;
+                        newTop = _initSelTop + deltaY;
+                        break;
+
+                    case ResizeDirection.BottomLeft:
+                        newWidth = _initSelWidth - deltaX;
+                        newLeft = _initSelLeft + deltaX;
+                        newHeight = _initSelHeight + deltaY;
+                        break;
+
+                    case ResizeDirection.TopLeft:
+                        newWidth = _initSelWidth - deltaX;
+                        newLeft = _initSelLeft + deltaX;
+                        newHeight = _initSelHeight - deltaY;
+                        newTop = _initSelTop + deltaY;
+                        break;
+                }
+
+                // 3. Aplicar y Validar (Mínimo 8x8 pixeles)
+                if (newWidth >= 8)
+                {
+                    item.Width = newWidth;
+                    Canvas.SetLeft(item, newLeft);
+                }
+
+                if (newHeight >= 8)
+                {
+                    item.Height = newHeight;
+                    Canvas.SetTop(item, newTop);
+                }
+
+                // 4. Actualizar los puntos visuales
+                ShowSelectionIndicator(item);
             }
         }
 
