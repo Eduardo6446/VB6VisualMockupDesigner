@@ -70,9 +70,12 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
 
                 <Grid x:Name="WindowResizerGrid" 
                       Width="480" Height="360"
-                      VerticalAlignment="Center" HorizontalAlignment="Center">
+                      VerticalAlignment="Top" 
+                      HorizontalAlignment="Left">
 
                     <Border x:Name="RetroFormContainer"
+                            HorizontalAlignment="Stretch" 
+                            VerticalAlignment="Stretch"
                             Background="#D4D0C8"
                             BorderThickness="2">
 

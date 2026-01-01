@@ -61,26 +61,36 @@ namespace VB6VisualMockupDesigner
         {
             if (_isResizingForm)
             {
+                // 1. Calcular nueva posición
                 Point currentPos = e.GetPosition(this);
 
-                // Calcular delta
                 double deltaX = currentPos.X - _resizeClickStart.X;
                 double deltaY = currentPos.Y - _resizeClickStart.Y;
 
-                // Calcular nuevo tamaño (con SnapToGrid opcional para la ventana también)
                 double newWidth = _initialFormWidth + deltaX;
                 double newHeight = _initialFormHeight + deltaY;
 
-                // Limites mínimos (para que no desaparezca la ventana)
+                // 2. Validar mínimos
                 if (newWidth < 100) newWidth = 100;
                 if (newHeight < 100) newHeight = 100;
 
-                // Aplicar al Grid contenedor (y el Border se estirará para llenarlo)
-                WindowResizerGrid.Width = SnapToGrid(newWidth);
-                WindowResizerGrid.Height = SnapToGrid(newHeight);
+                // 3. Aplicar SnapToGrid (Opcional, pero recomendado)
+                newWidth = SnapToGrid(newWidth);
+                newHeight = SnapToGrid(newHeight);
+
+                // 4. Actualizar el Contenedor de los Puntos (Padre)
+                WindowResizerGrid.Width = newWidth;
+                WindowResizerGrid.Height = newHeight;
+
+                // --- SOLUCIÓN: Actualizar también el formulario visual ---
+                // Al tener un tamaño explícito desde el LoadForm, debemos actualizarlo manualmente aquí también.
+                if (RetroFormContainer != null)
+                {
+                    RetroFormContainer.Width = newWidth;
+                    RetroFormContainer.Height = newHeight;
+                }
             }
         }
-
         private void ResizeGrip_MouseUp(object sender, MouseButtonEventArgs e)
         {
             if (_isResizingForm)
@@ -128,20 +138,36 @@ namespace VB6VisualMockupDesigner
 
         // 2. Método para redimensionar la "Ventana VB6" (El borde gris)
         // Método para redimensionar la "Ventana VB6" simulada
+        // DesignerCanvas.cs
+
         public void SetFormDimensions(double width, double height)
         {
-            // Validaciones para evitar crashes con tamaños inválidos
+            // 1. Validaciones de seguridad
             if (width < 100) width = 100;
             if (height < 100) height = 100;
 
-            // Redimensionamos el Grid contenedor (que contiene los Grips de redimensión)
+            // 2. Redimensionar el Contenedor Padre (El que tiene los puntos blancos)
             if (WindowResizerGrid != null)
             {
                 WindowResizerGrid.Width = width;
                 WindowResizerGrid.Height = height;
+
+                // Centrar en el lienzo
+                if (DesignGrid != null)
+                {
+                    double leftMargin = (DesignGrid.Width - width) / 2;
+                    double topMargin = (DesignGrid.Height - height) / 2;
+
+                    // Evitamos negativos
+                    WindowResizerGrid.Margin = new Thickness(
+                        Math.Max(0, leftMargin),
+                        Math.Max(0, topMargin),
+                        0, 0);
+                }
             }
 
-            // Si usas el Borde interno (RetroFormContainer), asegúrate que se ajuste o herede
+            // 3. FUERZA BRUTA: Redimensionar también el Borde Visual (La ventana gris)
+            // Esto arregla el bug visual donde la ventana se queda pequeña y los puntos se van lejos.
             if (RetroFormContainer != null)
             {
                 RetroFormContainer.Width = width;
@@ -760,22 +786,34 @@ namespace VB6VisualMockupDesigner
             var rootModel = ParseVb6Form(vb6Content);
             if (rootModel == null) return;
 
-            // Configurar Tamaño del Formulario
-            double fWidth = 600; // Valor default (en pixeles)
+            // --- CORRECCIÓN DE TAMAÑOS ---
+            double fWidth = 600;
             double fHeight = 450;
 
-            if (rootModel.Properties.ContainsKey("ClientWidth")) fWidth = TwipsToPixels(rootModel.Properties["ClientWidth"]);
-            else if (rootModel.Properties.ContainsKey("ScaleWidth")) fWidth = TwipsToPixels(rootModel.Properties["ScaleWidth"]);
+            // Offset aproximado para Bordes (izq+der) y Barra de Título (arriba+bordes)
+            // En VB6 el ClientSize no incluye el borde de la ventana ni la barra azul.
+            // En nuestro Mockup, la barra azul mide aprox 25px y bordes 2px c/u.
+            double chromeWidth = 8;
+            double chromeHeight = 28;
 
-            if (rootModel.Properties.ContainsKey("ClientHeight")) fHeight = TwipsToPixels(rootModel.Properties["ClientHeight"]);
-            else if (rootModel.Properties.ContainsKey("ScaleHeight")) fHeight = TwipsToPixels(rootModel.Properties["ScaleHeight"]);
+            // Priorizamos ClientWidth/Height (Área interna)
+            if (rootModel.Properties.ContainsKey("ClientWidth"))
+                fWidth = TwipsToPixels(rootModel.Properties["ClientWidth"]) + chromeWidth;
+            else if (rootModel.Properties.ContainsKey("ScaleWidth"))
+                fWidth = TwipsToPixels(rootModel.Properties["ScaleWidth"]) + chromeWidth;
 
-            if (fWidth > 0 && fHeight > 0) SetFormDimensions(fWidth, fHeight);
+            if (rootModel.Properties.ContainsKey("ClientHeight"))
+                fHeight = TwipsToPixels(rootModel.Properties["ClientHeight"]) + chromeHeight;
+            else if (rootModel.Properties.ContainsKey("ScaleHeight"))
+                fHeight = TwipsToPixels(rootModel.Properties["ScaleHeight"]) + chromeHeight;
+
+            // Aplicamos las dimensiones corregidas
+            SetFormDimensions(fWidth, fHeight);
+            // -----------------------------
 
             if (rootModel.Properties.ContainsKey("Caption"))
                 FormTitle = rootModel.Properties["Caption"];
 
-            // Iniciar renderizado recursivo en el Canvas principal
             RenderChildren(rootModel, DesignSurface);
         }
 
