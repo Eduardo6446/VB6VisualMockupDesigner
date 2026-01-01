@@ -586,6 +586,22 @@ namespace VB6VisualMockupDesigner
             }
         }
 
+        private void MnuExportPng_Click(object sender, RoutedEventArgs e)
+        {
+            // 1. Validar que haya un diseñador activo
+            if (!(MainTabControl.SelectedItem is TabItem tab) || !(tab.Content is DesignerCanvas designer))
+            {
+                MessageBox.Show("No hay ningún diseño abierto para exportar.", "Información", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
 
+            // 2. Configurar el diálogo de guardado
+            return;
+
+
+
+
+
+        }
     }
 }
