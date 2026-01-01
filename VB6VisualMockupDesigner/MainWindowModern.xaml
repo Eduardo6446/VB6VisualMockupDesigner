@@ -281,8 +281,9 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     <MenuItem Header="Rehacer"/>
                 </MenuItem>
                 <MenuItem Header="Ver">
-                    <MenuItem Header="Caja de Herramientas"/>
-                    <MenuItem Header="Explorador de Proyectos"/>
+
+                    <MenuItem Header="Propiedades" Click="MnuShowProperties_Click"/>
+                    <MenuItem Header="Vista Auxiliar" Click="MnuShowAux_Click"/>
                 </MenuItem>
                 <MenuItem Header="Ayuda">
                     <MenuItem Header="Acerca de..."/>
@@ -310,7 +311,7 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                 <ColumnDefinition Width="50"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="250"/>
+                <ColumnDefinition Width="250" x:Name="ColProperties"/>
             </Grid.ColumnDefinitions>
 
             <Grid Grid.Column="0" Background="{StaticResource SideBarColor}">
@@ -361,10 +362,40 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                 </TabControl>
             </Grid>
 
-            <local:PropertiesPanel x:Name="PropertiesPanel" 
-                                   Grid.Column="3" 
-                                   BorderBrush="#3E3E42" 
-                                   BorderThickness="1,0,0,0"/>
+            <Grid Grid.Column="3" x:Name="RightSidebarGrid" Background="#252526">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" x:Name="RightRow1"/>
+                    <RowDefinition Height="5" x:Name="RightSplitterRow"/>
+                    <RowDefinition Height="*" x:Name="RightRow2"/>
+                </Grid.RowDefinitions>
+
+                <local:PropertiesPanel x:Name="PropertiesPanel" 
+                           Grid.Row="0"
+                           BorderBrush="#3E3E42" 
+                           BorderThickness="1,0,0,0"/>
+
+                <GridSplitter Grid.Row="1" Height="5" HorizontalAlignment="Stretch" Background="#3E3E42" ResizeBehavior="PreviousAndNext"/>
+
+                <Grid x:Name="SecondaryPanel" Grid.Row="2" Background="#2D2D30">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <Border Padding="5" BorderBrush="#3E3E42" BorderThickness="1,1,0,0">
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Click="BtnCloseSecondary_Click" Width="16" Height="16" Background="Transparent" BorderThickness="0">
+                                <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="10" Foreground="#969696"/>
+                            </Button>
+                            <TextBlock Text="VISTA AUXILIAR" Foreground="#969696" FontSize="11" FontWeight="Bold"/>
+                        </DockPanel>
+                    </Border>
+
+                    <TextBlock Grid.Row="1" Text="Aquí iría otro control..." Foreground="#666" 
+                   VerticalAlignment="Center" HorizontalAlignment="Center" TextWrapping="Wrap" Margin="10"/>
+                </Grid>
+
+            </Grid>
         </Grid>
         <StatusBar Grid.Row="2" Background="#007ACC" Foreground="White" Padding="10,0">
             <StatusBarItem>

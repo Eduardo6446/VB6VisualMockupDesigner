@@ -1,36 +1,29 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace VB6VisualMockupDesigner
 {
-    /// <summary>
-    /// Interaction logic for PropertiesPanel.xaml
-    /// </summary>
     public partial class PropertiesPanel : UserControl
     {
         private FrameworkElement _currentControl;
         private bool _isUpdating = false;
+
+        // Evento para notificar que algo cambió (útil para actualizar los puntos de selección en el Canvas)
+        public event EventHandler PropertyChanged;
+
+        public event EventHandler CloseRequested;
 
         public PropertiesPanel()
         {
             InitializeComponent();
         }
 
-        // Método principal: Recibe el control seleccionado y extrae sus datos
         public void InspectObject(FrameworkElement control)
         {
             _currentControl = control;
-            _isUpdating = true; // Evitar disparar eventos mientras cargamos
+            _isUpdating = true; // Pausar eventos
 
             if (control == null)
             {
@@ -40,21 +33,23 @@ namespace VB6VisualMockupDesigner
                 return;
             }
 
-            // Simulamos el nombre de objeto VB6 (ej: Command1)
-            // En un futuro podrías guardar el nombre real en la propiedad .Name o .Tag
-            string typeName = control.GetType().Name;
-            ObjectSelector.Text = $"{typeName}1 {typeName}";
+            // Nombre y Tipo (Usamos el Tag o el Tipo de clase)
+            string typeName = control.Tag as string ?? control.GetType().Name;
+            // Si el control tiene nombre en el XAML (x:Name), úsalo, sino usa el Tipo
+            string name = string.IsNullOrEmpty(control.Name) ? typeName : control.Name;
+
+            ObjectSelector.Text = $"{name} ({typeName})";
 
             var props = new List<PropertyItem>();
 
-            // 1. Propiedades Comunes de Posición
-            props.Add(new PropertyItem { Name = "Left", Value = Canvas.GetLeft(control) });
-            props.Add(new PropertyItem { Name = "Top", Value = Canvas.GetTop(control) });
-            props.Add(new PropertyItem { Name = "Width", Value = control.Width });
-            props.Add(new PropertyItem { Name = "Height", Value = control.Height });
+            // 1. Propiedades de Diseño (Redondeamos a 0 decimales para limpieza)
+            props.Add(new PropertyItem { Name = "Left", Value = Math.Round(Canvas.GetLeft(control)) });
+            props.Add(new PropertyItem { Name = "Top", Value = Math.Round(Canvas.GetTop(control)) });
+            props.Add(new PropertyItem { Name = "Width", Value = Math.Round(control.Width) });
+            props.Add(new PropertyItem { Name = "Height", Value = Math.Round(control.Height) });
 
-            // 2. Propiedades Específicas (Caption/Text)
-            if (control is ContentControl cc) // Button, Label, CheckBox
+            // 2. Propiedades Específicas
+            if (control is ContentControl cc) // Button, Label, Frame
             {
                 props.Add(new PropertyItem { Name = "Caption", Value = cc.Content });
             }
@@ -62,11 +57,14 @@ namespace VB6VisualMockupDesigner
             {
                 props.Add(new PropertyItem { Name = "Text", Value = tb.Text });
             }
-
-            // 3. Apariencia
-            if (control is Control c)
+            else if (control is TextBlock txt) // TextBlock (usado en algunos placeholders)
             {
-                // Convertimos el Brush a string para mostrarlo simple
+                props.Add(new PropertyItem { Name = "Caption", Value = txt.Text });
+            }
+
+            // 3. Propiedades Visuales (Color de fondo simple)
+            if (control is Control c && c.Background != null)
+            {
                 props.Add(new PropertyItem { Name = "BackColor", Value = c.Background.ToString() });
             }
 
@@ -74,20 +72,23 @@ namespace VB6VisualMockupDesigner
             _isUpdating = false;
         }
 
-        // Evento: Cuando el usuario termina de editar una celda
+        // Se dispara al terminar de editar una celda
         private void PropGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
         {
             if (_isUpdating || _currentControl == null) return;
 
-            // Obtenemos el item editado y el nuevo valor
+            // Obtenemos la propiedad y el control de edición (TextBox)
             if (e.Row.Item is PropertyItem item && e.EditingElement is TextBox tb)
             {
                 string newValue = tb.Text;
-                ApplyPropertyChange(item.Name, newValue);
+                bool success = ApplyPropertyChange(item.Name, newValue);
+
+                // Si el cambio fue visual (tamaño/pos), notificamos
+                if (success) PropertyChanged?.Invoke(this, EventArgs.Empty);
             }
         }
 
-        private void ApplyPropertyChange(string propName, string value)
+        private bool ApplyPropertyChange(string propName, string value)
         {
             try
             {
@@ -107,16 +108,33 @@ namespace VB6VisualMockupDesigner
                         break;
                     case "Caption":
                         if (_currentControl is ContentControl cc) cc.Content = value;
+                        if (_currentControl is TextBlock lbl) lbl.Text = value;
+                        if (_currentControl is GroupBox gb) gb.Header = value; // Para Frames
                         break;
                     case "Text":
                         if (_currentControl is TextBox txt) txt.Text = value;
                         break;
+                    default:
+                        return false;
                 }
+                return true;
             }
             catch
             {
-                // Ignorar valores inválidos (ej: texto en un campo numérico)
+                // Si el usuario escribe texto en un campo numérico, ignoramos el cambio
+                return false;
             }
+        }
+
+        private void CloseBtn_Click(object sender, RoutedEventArgs e)
+        {
+            CloseRequested?.Invoke(this, EventArgs.Empty);
+        }
+
+        public class PropertyItem
+        {
+            public string Name { get; set; }
+            public object Value { get; set; }
         }
     }
 }

@@ -36,6 +36,12 @@ namespace VB6VisualMockupDesigner
             MainTabControl.SelectionChanged += MainTabControl_SelectionChanged;
 
             this.StateChanged += MainWindowModern_StateChanged;
+
+            PropertiesPanel.CloseRequested += (s, e) => TogglePanel(PropertiesPanel, false);
+
+            // Iniciar layout (Por defecto mostramos Propiedades, ocultamos el auxiliar)
+            SecondaryPanel.Visibility = Visibility.Collapsed;
+            UpdateRightLayout();
         }
 
         private void MainTabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -114,6 +120,9 @@ namespace VB6VisualMockupDesigner
             // 3. Instanciar el Diseñador
             var designer = new DesignerCanvas();
 
+
+
+
             // === CORRECCIÓN AQUÍ ===
             // En lugar de FrmParser.Parse, leemos el archivo y usamos el método interno del designer
             if (System.IO.File.Exists(fullPath))
@@ -136,8 +145,11 @@ namespace VB6VisualMockupDesigner
             // Evento de selección para propiedades
             designer.ControlSelected += (s, control) =>
             {
-                // PropertiesPanel.InspectObject(control); // Descomenta cuando tengas el panel
+                this.PropertiesPanel.InspectObject(control);
             };
+
+
+
 
             newTab.Content = designer;
 
@@ -360,7 +372,102 @@ namespace VB6VisualMockupDesigner
             // Cerrar esta ventana de edición
             this.Close();
         }
+
+
+        // ----------------------------------------------------
+        // LÓGICA DE MENÚS (VER)
+        // ----------------------------------------------------
+        private void MnuShowProperties_Click(object sender, RoutedEventArgs e)
+        {
+            TogglePanel(PropertiesPanel, true);
+        }
+
+        private void MnuShowAux_Click(object sender, RoutedEventArgs e)
+        {
+            TogglePanel(SecondaryPanel, true);
+        }
+
+        // Botón X del panel secundario (el de propiedades usa su evento propio)
+        private void BtnCloseSecondary_Click(object sender, RoutedEventArgs e)
+        {
+            TogglePanel(SecondaryPanel, false);
+        }
+
+        // Helper para mostrar/ocultar y recalcular
+        private void TogglePanel(UIElement panel, bool show)
+        {
+            panel.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+            UpdateRightLayout();
+        }
+
+        // ----------------------------------------------------
+        // EL CEREBRO DEL LAYOUT DERECHO
+        // ----------------------------------------------------
+        private void UpdateRightLayout()
+        {
+            // Validación de seguridad: Si la columna no se ha cargado, no hacemos nada.
+            if (ColProperties == null) return;
+
+            bool showProps = PropertiesPanel.Visibility == Visibility.Visible;
+            bool showAux = SecondaryPanel.Visibility == Visibility.Visible;
+
+            // 1. GESTIÓN DEL ANCHO DE LA COLUMNA
+            if (!showProps && !showAux)
+            {
+                // Si todo está oculto, ancho 0
+                ColProperties.Width = new GridLength(0);
+                return;
+            }
+            else
+            {
+                // Si hay algo visible y estaba en 0, lo restauramos a 250
+                if (ColProperties.Width.Value == 0)
+                    ColProperties.Width = new GridLength(250);
+            }
+
+            // 2. GESTIÓN DE PANELES (ARRIBA / ABAJO)
+            // Nos aseguramos que el Grid del Sidebar tenga las filas necesarias cargadas
+            if (RightRow1 == null || RightRow2 == null || RightSplitterRow == null) return;
+
+            if (showProps && showAux)
+            {
+                // --- AMBOS VISIBLES ---
+                Grid.SetRow(PropertiesPanel, 0);
+                Grid.SetRowSpan(PropertiesPanel, 1);
+
+                Grid.SetRow(SecondaryPanel, 2);
+                Grid.SetRowSpan(SecondaryPanel, 1);
+
+                RightRow1.Height = new GridLength(1, GridUnitType.Star);
+                RightRow2.Height = new GridLength(1, GridUnitType.Star);
+                RightSplitterRow.Height = new GridLength(5);
+            }
+            else if (showProps)
+            {
+                // --- SOLO PROPIEDADES ---
+                Grid.SetRow(PropertiesPanel, 0);
+                Grid.SetRowSpan(PropertiesPanel, 3);
+
+                RightRow1.Height = new GridLength(1, GridUnitType.Star);
+                RightRow2.Height = new GridLength(0);
+                RightSplitterRow.Height = new GridLength(0);
+            }
+            else if (showAux)
+            {
+                // --- SOLO AUXILIAR ---
+                Grid.SetRow(SecondaryPanel, 0);
+                Grid.SetRowSpan(SecondaryPanel, 3);
+
+                RightRow1.Height = new GridLength(1, GridUnitType.Star);
+                RightRow2.Height = new GridLength(0);
+                RightSplitterRow.Height = new GridLength(0);
+            }
+        }
+
     }
+
+
+
 
 
 }
