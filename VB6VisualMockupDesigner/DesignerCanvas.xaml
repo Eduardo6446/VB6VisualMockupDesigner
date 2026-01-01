@@ -66,7 +66,7 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
 
             <Grid x:Name="DesignGrid" Width="2000" Height="2000" 
                   Background="Transparent" 
-                  MouseLeftButtonDown="Grid_MouseLeftButtonDown">
+                  MouseLeftButtonDown="DesignSurface_MouseDown">
 
                 <Grid x:Name="WindowResizerGrid" 
                       Width="480" Height="360"
