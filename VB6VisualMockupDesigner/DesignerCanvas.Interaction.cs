@@ -241,18 +241,10 @@ namespace VB6VisualMockupDesigner
         private void UpdateSelectionVisuals()
         {
             // A) Actualizar Bordes Azules
-            // Usamos .ToList() para evitar excepción al modificar el diccionario mientras iteramos claves
-            var adornersToRemove = _selectionAdorners.Keys
-                                    .Where(k => !_selectedControls.Contains(k))
-                                    .ToList();
-
+            var adornersToRemove = _selectionAdorners.Keys.Where(k => !_selectedControls.Contains(k)).ToList();
             foreach (var ctrl in adornersToRemove)
             {
-                if (_selectionAdorners.ContainsKey(ctrl))
-                {
-                    DesignSurface.Children.Remove(_selectionAdorners[ctrl]);
-                    _selectionAdorners.Remove(ctrl);
-                }
+                if (_selectionAdorners.ContainsKey(ctrl)) { DesignSurface.Children.Remove(_selectionAdorners[ctrl]); _selectionAdorners.Remove(ctrl); }
             }
 
             foreach (var control in _selectedControls)
@@ -262,24 +254,24 @@ namespace VB6VisualMockupDesigner
 
                 if (!_selectionAdorners.ContainsKey(control))
                 {
-                    var border = new Border
-                    {
-                        BorderBrush = Brushes.Blue,
-                        BorderThickness = new Thickness(1),
-                        IsHitTestVisible = false
-                    };
+                    var border = new Border { BorderBrush = Brushes.Blue, BorderThickness = new Thickness(1), IsHitTestVisible = false };
                     DesignSurface.Children.Add(border);
                     _selectionAdorners[control] = border;
                 }
 
                 var visualBorder = _selectionAdorners[control];
+
+                // USAMOS LOS HELPERS:
+                double l = GetSafeLeft(item);
+                double t = GetSafeTop(item);
+
                 visualBorder.Width = item.ActualWidth + 4;
                 visualBorder.Height = item.ActualHeight + 4;
-                Canvas.SetLeft(visualBorder, Canvas.GetLeft(item) - 2);
-                Canvas.SetTop(visualBorder, Canvas.GetTop(item) - 2);
+                Canvas.SetLeft(visualBorder, l - 2);
+                Canvas.SetTop(visualBorder, t - 2);
             }
 
-            // B) Actualizar Handles de Redimensión
+            // B) Actualizar Handles (Cuadraditos blancos)
             if (_selectedControls.Count == 1)
             {
                 var item = _primarySelection as FrameworkElement;
@@ -330,8 +322,14 @@ namespace VB6VisualMockupDesigner
         {
             if (item == null || _resizeHandles.Count < 8) return;
 
+            // --- CORRECCIÓN CRÍTICA 2: Handles Blancos ---
             double l = Canvas.GetLeft(item);
             double t = Canvas.GetTop(item);
+
+            // Si es NaN, usamos 0 para que la matemática funcione
+            if (double.IsNaN(l)) l = 0;
+            if (double.IsNaN(t)) t = 0;
+
             double w = item.ActualWidth;
             double h = item.ActualHeight;
 
@@ -493,9 +491,19 @@ namespace VB6VisualMockupDesigner
         public void AddControlToCanvas(UIElement control, double x, double y)
         {
             if (control == null) return;
+
+            // SANITIZACIÓN: Si por error matemático llega un NaN, lo convertimos a 0
+            if (double.IsNaN(x)) x = 0;
+            if (double.IsNaN(y)) y = 0;
+
+            // Suscribir eventos
             control.PreviewMouseDown += Control_PreviewMouseDown;
             control.PreviewMouseMove += Control_PreviewMouseMove;
             control.PreviewMouseUp += Control_PreviewMouseUp;
+
+            // Asegurar posición inicial válida
+            Canvas.SetLeft(control, SnapToGrid(x));
+            Canvas.SetTop(control, SnapToGrid(y));
 
             if (!DesignSurface.Children.Contains(control))
                 DesignSurface.Children.Add(control);
@@ -531,6 +539,24 @@ namespace VB6VisualMockupDesigner
         // ==========================================
         // 7. HERRAMIENTAS DE ALINEACIÓN Y DISTRIBUCIÓN
         // ==========================================
+
+        /// <summary>
+        /// Obtiene la posición Left real. Si es NaN (Auto), devuelve 0.
+        /// </summary>
+        private double GetSafeLeft(UIElement element)
+        {
+            double l = Canvas.GetLeft(element);
+            return double.IsNaN(l) ? 0.0 : l;
+        }
+
+        /// <summary>
+        /// Obtiene la posición Top real. Si es NaN (Auto), devuelve 0.
+        /// </summary>
+        private double GetSafeTop(UIElement element)
+        {
+            double t = Canvas.GetTop(element);
+            return double.IsNaN(t) ? 0.0 : t;
+        }
 
         public void AlignSelected(string operation)
         {

@@ -49,7 +49,6 @@ namespace VB6VisualMockupDesigner
             var state = new CanvasState();
             foreach (UIElement child in DesignSurface.Children)
             {
-                // Ignoramos los adornos visuales (Bordes azules, handles, líneas de selección)
                 if (child is FrameworkElement fe && !(child is System.Windows.Shapes.Rectangle) && !(child is Border))
                 {
                     string text = "";
@@ -60,10 +59,15 @@ namespace VB6VisualMockupDesigner
                     state.Controls.Add(new ControlSnapshot
                     {
                         Type = fe.Tag?.ToString() ?? fe.GetType().Name,
-                        Left = Canvas.GetLeft(fe),
-                        Top = Canvas.GetTop(fe),
-                        Width = fe.Width,
-                        Height = fe.Height,
+
+                        // USAMOS LOS HELPERS AQUÍ:
+                        Left = GetSafeLeft(fe),
+                        Top = GetSafeTop(fe),
+
+                        // SANITIZACIÓN TAMBIÉN PARA TAMAÑO:
+                        Width = double.IsNaN(fe.Width) ? fe.ActualWidth : fe.Width,
+                        Height = double.IsNaN(fe.Height) ? fe.ActualHeight : fe.Height,
+
                         Text = text,
                         Tag = fe.Tag?.ToString()
                     });
@@ -75,14 +79,15 @@ namespace VB6VisualMockupDesigner
         private void RestoreState(CanvasState state)
         {
             // 1. Limpiar estado actual
-            ClearSelection(); // Usamos el método de la clase principal
+            ClearSelection();
             DesignSurface.Children.Clear();
-            NotifySelectionChanged();
 
-            // 2. Reconstruir controles desde el snapshot
+            // Re-agregar SelectionRect si es necesario (manejado en ClearCanvas, pero por seguridad notificamos)
+            ControlSelected?.Invoke(this, null);
+
+            // 2. Reconstruir controles
             foreach (var item in state.Controls)
             {
-                // Limpieza de tipos antiguos o corruptos
                 string cleanType = item.Type;
                 if (string.IsNullOrEmpty(cleanType)) continue;
 
@@ -99,8 +104,23 @@ namespace VB6VisualMockupDesigner
 
                     fe.Tag = item.Tag;
 
+                    // Usamos el método base para conectar eventos
+                    // NOTA: Pasamos las coordenadas, pero luego las forzamos abajo para evitar Doble-Snap
                     AddControlToCanvas(newControl, item.Left, item.Top);
+
+                    // --- CORRECCIÓN CRÍTICA ---
+                    // AddControlToCanvas hace SnapToGrid. 
+                    // Al restaurar, queremos la posición EXACTA del historial, no redondearla de nuevo.
+                    Canvas.SetLeft(newControl, item.Left);
+                    Canvas.SetTop(newControl, item.Top);
                 }
+            }
+
+            // Asegurar que el recuadro de selección esté presente (si se borró en el Clear)
+            // (Tu método ClearCanvas ya debería manejar esto, pero no hace daño verificar)
+            if (SelectionRect != null && !DesignSurface.Children.Contains(SelectionRect))
+            {
+                DesignSurface.Children.Add(SelectionRect);
             }
         }
 
@@ -112,13 +132,21 @@ namespace VB6VisualMockupDesigner
         {
             if (_selectedControls.Count == 0) return;
 
-            // 1. Limpiar portapapeles
             DesignerClipboard.Clear();
 
-            // 2. Calcular punto de referencia (Top-Left del grupo seleccionado)
-            // Esto sirve para pegar el grupo manteniendo su forma relativa
-            double minX = _selectedControls.Min(c => Canvas.GetLeft(c));
-            double minY = _selectedControls.Min(c => Canvas.GetTop(c));
+            // === CORRECCIÓN 1: Sanitizar el cálculo del punto mínimo (Ancla del grupo) ===
+            // Si Canvas.GetLeft devuelve NaN, asumimos que es 0.
+            double minX = _selectedControls.Min(c =>
+            {
+                double v = Canvas.GetLeft(c);
+                return double.IsNaN(v) ? 0 : v;
+            });
+
+            double minY = _selectedControls.Min(c =>
+            {
+                double v = Canvas.GetTop(c);
+                return double.IsNaN(v) ? 0 : v;
+            });
 
             foreach (FrameworkElement fe in _selectedControls)
             {
@@ -127,19 +155,27 @@ namespace VB6VisualMockupDesigner
                 else if (fe is TextBox tb) text = tb.Text;
                 else if (fe is TextBlock txt) text = txt.Text;
 
+                // === CORRECCIÓN 2: Obtener coordenadas seguras para el item actual ===
+                double currentL = Canvas.GetLeft(fe);
+                double currentT = Canvas.GetTop(fe);
+
+                if (double.IsNaN(currentL)) currentL = 0;
+                if (double.IsNaN(currentT)) currentT = 0;
+
                 DesignerClipboard.Items.Add(new ClipboardItem
                 {
                     ControlType = fe.Tag?.ToString(),
-                    Width = fe.Width,
-                    Height = fe.Height,
+                    Width = double.IsNaN(fe.Width) ? fe.ActualWidth : fe.Width,
+                    Height = double.IsNaN(fe.Height) ? fe.ActualHeight : fe.Height,
                     ContentText = text,
-                    // Guardamos qué tan lejos está este control del "inicio" del grupo
-                    RelativeLeft = Canvas.GetLeft(fe) - minX,
-                    RelativeTop = Canvas.GetTop(fe) - minY
+
+                    // Ahora la matemática es segura: Numero - Numero = Numero
+                    RelativeLeft = currentL - minX,
+                    RelativeTop = currentT - minY
                 });
             }
 
-            _pasteOffset = 10; // Reiniciar offset para la nueva copia
+            _pasteOffset = 10;
         }
 
         public void CutSelected()
@@ -148,7 +184,7 @@ namespace VB6VisualMockupDesigner
             {
                 CopySelected();
                 SaveUndoSnapshot();
-                DeleteSelectedControl(); // Este método ya maneja borrado múltiple en la otra clase parcial
+                DeleteSelectedControl();
             }
         }
 
@@ -157,11 +193,8 @@ namespace VB6VisualMockupDesigner
             if (DesignerClipboard.IsEmpty) return;
 
             SaveUndoSnapshot();
-
-            // Deseleccionar lo actual para seleccionar lo que vamos a pegar
             ClearSelection();
 
-            // Punto base de pegado (con efecto cascada)
             double baseX = 10 + _pasteOffset;
             double baseY = 10 + _pasteOffset;
 
@@ -177,22 +210,17 @@ namespace VB6VisualMockupDesigner
                     else if (fe is TextBox tb) tb.Text = item.ContentText;
                     else if (fe is TextBlock txt) txt.Text = item.ContentText;
 
-                    // Posición: Base + Posición relativa original
                     double finalX = baseX + item.RelativeLeft;
                     double finalY = baseY + item.RelativeTop;
 
                     AddControlToCanvas(newControl, finalX, finalY);
-
-                    // Añadir a la selección nueva
                     AddToSelection(newControl);
                 }
             }
 
-            // Incrementar offset para el próximo paste
             _pasteOffset += 10;
-
-            // Actualizar visuales (bordes azules) y notificar
             NotifySelectionChanged();
         }
-    }
+    
+}
 }
