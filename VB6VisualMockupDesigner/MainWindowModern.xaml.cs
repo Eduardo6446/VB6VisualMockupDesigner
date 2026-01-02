@@ -603,5 +603,43 @@ namespace VB6VisualMockupDesigner
 
 
         }
+
+
+
+        // ==========================================
+        // LÓGICA DE LA TOOLBAR
+        // ==========================================
+
+        // Helper para ejecutar acciones en la pestaña activa
+        private void ExecuteOnActiveDesigner(Action<DesignerCanvas> action)
+        {
+            if (MainTabControl.SelectedItem is TabItem tab && tab.Content is DesignerCanvas designer)
+            {
+                action(designer);
+            }
+        }
+
+        // 1. UNDO / REDO
+        private void BtnUndo_Click(object sender, RoutedEventArgs e) => ExecuteOnActiveDesigner(d => d.Undo());
+        private void BtnRedo_Click(object sender, RoutedEventArgs e) => ExecuteOnActiveDesigner(d => d.Redo());
+
+        // 2. CLIPBOARD
+        private void BtnCut_Click(object sender, RoutedEventArgs e) => ExecuteOnActiveDesigner(d => d.CutSelected());
+        private void BtnCopy_Click(object sender, RoutedEventArgs e) => ExecuteOnActiveDesigner(d => d.CopySelected());
+        private void BtnPaste_Click(object sender, RoutedEventArgs e) => ExecuteOnActiveDesigner(d => d.Paste());
+        private void BtnDelete_Click(object sender, RoutedEventArgs e) => ExecuteOnActiveDesigner(d => d.DeleteSelectedControl());
+
+        // 3. ALINEACIÓN
+        private void BtnAlignLeft_Click(object sender, RoutedEventArgs e) => ExecuteOnActiveDesigner(d => d.AlignSelected("Left"));
+        private void BtnAlignCenter_Click(object sender, RoutedEventArgs e) => ExecuteOnActiveDesigner(d => d.AlignSelected("Center"));
+        private void BtnAlignRight_Click(object sender, RoutedEventArgs e) => ExecuteOnActiveDesigner(d => d.AlignSelected("Right"));
+
+        private void BtnAlignTop_Click(object sender, RoutedEventArgs e) => ExecuteOnActiveDesigner(d => d.AlignSelected("Top"));
+        private void BtnAlignMiddle_Click(object sender, RoutedEventArgs e) => ExecuteOnActiveDesigner(d => d.AlignSelected("Middle"));
+        private void BtnAlignBottom_Click(object sender, RoutedEventArgs e) => ExecuteOnActiveDesigner(d => d.AlignSelected("Bottom"));
+
+        // 4. TAMAÑO
+        private void BtnSameWidth_Click(object sender, RoutedEventArgs e) => ExecuteOnActiveDesigner(d => d.AlignSelected("SameWidth"));
+        private void BtnSameHeight_Click(object sender, RoutedEventArgs e) => ExecuteOnActiveDesigner(d => d.AlignSelected("SameHeight"));
     }
 }

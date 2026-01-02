@@ -526,5 +526,101 @@ namespace VB6VisualMockupDesigner
             ClearSelection();
             NotifySelectionChanged();
         }
+
+
+        // ==========================================
+        // 7. HERRAMIENTAS DE ALINEACIÓN Y DISTRIBUCIÓN
+        // ==========================================
+
+        public void AlignSelected(string operation)
+        {
+            if (_selectedControls.Count < 2) return;
+
+            SaveUndoSnapshot();
+
+            // Necesitamos una referencia. 
+            // Opción A: El primer seleccionado (Primary).
+            // Opción B: El control que esté más al extremo (ej: más a la izquierda).
+            // Usaremos la lógica de VB6/VS: El último seleccionado suele ser el "Primary", 
+            // pero aquí usaremos el control "Dominante" según la operación (ej: el que está más a la izquierda para AlignLeft).
+
+            switch (operation)
+            {
+                case "Left":
+                    // Alinea todos al borde izquierdo del control que esté más a la izquierda
+                    double minLeft = _selectedControls.Min(c => Canvas.GetLeft(c));
+                    foreach (var ctrl in _selectedControls) Canvas.SetLeft(ctrl, minLeft);
+                    break;
+
+                case "Center":
+                    // Alinea los centros verticales
+                    // Usamos el promedio o el del control principal. Usaremos el del último seleccionado como ancla.
+                    var anchorC = _selectedControls.Last() as FrameworkElement;
+                    double center = Canvas.GetLeft(anchorC) + (anchorC.ActualWidth / 2);
+
+                    foreach (var ctrl in _selectedControls)
+                    {
+                        if (ctrl is FrameworkElement fe)
+                            Canvas.SetLeft(ctrl, center - (fe.ActualWidth / 2));
+                    }
+                    break;
+
+                case "Right":
+                    // Alinea al borde derecho del control que esté más a la derecha
+                    double maxRight = _selectedControls.Max(c => Canvas.GetLeft(c) + (c as FrameworkElement).ActualWidth);
+                    foreach (var ctrl in _selectedControls)
+                    {
+                        if (ctrl is FrameworkElement fe)
+                            Canvas.SetLeft(ctrl, maxRight - fe.ActualWidth);
+                    }
+                    break;
+
+                case "Top":
+                    double minTop = _selectedControls.Min(c => Canvas.GetTop(c));
+                    foreach (var ctrl in _selectedControls) Canvas.SetTop(ctrl, minTop);
+                    break;
+
+                case "Middle":
+                    // Alinea centros horizontales
+                    var anchorM = _selectedControls.Last() as FrameworkElement;
+                    double mid = Canvas.GetTop(anchorM) + (anchorM.ActualHeight / 2);
+                    foreach (var ctrl in _selectedControls)
+                    {
+                        if (ctrl is FrameworkElement fe)
+                            Canvas.SetTop(ctrl, mid - (fe.ActualHeight / 2));
+                    }
+                    break;
+
+                case "Bottom":
+                    double maxBottom = _selectedControls.Max(c => Canvas.GetTop(c) + (c as FrameworkElement).ActualHeight);
+                    foreach (var ctrl in _selectedControls)
+                    {
+                        if (ctrl is FrameworkElement fe)
+                            Canvas.SetTop(ctrl, maxBottom - fe.ActualHeight);
+                    }
+                    break;
+
+                case "SameWidth":
+                    // Ancho del último seleccionado (Primary)
+                    var anchorW = _selectedControls.Last() as FrameworkElement;
+                    foreach (var ctrl in _selectedControls)
+                    {
+                        if (ctrl is FrameworkElement fe) fe.Width = anchorW.ActualWidth;
+                    }
+                    break;
+
+                case "SameHeight":
+                    // Alto del último seleccionado
+                    var anchorH = _selectedControls.Last() as FrameworkElement;
+                    foreach (var ctrl in _selectedControls)
+                    {
+                        if (ctrl is FrameworkElement fe) fe.Height = anchorH.ActualHeight;
+                    }
+                    break;
+            }
+
+            // Actualizar los bordes azules a las nuevas posiciones
+            UpdateSelectionVisuals();
+        }
     }
 }

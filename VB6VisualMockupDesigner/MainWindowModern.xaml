@@ -22,8 +22,6 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     </WindowChrome.WindowChrome>
 
     <Window.Resources>
-
-
         <Style TargetType="Separator">
             <Setter Property="Background" Value="#3E3E42"/>
             <Setter Property="Margin" Value="0,4,0,4"/>
@@ -59,31 +57,30 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                             <ControlTemplate TargetType="MenuItem">
                                 <Grid>
                                     <Border x:Name="Border" Background="{TemplateBinding Background}" 
-                                        BorderBrush="{TemplateBinding BorderBrush}" 
-                                        BorderThickness="{TemplateBinding BorderThickness}" 
-                                        Padding="{TemplateBinding Padding}" 
-                                        SnapsToDevicePixels="True">
+                                            BorderBrush="{TemplateBinding BorderBrush}" 
+                                            BorderThickness="{TemplateBinding BorderThickness}" 
+                                            Padding="{TemplateBinding Padding}" 
+                                            SnapsToDevicePixels="True">
                                         <ContentPresenter ContentSource="Header" 
-                                                      VerticalAlignment="Center" 
-                                                      HorizontalAlignment="Left"
-                                                      RecognizesAccessKey="True"/>
+                                                          VerticalAlignment="Center" 
+                                                          HorizontalAlignment="Left"
+                                                          RecognizesAccessKey="True"/>
                                     </Border>
 
                                     <Popup x:Name="Popup" Placement="Bottom" 
-                                       IsOpen="{TemplateBinding IsSubmenuOpen}" 
-                                       AllowsTransparency="True" 
-                                       Focusable="False" 
-                                       PopupAnimation="Fade">
+                                           IsOpen="{TemplateBinding IsSubmenuOpen}" 
+                                           AllowsTransparency="True" 
+                                           Focusable="False" 
+                                           PopupAnimation="Fade">
                                         <Border x:Name="SubmenuBorder" SnapsToDevicePixels="True" 
-                                            Background="#1E1E1E" 
-                                            BorderBrush="#3E3E42" 
-                                            BorderThickness="1" 
-                                            Padding="2">
+                                                Background="#1E1E1E" 
+                                                BorderBrush="#3E3E42" 
+                                                BorderThickness="1" 
+                                                Padding="2">
                                             <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Cycle"/>
                                         </Border>
                                     </Popup>
                                 </Grid>
-
                                 <ControlTemplate.Triggers>
                                     <Trigger Property="IsHighlighted" Value="True">
                                         <Setter TargetName="Border" Property="Background" Value="#3E3E42"/>
@@ -102,8 +99,8 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                                         <ContentPresenter ContentSource="Icon" Margin="0,0,10,0" Width="16" Height="16"/>
                                         <ContentPresenter ContentSource="Header"/>
                                         <TextBlock Text="{TemplateBinding InputGestureText}" 
-                                               Foreground="#888888" Margin="20,0,0,0" 
-                                               HorizontalAlignment="Right" DockPanel.Dock="Right"/>
+                                                   Foreground="#888888" Margin="20,0,0,0" 
+                                                   HorizontalAlignment="Right" DockPanel.Dock="Right"/>
                                     </DockPanel>
                                 </Border>
                                 <ControlTemplate.Triggers>
@@ -167,7 +164,7 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                         <Grid Background="{TemplateBinding Background}">
                             <Border x:Name="Indicator" Width="2" HorizontalAlignment="Left" Background="Transparent"/>
                             <TextBlock Text="{TemplateBinding Content}" FontFamily="Segoe MDL2 Assets" FontSize="20"
-                                   VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="{TemplateBinding Foreground}"/>
+                                       VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="{TemplateBinding Foreground}"/>
                         </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
@@ -194,7 +191,7 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     <ControlTemplate TargetType="Button">
                         <Border Background="{TemplateBinding Background}" CornerRadius="2">
                             <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="10" 
-                                    Foreground="#CCCCCC" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                       Foreground="#CCCCCC" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
@@ -239,10 +236,45 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <Style x:Key="ToolbarBtnStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#F1F1F1"/>
+            <Setter Property="Width" Value="32"/>
+            <Setter Property="Height" Value="26"/>
+            <Setter Property="Margin" Value="1,0"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="2">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#3E3E42"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="#007ACC"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.4"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="ToolbarSeparator" TargetType="Border">
+            <Setter Property="Width" Value="1"/>
+            <Setter Property="Height" Value="16"/>
+            <Setter Property="Background" Value="#3E3E42"/>
+            <Setter Property="Margin" Value="4,0"/>
+        </Style>
     </Window.Resources>
 
     <Grid x:Name="RootGrid">
-
         <Grid.Style>
             <Style TargetType="Grid">
                 <Style.Triggers>
@@ -253,9 +285,9 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
             </Style>
         </Grid.Style>
 
-
         <Grid.RowDefinitions>
             <RowDefinition Height="32"/>
+            <RowDefinition Height="34"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
@@ -268,29 +300,24 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
             </Grid.ColumnDefinitions>
 
             <Menu Grid.Column="0" Style="{StaticResource TopMenuStyle}" 
-              VerticalAlignment="Center" Margin="5,0,0,0"
-              WindowChrome.IsHitTestVisibleInChrome="True">
+                  VerticalAlignment="Center" Margin="5,0,0,0"
+                  WindowChrome.IsHitTestVisibleInChrome="True">
                 <MenuItem Header="Archivo">
                     <MenuItem Header="Nuevo Proyecto..." Click="BtnNew_Click"/>
                     <MenuItem Header="Abrir..." Click="BtnOpen_Click"/>
-
                     <Separator Background="{StaticResource BorderColor}"/>
-
                     <MenuItem Header="Guardar" InputGestureText="Ctrl+S" Click="MnuSave_Click"/>
                     <MenuItem Header="Guardar como..." Click="MnuSaveAs_Click"/>
-
                     <MenuItem Header="Exportar a Imagen" Click="MnuExportPng_Click"/>
                     <Separator Background="{StaticResource BorderColor}"/>
-
                     <MenuItem Header="Cerrar Pestaña" Click="BtnCloseProject_Click"/>
                     <MenuItem Header="Salir" Click="BtnClose_Click"/>
                 </MenuItem>
                 <MenuItem Header="Editar">
-                    <MenuItem Header="Deshacer"/>
-                    <MenuItem Header="Rehacer"/>
+                    <MenuItem Header="Deshacer" Click="BtnUndo_Click"/>
+                    <MenuItem Header="Rehacer" Click="BtnRedo_Click"/>
                 </MenuItem>
                 <MenuItem Header="Ver">
-
                     <MenuItem Header="Propiedades" Click="MnuShowProperties_Click"/>
                     <MenuItem Header="Vista Auxiliar" Click="MnuShowAux_Click"/>
                 </MenuItem>
@@ -300,12 +327,12 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
             </Menu>
 
             <TextBlock Grid.Column="1" Text="VB6 Visual Mockup Designer" 
-                   Foreground="{StaticResource MutedTextColor}" FontSize="12"
-                   VerticalAlignment="Center" HorizontalAlignment="Center" 
-                   IsHitTestVisible="False"/>
+                       Foreground="{StaticResource MutedTextColor}" FontSize="12"
+                       VerticalAlignment="Center" HorizontalAlignment="Center" 
+                       IsHitTestVisible="False"/>
 
             <StackPanel Grid.Column="2" Orientation="Horizontal"
-                    WindowChrome.IsHitTestVisibleInChrome="True">
+                        WindowChrome.IsHitTestVisibleInChrome="True">
                 <Button Content="&#xE921;" Style="{StaticResource WindowControlButtonStyle}" Click="BtnMinimize_Click"/>
                 <Button Content="&#xE922;" Style="{StaticResource WindowControlButtonStyle}" Click="BtnMaximize_Click" x:Name="BtnMaximize"/>
                 <Button Content="&#xE8BB;" Style="{StaticResource CloseButtonStyle}" Click="BtnClose_Click"/>
@@ -314,8 +341,76 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
 
         <Border Grid.Row="0" VerticalAlignment="Bottom" Height="1" Background="{StaticResource BorderColor}"/>
 
+        <Border Grid.Row="1" Background="{StaticResource BgColor}" BorderBrush="#3E3E42" BorderThickness="0,0,0,1">
+            <StackPanel Orientation="Horizontal" Margin="5,0" VerticalAlignment="Center">
 
-        <Grid Grid.Row="1">
+                <Button Style="{StaticResource ToolbarBtnStyle}" ToolTip="Guardar (Ctrl+S)" Click="MnuSave_Click">
+                    <TextBlock Text="&#xE74E;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
+                </Button>
+                <Button Style="{StaticResource ToolbarBtnStyle}" ToolTip="Guardar todo">
+                    <TextBlock Text="&#xE78C;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
+                </Button>
+
+                <Border Style="{StaticResource ToolbarSeparator}"/>
+
+                <Button Style="{StaticResource ToolbarBtnStyle}" ToolTip="Deshacer (Ctrl+Z)" Click="BtnUndo_Click">
+                    <TextBlock Text="&#xE7A7;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
+                </Button>
+                <Button Style="{StaticResource ToolbarBtnStyle}" ToolTip="Rehacer (Ctrl+Y)" Click="BtnRedo_Click">
+                    <TextBlock Text="&#xE7A6;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
+                </Button>
+
+                <Border Style="{StaticResource ToolbarSeparator}"/>
+
+                <Button Style="{StaticResource ToolbarBtnStyle}" ToolTip="Cortar (Ctrl+X)" Click="BtnCut_Click">
+                    <TextBlock Text="&#xE8C6;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
+                </Button>
+                <Button Style="{StaticResource ToolbarBtnStyle}" ToolTip="Copiar (Ctrl+C)" Click="BtnCopy_Click">
+                    <TextBlock Text="&#xE8C8;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
+                </Button>
+                <Button Style="{StaticResource ToolbarBtnStyle}" ToolTip="Pegar (Ctrl+V)" Click="BtnPaste_Click">
+                    <TextBlock Text="&#xE77F;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
+                </Button>
+                <Button Style="{StaticResource ToolbarBtnStyle}" ToolTip="Eliminar (Supr)" Click="BtnDelete_Click">
+                    <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
+                </Button>
+
+                <Border Style="{StaticResource ToolbarSeparator}"/>
+
+                <Button Style="{StaticResource ToolbarBtnStyle}" ToolTip="Alinear a la Izquierda" Click="BtnAlignLeft_Click">
+                    <Path Data="M2,2 H4 V14 H2 Z M6,4 H14 V7 H6 Z M6,9 H12 V12 H6 Z" Fill="#F1F1F1" Width="14" Height="14" Stretch="Uniform"/>
+                </Button>
+                <Button Style="{StaticResource ToolbarBtnStyle}" ToolTip="Alinear al Centro" Click="BtnAlignCenter_Click">
+                    <Path Data="M7,2 H9 V14 H7 Z M3,4 H13 V7 H3 Z M4,9 H12 V12 H4 Z" Fill="#F1F1F1" Width="14" Height="14" Stretch="Uniform"/>
+                </Button>
+                <Button Style="{StaticResource ToolbarBtnStyle}" ToolTip="Alinear a la Derecha" Click="BtnAlignRight_Click">
+                    <Path Data="M12,2 H14 V14 H12 Z M2,4 H10 V7 H2 Z M4,9 H10 V12 H4 Z" Fill="#F1F1F1" Width="14" Height="14" Stretch="Uniform"/>
+                </Button>
+
+                <Border Style="{StaticResource ToolbarSeparator}"/>
+
+                <Button Style="{StaticResource ToolbarBtnStyle}" ToolTip="Alinear Arriba" Click="BtnAlignTop_Click">
+                    <Path Data="M2,2 V4 H14 V2 Z M4,6 V14 H7 V6 Z M9,6 V12 H12 V6 Z" Fill="#F1F1F1" Width="14" Height="14" Stretch="Uniform"/>
+                </Button>
+                <Button Style="{StaticResource ToolbarBtnStyle}" ToolTip="Alinear al Medio" Click="BtnAlignMiddle_Click">
+                    <Path Data="M2,7 V9 H14 V7 Z M4,2 V14 H7 V2 Z M9,4 V12 H12 V4 Z" Fill="#F1F1F1" Width="14" Height="14" Stretch="Uniform"/>
+                </Button>
+                <Button Style="{StaticResource ToolbarBtnStyle}" ToolTip="Alinear Abajo" Click="BtnAlignBottom_Click">
+                    <Path Data="M2,12 V14 H14 V12 Z M4,2 V10 H7 V2 Z M9,4 V10 H12 V4 Z" Fill="#F1F1F1" Width="14" Height="14" Stretch="Uniform"/>
+                </Button>
+
+                <Border Style="{StaticResource ToolbarSeparator}"/>
+
+                <Button Style="{StaticResource ToolbarBtnStyle}" ToolTip="Igualar Ancho" Click="BtnSameWidth_Click">
+                    <Path Data="M2,4 H6 V12 H2 Z M9,2 H13 V14 H9 Z M7,8 L9,8 M6,8 L4,8" Stroke="#F1F1F1" StrokeThickness="1"/>
+                </Button>
+                <Button Style="{StaticResource ToolbarBtnStyle}" ToolTip="Igualar Alto" Click="BtnSameHeight_Click">
+                    <Path Data="M2,9 V13 H14 V9 Z M4,2 V6 H12 V2 Z" Stroke="#F1F1F1" StrokeThickness="1"/>
+                </Button>
+            </StackPanel>
+        </Border>
+
+        <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="50"/>
                 <ColumnDefinition Width="Auto"/>
@@ -406,7 +501,8 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
 
             </Grid>
         </Grid>
-        <StatusBar Grid.Row="2" Background="#007ACC" Foreground="White" Padding="10,0">
+
+        <StatusBar Grid.Row="3" Background="#007ACC" Foreground="White" Padding="10,0">
             <StatusBarItem>
                 <TextBlock Text="Listo"/>
             </StatusBarItem>
