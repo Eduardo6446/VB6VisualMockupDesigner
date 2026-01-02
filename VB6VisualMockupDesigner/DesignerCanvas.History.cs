@@ -20,13 +20,8 @@ namespace VB6VisualMockupDesigner
 
         public void SaveUndoSnapshot()
         {
-            // 1. Crear una foto del estado actual
             var snapshot = GetCurrentState();
-
-            // 2. Guardar en la pila de deshacer
             _undoStack.Push(snapshot);
-
-            // 3. Limpiar la pila de rehacer (si haces algo nuevo, rompes la línea temporal futura)
             _redoStack.Clear();
         }
 
@@ -34,13 +29,8 @@ namespace VB6VisualMockupDesigner
         {
             if (_undoStack.Count == 0) return;
 
-            // 1. Guardar estado actual en Redo antes de volver atrás
             _redoStack.Push(GetCurrentState());
-
-            // 2. Sacar el último estado guardado
             var previousState = _undoStack.Pop();
-
-            // 3. Restaurar
             RestoreState(previousState);
         }
 
@@ -48,13 +38,8 @@ namespace VB6VisualMockupDesigner
         {
             if (_redoStack.Count == 0) return;
 
-            // 1. Guardar estado actual en Undo
             _undoStack.Push(GetCurrentState());
-
-            // 2. Sacar el estado futuro
             var nextState = _redoStack.Pop();
-
-            // 3. Restaurar
             RestoreState(nextState);
         }
 
@@ -64,9 +49,9 @@ namespace VB6VisualMockupDesigner
             var state = new CanvasState();
             foreach (UIElement child in DesignSurface.Children)
             {
-                if (child is FrameworkElement fe && !(child is Border)) // Ignorar selección visual
+                // Ignoramos los adornos visuales (Bordes azules, handles, líneas de selección)
+                if (child is FrameworkElement fe && !(child is System.Windows.Shapes.Rectangle) && !(child is Border))
                 {
-                    // Guardar propiedades
                     string text = "";
                     if (fe is ContentControl cc) text = cc.Content?.ToString();
                     else if (fe is TextBox tb) text = tb.Text;
@@ -74,7 +59,7 @@ namespace VB6VisualMockupDesigner
 
                     state.Controls.Add(new ControlSnapshot
                     {
-                        Type = fe.Tag?.ToString() ?? fe.GetType().Name, // Usamos el Tag puesto por la Factory
+                        Type = fe.Tag?.ToString() ?? fe.GetType().Name,
                         Left = Canvas.GetLeft(fe),
                         Top = Canvas.GetTop(fe),
                         Width = fe.Width,
@@ -89,22 +74,20 @@ namespace VB6VisualMockupDesigner
 
         private void RestoreState(CanvasState state)
         {
-            // 1. Limpiar todo (menos selección si quieres, pero mejor limpiar todo)
-            ShowSelectionIndicator(null);
-            _selectedControl = null;
+            // 1. Limpiar estado actual
+            ClearSelection(); // Usamos el método de la clase principal
             DesignSurface.Children.Clear();
+            NotifySelectionChanged();
 
-            // Avisar que no hay selección
-            ControlSelected?.Invoke(this, null);
-
-            // 2. Reconstruir controles
+            // 2. Reconstruir controles desde el snapshot
             foreach (var item in state.Controls)
             {
-                // Limpiar el tipo si viene sucio (ej: "Array: 1")
+                // Limpieza de tipos antiguos o corruptos
                 string cleanType = item.Type;
-                if (cleanType.StartsWith("Array")) cleanType = "PictureBox"; // Fallback simple o lógica compleja
+                if (string.IsNullOrEmpty(cleanType)) continue;
 
                 UIElement newControl = RetroControlFactory.Create(cleanType);
+
                 if (newControl is FrameworkElement fe)
                 {
                     fe.Width = item.Width;
@@ -114,7 +97,7 @@ namespace VB6VisualMockupDesigner
                     else if (fe is TextBox tb) tb.Text = item.Text;
                     else if (fe is TextBlock txt) txt.Text = item.Text;
 
-                    fe.Tag = item.Tag; // Restaurar Tag original
+                    fe.Tag = item.Tag;
 
                     AddControlToCanvas(newControl, item.Left, item.Top);
                 }
@@ -127,27 +110,45 @@ namespace VB6VisualMockupDesigner
 
         public void CopySelected()
         {
-            if (_selectedControl is FrameworkElement fe)
+            if (_selectedControls.Count == 0) return;
+
+            // 1. Limpiar portapapeles
+            DesignerClipboard.Clear();
+
+            // 2. Calcular punto de referencia (Top-Left del grupo seleccionado)
+            // Esto sirve para pegar el grupo manteniendo su forma relativa
+            double minX = _selectedControls.Min(c => Canvas.GetLeft(c));
+            double minY = _selectedControls.Min(c => Canvas.GetTop(c));
+
+            foreach (FrameworkElement fe in _selectedControls)
             {
-                DesignerClipboard.ControlType = fe.Tag?.ToString(); // Importante: Factory pone el Tag
-                DesignerClipboard.Width = fe.Width;
-                DesignerClipboard.Height = fe.Height;
+                string text = "";
+                if (fe is ContentControl cc) text = cc.Content?.ToString();
+                else if (fe is TextBox tb) text = tb.Text;
+                else if (fe is TextBlock txt) text = txt.Text;
 
-                if (fe is ContentControl cc) DesignerClipboard.ContentText = cc.Content?.ToString();
-                else if (fe is TextBox tb) DesignerClipboard.ContentText = tb.Text;
-                else if (fe is TextBlock txt) DesignerClipboard.ContentText = txt.Text;
-
-                _pasteOffset = 10; // Resetear offset
+                DesignerClipboard.Items.Add(new ClipboardItem
+                {
+                    ControlType = fe.Tag?.ToString(),
+                    Width = fe.Width,
+                    Height = fe.Height,
+                    ContentText = text,
+                    // Guardamos qué tan lejos está este control del "inicio" del grupo
+                    RelativeLeft = Canvas.GetLeft(fe) - minX,
+                    RelativeTop = Canvas.GetTop(fe) - minY
+                });
             }
+
+            _pasteOffset = 10; // Reiniciar offset para la nueva copia
         }
 
         public void CutSelected()
         {
-            if (_selectedControl != null)
+            if (_selectedControls.Count > 0)
             {
                 CopySelected();
-                SaveUndoSnapshot(); // Guardar historia antes de borrar
-                DeleteSelectedControl();
+                SaveUndoSnapshot();
+                DeleteSelectedControl(); // Este método ya maneja borrado múltiple en la otra clase parcial
             }
         }
 
@@ -155,30 +156,43 @@ namespace VB6VisualMockupDesigner
         {
             if (DesignerClipboard.IsEmpty) return;
 
-            SaveUndoSnapshot(); // Guardar historia antes de agregar
+            SaveUndoSnapshot();
 
-            UIElement newControl = RetroControlFactory.Create(DesignerClipboard.ControlType);
-            if (newControl is FrameworkElement fe)
+            // Deseleccionar lo actual para seleccionar lo que vamos a pegar
+            ClearSelection();
+
+            // Punto base de pegado (con efecto cascada)
+            double baseX = 10 + _pasteOffset;
+            double baseY = 10 + _pasteOffset;
+
+            foreach (var item in DesignerClipboard.Items)
             {
-                fe.Width = DesignerClipboard.Width;
-                fe.Height = DesignerClipboard.Height;
+                UIElement newControl = RetroControlFactory.Create(item.ControlType);
+                if (newControl is FrameworkElement fe)
+                {
+                    fe.Width = item.Width;
+                    fe.Height = item.Height;
 
-                if (fe is ContentControl cc) cc.Content = DesignerClipboard.ContentText;
-                else if (fe is TextBox tb) tb.Text = DesignerClipboard.ContentText;
-                else if (fe is TextBlock txt) txt.Text = DesignerClipboard.ContentText;
+                    if (fe is ContentControl cc) cc.Content = item.ContentText;
+                    else if (fe is TextBox tb) tb.Text = item.ContentText;
+                    else if (fe is TextBlock txt) txt.Text = item.ContentText;
 
-                // Calcular posición: Intentar pegar en el centro o con offset
-                double x = 10 + _pasteOffset;
-                double y = 10 + _pasteOffset;
-                _pasteOffset += 10; // Incrementar para el siguiente paste
+                    // Posición: Base + Posición relativa original
+                    double finalX = baseX + item.RelativeLeft;
+                    double finalY = baseY + item.RelativeTop;
 
-                AddControlToCanvas(newControl, x, y);
+                    AddControlToCanvas(newControl, finalX, finalY);
 
-                // Seleccionar lo nuevo
-                ShowSelectionIndicator(newControl);
-                _selectedControl = newControl;
-                ControlSelected?.Invoke(this, newControl as FrameworkElement);
+                    // Añadir a la selección nueva
+                    AddToSelection(newControl);
+                }
             }
+
+            // Incrementar offset para el próximo paste
+            _pasteOffset += 10;
+
+            // Actualizar visuales (bordes azules) y notificar
+            NotifySelectionChanged();
         }
     }
 }

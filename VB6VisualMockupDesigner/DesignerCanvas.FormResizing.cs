@@ -8,8 +8,9 @@ namespace VB6VisualMockupDesigner
     // PARTIAL CLASS: Manejo de Redimensión del Formulario Principal
     public partial class DesignerCanvas
     {
+        // Variables específicas para el Formulario (Renombradas para no chocar con los Controles)
         private bool _isResizingForm = false;
-        private Point _resizeClickStart;
+        private Point _formResizeClickStart;
         private double _initialFormWidth;
         private double _initialFormHeight;
 
@@ -17,9 +18,13 @@ namespace VB6VisualMockupDesigner
         {
             var grip = sender as UIElement;
             _isResizingForm = true;
-            _resizeClickStart = e.GetPosition(this);
+
+            // Usamos 'this' para obtener la posición relativa al Canvas general
+            _formResizeClickStart = e.GetPosition(this);
+
             _initialFormWidth = WindowResizerGrid.Width;
             _initialFormHeight = WindowResizerGrid.Height;
+
             grip.CaptureMouse();
             e.Handled = true;
         }
@@ -29,23 +34,27 @@ namespace VB6VisualMockupDesigner
             if (_isResizingForm)
             {
                 Point currentPos = e.GetPosition(this);
-                double deltaX = currentPos.X - _resizeClickStart.X;
-                double deltaY = currentPos.Y - _resizeClickStart.Y;
 
+                // Calcular diferencia
+                double deltaX = currentPos.X - _formResizeClickStart.X;
+                double deltaY = currentPos.Y - _formResizeClickStart.Y;
+
+                // Calcular nuevo tamaño aplicando SnapToGrid (Método definido en la otra parte de la clase)
                 double newWidth = SnapToGrid(_initialFormWidth + deltaX);
                 double newHeight = SnapToGrid(_initialFormHeight + deltaY);
 
+                // Restricciones mínimas (para no desaparecer el form)
                 if (newWidth < 100) newWidth = 100;
                 if (newHeight < 100) newHeight = 100;
 
-                // 1. Redimensionar contenedor padre
+                // 1. Redimensionar contenedor padre (Grid principal del mock)
                 if (WindowResizerGrid != null)
                 {
                     WindowResizerGrid.Width = newWidth;
                     WindowResizerGrid.Height = newHeight;
                 }
 
-                // 2. Sincronizar el borde visual (Fuerza Bruta para arreglar bug visual)
+                // 2. Sincronizar el borde visual (El estilo "Retro")
                 if (RetroFormContainer != null)
                 {
                     RetroFormContainer.Width = newWidth;
@@ -63,6 +72,7 @@ namespace VB6VisualMockupDesigner
             }
         }
 
+        // Método público para establecer dimensiones desde fuera (ej: al cargar un archivo .frm)
         public void SetFormDimensions(double width, double height)
         {
             if (width < 100) width = 100;
@@ -74,7 +84,7 @@ namespace VB6VisualMockupDesigner
                 WindowResizerGrid.Width = width;
                 WindowResizerGrid.Height = height;
 
-                // Centrar en lienzo
+                // Centrar el formulario en el lienzo grande
                 if (DesignGrid != null)
                 {
                     double l = (DesignGrid.Width - width) / 2;

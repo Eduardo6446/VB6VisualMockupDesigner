@@ -11,62 +11,96 @@ namespace VB6VisualMockupDesigner
     // PARTIAL CLASS: Manejo de Interacción con Controles
     public partial class DesignerCanvas
     {
+        // ==========================================
+        // 1. VARIABLES DE ESTADO Y COLECCIONES
+        // ==========================================
 
+        private bool _isSelectingArea = false;
+        private Point _areaStartPoint;
 
-        // Variables para guardar el estado inicial del control al empezar a redimensionar
-        private double _initSelLeft;
-        private double _initSelTop;
-        private double _initSelWidth;
-        private double _initSelHeight;
-
+        private readonly HashSet<UIElement> _selectedControls = new HashSet<UIElement>();
+        private Dictionary<UIElement, FrameworkElement> _selectionAdorners = new Dictionary<UIElement, FrameworkElement>();
+        private Dictionary<UIElement, Point> _initialPositions = new Dictionary<UIElement, Point>();
 
         private bool _isDragging = false;
-        private Point _clickOffset;
-        private UIElement _selectedControl;
-        private Border _selectionBorder;
+        private Point _dragStartPoint;
 
-        // Manejo de Redimensión de Controles
+        // Variables de Redimensión
+        private List<Rectangle> _resizeHandles = new List<Rectangle>();
+        private Point _resizeClickStart;
+
+        // Estado inicial para redimensión
+        private double _initSelLeft, _initSelTop, _initSelWidth, _initSelHeight;
+
         private enum ResizeDirection { None, TopLeft, Top, TopRight, Right, BottomRight, Bottom, BottomLeft, Left }
         private ResizeDirection _currentResizeDir = ResizeDirection.None;
-        private List<Rectangle> _resizeHandles = new List<Rectangle>();
 
-        // EVENTOS DE CONTROL (Arrastre y Selección)
+        private UIElement _primarySelection => _selectedControls.Count == 1 ? _selectedControls.First() : null;
+
+        // ==========================================
+        // 2. EVENTOS DEL MOUSE (SELECCIÓN Y ARRASTRE)
+        // ==========================================
+
         private void Control_PreviewMouseDown(object sender, MouseButtonEventArgs e)
         {
-            SaveUndoSnapshot();
-
             var control = sender as UIElement;
-            _selectedControl = control;
+            if (control == null) return;
+
+            bool isCtrlPressed = (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control;
+
+            if (isCtrlPressed)
+            {
+                ToggleSelection(control);
+            }
+            else
+            {
+                if (!_selectedControls.Contains(control))
+                {
+                    ClearSelection();
+                    AddToSelection(control);
+                }
+            }
+
             _isDragging = true;
-            _clickOffset = e.GetPosition(control);
+            _dragStartPoint = e.GetPosition(DesignSurface);
+
+            _initialPositions.Clear();
+            foreach (var item in _selectedControls)
+            {
+                _initialPositions[item] = new Point(Canvas.GetLeft(item), Canvas.GetTop(item));
+            }
+
             control.CaptureMouse();
-            ShowSelectionIndicator(control);
             e.Handled = true;
-            ControlSelected?.Invoke(this, control as FrameworkElement);
+            NotifySelectionChanged();
         }
 
         private void Control_PreviewMouseMove(object sender, MouseEventArgs e)
         {
-            if (_isDragging && _selectedControl != null)
+            if (_isDragging && _selectedControls.Count > 0)
             {
-                Point currentPos = e.GetPosition(DesignSurface);
-                double newLeft = SnapToGrid(currentPos.X - _clickOffset.X);
-                double newTop = SnapToGrid(currentPos.Y - _clickOffset.Y);
+                Point currentMousePos = e.GetPosition(DesignSurface);
 
-                // Límites
-                var fe = _selectedControl as FrameworkElement;
-                double maxLeft = DesignSurface.ActualWidth - fe.ActualWidth;
-                double maxTop = DesignSurface.ActualHeight - fe.ActualHeight;
+                double rawDeltaX = currentMousePos.X - _dragStartPoint.X;
+                double rawDeltaY = currentMousePos.Y - _dragStartPoint.Y;
+                double snapDeltaX = SnapToGrid(rawDeltaX);
+                double snapDeltaY = SnapToGrid(rawDeltaY);
 
-                if (newLeft < 0) newLeft = 0;
-                if (newTop < 0) newTop = 0;
-                if (maxLeft > 0 && newLeft > maxLeft) newLeft = maxLeft;
-                if (maxTop > 0 && newTop > maxTop) newTop = maxTop;
+                if (Math.Abs(snapDeltaX) < 1 && Math.Abs(snapDeltaY) < 1) return;
 
-                Canvas.SetLeft(_selectedControl, newLeft);
-                Canvas.SetTop(_selectedControl, newTop);
+                foreach (var control in _selectedControls)
+                {
+                    if (_initialPositions.TryGetValue(control, out Point startPos))
+                    {
+                        double newLeft = Math.Max(0, startPos.X + snapDeltaX);
+                        double newTop = Math.Max(0, startPos.Y + snapDeltaY);
 
-                ShowSelectionIndicator(_selectedControl); // Actualizar handles
+                        Canvas.SetLeft(control, newLeft);
+                        Canvas.SetTop(control, newTop);
+                    }
+                }
+
+                UpdateSelectionVisuals();
             }
         }
 
@@ -75,131 +109,272 @@ namespace VB6VisualMockupDesigner
             if (_isDragging)
             {
                 _isDragging = false;
-                if (_selectedControl != null) _selectedControl.ReleaseMouseCapture();
+                var control = sender as UIElement;
+                control?.ReleaseMouseCapture();
             }
         }
 
         private void DesignSurface_MouseDown(object sender, MouseButtonEventArgs e)
         {
-            ShowSelectionIndicator(null);
-            _selectedControl = null;
-            ControlSelected?.Invoke(this, null);
+            // Si hacemos clic directo en el fondo
+            if (e.Source == DesignSurface)
+            {
+                ClearSelection();
+                NotifySelectionChanged();
+
+                _isSelectingArea = true;
+                _areaStartPoint = e.GetPosition(DesignSurface);
+
+                Canvas.SetLeft(SelectionRect, _areaStartPoint.X);
+                Canvas.SetTop(SelectionRect, _areaStartPoint.Y);
+                SelectionRect.Width = 0;
+                SelectionRect.Height = 0;
+                SelectionRect.Visibility = Visibility.Visible;
+
+                DesignSurface.CaptureMouse();
+                e.Handled = true;
+            }
         }
 
-        // LÓGICA DE HANDLES (Los 8 cuadritos)
-        private void ShowSelectionIndicator(UIElement control)
+        private void DesignSurface_MouseMove(object sender, MouseEventArgs e)
         {
-            // CASO 1: Deseleccionar (Borrar todo)
-            if (control == null)
+            if (_isSelectingArea)
             {
-                if (_selectionBorder != null) DesignSurface.Children.Remove(_selectionBorder);
-                _selectionBorder = null;
-                foreach (var r in _resizeHandles) DesignSurface.Children.Remove(r);
-                _resizeHandles.Clear();
-                return;
+                Point currentPos = e.GetPosition(DesignSurface);
+
+                double x = Math.Min(currentPos.X, _areaStartPoint.X);
+                double y = Math.Min(currentPos.Y, _areaStartPoint.Y);
+                double w = Math.Abs(currentPos.X - _areaStartPoint.X);
+                double h = Math.Abs(currentPos.Y - _areaStartPoint.Y);
+
+                Canvas.SetLeft(SelectionRect, x);
+                Canvas.SetTop(SelectionRect, y);
+                SelectionRect.Width = w;
+                SelectionRect.Height = h;
+            }
+        }
+
+        private void DesignSurface_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            if (_isSelectingArea)
+            {
+                _isSelectingArea = false;
+                DesignSurface.ReleaseMouseCapture();
+                SelectionRect.Visibility = Visibility.Collapsed;
+
+                // --- CORRECCIÓN CRÍTICA AQUÍ ---
+                double rectL = Canvas.GetLeft(SelectionRect);
+                double rectT = Canvas.GetTop(SelectionRect);
+                Rect selectionArea = new Rect(rectL, rectT, SelectionRect.Width, SelectionRect.Height);
+
+                // 1. Usamos una lista temporal para guardar lo que encontramos
+                // No podemos llamar a AddToSelection dentro del bucle de Children porque modificaría la colección
+                var hits = new List<UIElement>();
+
+                foreach (UIElement child in DesignSurface.Children)
+                {
+                    // Ignoramos el propio cuadro de selección y los adornos (bordes, handles)
+                    if (child == SelectionRect || child is Border || (child is Rectangle && child != SelectionRect)) continue;
+
+                    if (child is FrameworkElement fe)
+                    {
+                        double childL = Canvas.GetLeft(fe);
+                        double childT = Canvas.GetTop(fe);
+                        Rect childRect = new Rect(childL, childT, fe.ActualWidth, fe.ActualHeight);
+
+                        if (selectionArea.IntersectsWith(childRect))
+                        {
+                            hits.Add(fe);
+                        }
+                    }
+                }
+
+                // 2. Ahora sí aplicamos la selección (fuera del bucle de Children)
+                foreach (var hit in hits)
+                {
+                    AddToSelection(hit);
+                }
+
+                if (hits.Count > 0) NotifySelectionChanged();
+            }
+        }
+
+
+        // ==========================================
+        // 3. GESTIÓN DE LA SELECCIÓN
+        // ==========================================
+
+        private void AddToSelection(UIElement control)
+        {
+            if (_selectedControls.Add(control)) UpdateSelectionVisuals();
+        }
+
+        private void RemoveFromSelection(UIElement control)
+        {
+            if (_selectedControls.Remove(control)) UpdateSelectionVisuals();
+        }
+
+        private void ToggleSelection(UIElement control)
+        {
+            if (_selectedControls.Contains(control)) RemoveFromSelection(control);
+            else AddToSelection(control);
+        }
+
+        private void ClearSelection()
+        {
+            _selectedControls.Clear();
+            UpdateSelectionVisuals();
+        }
+
+        private void NotifySelectionChanged()
+        {
+            if (_selectedControls.Count == 1)
+                ControlSelected?.Invoke(this, _selectedControls.First() as FrameworkElement);
+            else
+                ControlSelected?.Invoke(this, null);
+        }
+
+        // ==========================================
+        // 4. VISUALES (BORDES Y HANDLES)
+        // ==========================================
+
+        private void UpdateSelectionVisuals()
+        {
+            // A) Actualizar Bordes Azules
+            // Usamos .ToList() para evitar excepción al modificar el diccionario mientras iteramos claves
+            var adornersToRemove = _selectionAdorners.Keys
+                                    .Where(k => !_selectedControls.Contains(k))
+                                    .ToList();
+
+            foreach (var ctrl in adornersToRemove)
+            {
+                if (_selectionAdorners.ContainsKey(ctrl))
+                {
+                    DesignSurface.Children.Remove(_selectionAdorners[ctrl]);
+                    _selectionAdorners.Remove(ctrl);
+                }
             }
 
-            // Datos del control actual
-            var item = control as FrameworkElement;
+            foreach (var control in _selectedControls)
+            {
+                var item = control as FrameworkElement;
+                if (item == null) continue;
+
+                if (!_selectionAdorners.ContainsKey(control))
+                {
+                    var border = new Border
+                    {
+                        BorderBrush = Brushes.Blue,
+                        BorderThickness = new Thickness(1),
+                        IsHitTestVisible = false
+                    };
+                    DesignSurface.Children.Add(border);
+                    _selectionAdorners[control] = border;
+                }
+
+                var visualBorder = _selectionAdorners[control];
+                visualBorder.Width = item.ActualWidth + 4;
+                visualBorder.Height = item.ActualHeight + 4;
+                Canvas.SetLeft(visualBorder, Canvas.GetLeft(item) - 2);
+                Canvas.SetTop(visualBorder, Canvas.GetTop(item) - 2);
+            }
+
+            // B) Actualizar Handles de Redimensión
+            if (_selectedControls.Count == 1)
+            {
+                var item = _primarySelection as FrameworkElement;
+                if (_resizeHandles.Count == 0) CreateResizeHandles();
+                UpdateHandlePositions(item);
+            }
+            else
+            {
+                foreach (var h in _resizeHandles) DesignSurface.Children.Remove(h);
+                _resizeHandles.Clear();
+            }
+        }
+
+        private void CreateResizeHandles()
+        {
+            void AddHandle(ResizeDirection dir, Cursor cursor)
+            {
+                var rect = new Rectangle
+                {
+                    Width = 7,
+                    Height = 7,
+                    Fill = Brushes.White,
+                    Stroke = Brushes.Black,
+                    StrokeThickness = 1,
+                    Cursor = cursor,
+                    Tag = dir
+                };
+
+                rect.MouseLeftButtonDown += Handle_MouseDown;
+                rect.MouseLeftButtonUp += Handle_MouseUp;
+                rect.MouseMove += Handle_MouseMove;
+
+                DesignSurface.Children.Add(rect);
+                _resizeHandles.Add(rect);
+            }
+
+            AddHandle(ResizeDirection.TopLeft, Cursors.SizeNWSE);
+            AddHandle(ResizeDirection.Top, Cursors.SizeNS);
+            AddHandle(ResizeDirection.TopRight, Cursors.SizeNESW);
+            AddHandle(ResizeDirection.Right, Cursors.SizeWE);
+            AddHandle(ResizeDirection.BottomRight, Cursors.SizeNWSE);
+            AddHandle(ResizeDirection.Bottom, Cursors.SizeNS);
+            AddHandle(ResizeDirection.BottomLeft, Cursors.SizeNESW);
+            AddHandle(ResizeDirection.Left, Cursors.SizeWE);
+        }
+
+        private void UpdateHandlePositions(FrameworkElement item)
+        {
+            if (item == null || _resizeHandles.Count < 8) return;
+
             double l = Canvas.GetLeft(item);
             double t = Canvas.GetTop(item);
-            double w = item.Width;  // Usamos Width/Height explícitos
-            double h = item.Height;
+            double w = item.ActualWidth;
+            double h = item.ActualHeight;
 
-            // CASO 2: Crear visuales (Solo si no existen)
-            if (_selectionBorder == null)
+            void MoveHandle(int index, double x, double y)
             {
-                // Crear Borde
-                _selectionBorder = new Border
-                {
-                    BorderBrush = Brushes.Gray,
-                    BorderThickness = new Thickness(1),
-                    IsHitTestVisible = false
-                };
-                DesignSurface.Children.Add(_selectionBorder);
-
-                // Crear los 8 Handles (Solo se crean una vez)
-                CreateHandle(ResizeDirection.TopLeft, Cursors.SizeNWSE);
-                CreateHandle(ResizeDirection.Top, Cursors.SizeNS);
-                CreateHandle(ResizeDirection.TopRight, Cursors.SizeNESW);
-                CreateHandle(ResizeDirection.Right, Cursors.SizeWE);
-                CreateHandle(ResizeDirection.BottomRight, Cursors.SizeNWSE);
-                CreateHandle(ResizeDirection.Bottom, Cursors.SizeNS);
-                CreateHandle(ResizeDirection.BottomLeft, Cursors.SizeNESW);
-                CreateHandle(ResizeDirection.Left, Cursors.SizeWE);
-            }
-
-            // CASO 3: ACTUALIZAR POSICIONES (Se ejecuta siempre al mover/redimensionar)
-
-            // Actualizar tamaño y posición del borde
-            _selectionBorder.Width = w + 6;
-            _selectionBorder.Height = h + 6;
-            Canvas.SetLeft(_selectionBorder, l - 3);
-            Canvas.SetTop(_selectionBorder, t - 3);
-
-            // Actualizar posición de cada handle existente
-            foreach (var rect in _resizeHandles)
-            {
-                ResizeDirection dir = (ResizeDirection)rect.Tag;
-                double x = 0, y = 0;
-
-                switch (dir)
-                {
-                    case ResizeDirection.TopLeft: x = l - 3; y = t - 3; break;
-                    case ResizeDirection.Top: x = l + w / 2 - 3; y = t - 3; break;
-                    case ResizeDirection.TopRight: x = l + w - 3; y = t - 3; break;
-                    case ResizeDirection.Right: x = l + w - 3; y = t + h / 2 - 3; break;
-                    case ResizeDirection.BottomRight: x = l + w - 3; y = t + h - 3; break;
-                    case ResizeDirection.Bottom: x = l + w / 2 - 3; y = t + h - 3; break;
-                    case ResizeDirection.BottomLeft: x = l - 3; y = t + h - 3; break;
-                    case ResizeDirection.Left: x = l - 3; y = t + h / 2 - 3; break;
-                }
+                var rect = _resizeHandles[index];
                 Canvas.SetLeft(rect, x);
                 Canvas.SetTop(rect, y);
             }
+
+            MoveHandle(0, l - 4, t - 4);                // TopLeft
+            MoveHandle(1, l + w / 2 - 4, t - 4);        // Top
+            MoveHandle(2, l + w - 4, t - 4);            // TopRight
+            MoveHandle(3, l + w - 4, t + h / 2 - 4);    // Right
+            MoveHandle(4, l + w - 4, t + h - 4);        // BottomRight
+            MoveHandle(5, l + w / 2 - 4, t + h - 4);    // Bottom
+            MoveHandle(6, l - 4, t + h - 4);            // BottomLeft
+            MoveHandle(7, l - 4, t + h / 2 - 4);        // Left
         }
 
-        private void CreateHandle(ResizeDirection dir, Cursor cursor)
-        {
-            var rect = new Rectangle
-            {
-                Width = 6,
-                Height = 6,
-                Fill = Brushes.Navy,
-                Stroke = Brushes.White,
-                StrokeThickness = 1,
-                Cursor = cursor,
-                Tag = dir
-            };
+        // ==========================================
+        // 5. LÓGICA DE REDIMENSIÓN
+        // ==========================================
 
-            rect.MouseLeftButtonDown += Handle_MouseDown;
-            rect.MouseLeftButtonUp += Handle_MouseUp;
-            rect.MouseMove += Handle_MouseMove;
-
-            DesignSurface.Children.Add(rect);
-            _resizeHandles.Add(rect);
-        }
-
-        // LÓGICA DE REDIMENSIÓN DE CONTROL
         private void Handle_MouseDown(object sender, MouseButtonEventArgs e)
         {
+            if (_primarySelection == null) return;
+
             SaveUndoSnapshot();
 
             var rect = sender as Rectangle;
             _currentResizeDir = (ResizeDirection)rect.Tag;
-            _isDragging = false;
 
-            // Capturamos el punto de inicio del mouse
+            var item = _primarySelection as FrameworkElement;
+            _initSelLeft = Canvas.GetLeft(item);
+            _initSelTop = Canvas.GetTop(item);
+            _initSelWidth = item.ActualWidth;
+            _initSelHeight = item.ActualHeight;
+
+            if (double.IsNaN(_initSelLeft)) _initSelLeft = 0;
+            if (double.IsNaN(_initSelTop)) _initSelTop = 0;
+
             _resizeClickStart = e.GetPosition(DesignSurface);
-
-            // --- CORRECCIÓN: Guardar estado inicial del control ---
-            if (_selectedControl is FrameworkElement item)
-            {
-                _initSelLeft = Canvas.GetLeft(item);
-                _initSelTop = Canvas.GetTop(item);
-                _initSelWidth = item.ActualWidth;   // Aquí sí es seguro leer ActualWidth
-                _initSelHeight = item.ActualHeight;
-            }
 
             rect.CaptureMouse();
             e.Handled = true;
@@ -207,103 +382,67 @@ namespace VB6VisualMockupDesigner
 
         private void Handle_MouseMove(object sender, MouseEventArgs e)
         {
+            if (_currentResizeDir == ResizeDirection.None || _primarySelection == null) return;
 
-            if (e.LeftButton != MouseButtonState.Pressed)
+            var item = _primarySelection as FrameworkElement;
+            Point currentPos = e.GetPosition(DesignSurface);
+
+            double deltaX = SnapToGrid(currentPos.X - _resizeClickStart.X);
+            double deltaY = SnapToGrid(currentPos.Y - _resizeClickStart.Y);
+
+            double newW = _initSelWidth;
+            double newH = _initSelHeight;
+            double newL = _initSelLeft;
+            double newT = _initSelTop;
+
+            switch (_currentResizeDir)
             {
-                _currentResizeDir = ResizeDirection.None;
-                var r = sender as Rectangle;
-                if (r != null) r.ReleaseMouseCapture();
-                return;
+                case ResizeDirection.Right: newW += deltaX; break;
+                case ResizeDirection.Bottom: newH += deltaY; break;
+                case ResizeDirection.BottomRight: newW += deltaX; newH += deltaY; break;
+
+                case ResizeDirection.Left:
+                    newW -= deltaX;
+                    newL += deltaX;
+                    break;
+
+                case ResizeDirection.Top:
+                    newH -= deltaY;
+                    newT += deltaY;
+                    break;
+
+                case ResizeDirection.TopRight:
+                    newW += deltaX;
+                    newH -= deltaY;
+                    newT += deltaY;
+                    break;
+
+                case ResizeDirection.BottomLeft:
+                    newW -= deltaX;
+                    newL += deltaX;
+                    newH += deltaY;
+                    break;
+
+                case ResizeDirection.TopLeft:
+                    newW -= deltaX;
+                    newL += deltaX;
+                    newH -= deltaY;
+                    newT += deltaY;
+                    break;
             }
 
-
-            if (_currentResizeDir != ResizeDirection.None && _selectedControl != null)
+            if (newW >= 8)
             {
-                var item = _selectedControl as FrameworkElement;
-
-                // 1. Calcular cuánto se ha movido el mouse desde el clic inicial (Delta)
-                Point currentPos = e.GetPosition(DesignSurface);
-
-                // Aplicamos SnapToGrid a la posición actual para que el movimiento sea "a saltos"
-                double snappedCurrentX = SnapToGrid(currentPos.X);
-                double snappedCurrentY = SnapToGrid(currentPos.Y);
-
-                // El punto de inicio también debería considerarse "snapped" para que el delta sea exacto
-                double startX = SnapToGrid(_resizeClickStart.X);
-                double startY = SnapToGrid(_resizeClickStart.Y);
-
-                double deltaX = snappedCurrentX - startX;
-                double deltaY = snappedCurrentY - startY;
-
-                // 2. Calcular nuevos valores basándonos en los INICIALES + DELTA
-                double newLeft = _initSelLeft;
-                double newTop = _initSelTop;
-                double newWidth = _initSelWidth;
-                double newHeight = _initSelHeight;
-
-                switch (_currentResizeDir)
-                {
-                    case ResizeDirection.Right:
-                        newWidth = _initSelWidth + deltaX;
-                        break;
-
-                    case ResizeDirection.Bottom:
-                        newHeight = _initSelHeight + deltaY;
-                        break;
-
-                    case ResizeDirection.BottomRight:
-                        newWidth = _initSelWidth + deltaX;
-                        newHeight = _initSelHeight + deltaY;
-                        break;
-
-                    case ResizeDirection.Left:
-                        // Al estirar a la izquierda: El ancho crece (restando delta) y la posición X se mueve
-                        // Nota: deltaX será negativo si voy a la izquierda
-                        newWidth = _initSelWidth - deltaX;
-                        newLeft = _initSelLeft + deltaX;
-                        break;
-
-                    case ResizeDirection.Top:
-                        newHeight = _initSelHeight - deltaY;
-                        newTop = _initSelTop + deltaY;
-                        break;
-
-                    case ResizeDirection.TopRight:
-                        newWidth = _initSelWidth + deltaX;
-                        newHeight = _initSelHeight - deltaY;
-                        newTop = _initSelTop + deltaY;
-                        break;
-
-                    case ResizeDirection.BottomLeft:
-                        newWidth = _initSelWidth - deltaX;
-                        newLeft = _initSelLeft + deltaX;
-                        newHeight = _initSelHeight + deltaY;
-                        break;
-
-                    case ResizeDirection.TopLeft:
-                        newWidth = _initSelWidth - deltaX;
-                        newLeft = _initSelLeft + deltaX;
-                        newHeight = _initSelHeight - deltaY;
-                        newTop = _initSelTop + deltaY;
-                        break;
-                }
-
-                // 3. Aplicar y Validar (Mínimo 8x8 pixeles)
-                if (newWidth >= 8)
-                {
-                    item.Width = newWidth;
-                    Canvas.SetLeft(item, newLeft);
-                }
-
-                if (newHeight >= 8)
-                {
-                    item.Height = newHeight;
-                    Canvas.SetTop(item, newTop);
-                }
-
-                // 4. Actualizar los puntos visuales
-                ShowSelectionIndicator(item);
+                item.Width = newW;
+                Canvas.SetLeft(item, newL);
             }
+            if (newH >= 8)
+            {
+                item.Height = newH;
+                Canvas.SetTop(item, newT);
+            }
+
+            UpdateSelectionVisuals();
         }
 
         private void Handle_MouseUp(object sender, MouseButtonEventArgs e)
@@ -313,113 +452,79 @@ namespace VB6VisualMockupDesigner
             _currentResizeDir = ResizeDirection.None;
         }
 
+        // ==========================================
+        // 6. UTILIDADES
+        // ==========================================
+
         private double SnapToGrid(double val) => Math.Round(val / 8.0) * 8.0;
-
-
-        public void AddControlToCanvas(UIElement control, double x, double y)
-        {
-            if (control == null) return;
-            // Conectar eventos al nuevo control
-            control.PreviewMouseDown += Control_PreviewMouseDown;
-            control.PreviewMouseMove += Control_PreviewMouseMove;
-            control.PreviewMouseUp += Control_PreviewMouseUp;
-
-            Canvas.SetLeft(control, SnapToGrid(x));
-            Canvas.SetTop(control, SnapToGrid(y));
-            DesignSurface.Children.Add(control);
-        }
-
-        // 2. Solución al error 'CreateRetroControl'
-        // Sirve de puente para que el código antiguo siga funcionando usando la nueva Factory.
-        public UIElement CreateRetroControl(string type)
-        {
-            return RetroControlFactory.Create(type);
-        }
-
 
         private void DesignSurface_DragOver(object sender, DragEventArgs e)
         {
-            if (e.Data.GetDataPresent("ControlToolboxItem"))
-            {
-                e.Effects = DragDropEffects.Copy;
-                e.Handled = true;
-            }
-            else
-            {
-                e.Effects = DragDropEffects.None;
-            }
+            e.Effects = e.Data.GetDataPresent("ControlToolboxItem") ? DragDropEffects.Copy : DragDropEffects.None;
+            e.Handled = true;
         }
-
 
         private void DesignSurface_Drop(object sender, DragEventArgs e)
         {
             if (e.Data.GetDataPresent("ControlToolboxItem"))
             {
-
                 SaveUndoSnapshot();
-
                 string controlType = e.Data.GetData("ControlToolboxItem") as string;
-                Point dropPosition = e.GetPosition(DesignSurface);
+                Point dropPos = e.GetPosition(DesignSurface);
 
-                // Crear el control usando nuestra Factory
-                // Usamos el método puente CreateRetroControl o directamente la Factory
                 UIElement newControl = RetroControlFactory.Create(controlType);
-
                 if (newControl != null)
                 {
-                    // Posicionar donde cayó el mouse (con SnapToGrid)
-                    double x = SnapToGrid(dropPosition.X);
-                    double y = SnapToGrid(dropPosition.Y);
-
-                    // Ajuste fino: Centrar el control en el mouse (opcional)
-                    // Si quieres que el mouse quede en la esquina superior izquierda del control, déjalo así.
-                    // Si quieres centrarlo:
-                    // if (newControl is FrameworkElement fe) { x -= fe.Width / 2; y -= fe.Height / 2; }
+                    double x = SnapToGrid(dropPos.X);
+                    double y = SnapToGrid(dropPos.Y);
 
                     Canvas.SetLeft(newControl, x);
                     Canvas.SetTop(newControl, y);
-
-                    // Agregar al Canvas
                     AddControlToCanvas(newControl, x, y);
 
-                    // Seleccionarlo automáticamente
-                    // (Simulamos un click para activar los handles)
-                    _selectedControl = newControl;
-
-                    // 2. Dibujar los 8 puntos azules/blancos
-                    ShowSelectionIndicator(newControl);
-
-                    // 3. Avisar a la ventana principal (para que cargue el Panel de Propiedades)
-                    ControlSelected?.Invoke(this, newControl as FrameworkElement);
+                    ClearSelection();
+                    AddToSelection(newControl);
+                    NotifySelectionChanged();
                 }
-
                 e.Handled = true;
             }
         }
 
-        // EN DesignerCanvas.Interaction.cs
+        public void AddControlToCanvas(UIElement control, double x, double y)
+        {
+            if (control == null) return;
+            control.PreviewMouseDown += Control_PreviewMouseDown;
+            control.PreviewMouseMove += Control_PreviewMouseMove;
+            control.PreviewMouseUp += Control_PreviewMouseUp;
+
+            if (!DesignSurface.Children.Contains(control))
+                DesignSurface.Children.Add(control);
+        }
+
+        public UIElement CreateRetroControl(string type) => RetroControlFactory.Create(type);
 
         public void DeleteSelectedControl()
         {
-            if (_selectedControl != null)
+            if (_selectedControls.Count == 0) return;
+
+            SaveUndoSnapshot();
+
+            // IMPORTANTE: .ToList() para evitar excepción al modificar colección durante iteración
+            var toDelete = _selectedControls.ToList();
+
+            foreach (var ctrl in toDelete)
             {
-                SaveUndoSnapshot();
-                // 1. Quitar del Canvas visual
-                DesignSurface.Children.Remove(_selectedControl);
+                DesignSurface.Children.Remove(ctrl);
 
-                // 2. Limpiar la selección visual (puntos azules)
-                ShowSelectionIndicator(null);
-
-                // 3. Notificar a la ventana principal (para limpiar el panel de propiedades)
-                ControlSelected?.Invoke(this, null);
-
-                // 4. Olvidar la referencia
-                _selectedControl = null;
+                if (_selectionAdorners.ContainsKey(ctrl))
+                {
+                    DesignSurface.Children.Remove(_selectionAdorners[ctrl]);
+                    _selectionAdorners.Remove(ctrl);
+                }
             }
+
+            ClearSelection();
+            NotifySelectionChanged();
         }
-
-
-
-
     }
 }

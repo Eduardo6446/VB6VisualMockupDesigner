@@ -7,20 +7,6 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              d:DesignHeight="600" d:DesignWidth="800">
 
     <UserControl.Resources>
-        <!--<DrawingBrush x:Key="GridPatternBrush" TileMode="Tile" Viewport="0,0,8,8" ViewportUnits="Absolute">
-            <DrawingBrush.Drawing>
-                <GeometryDrawing>
-                    <GeometryDrawing.Geometry>
-                        <GeometryGroup>
-                            <EllipseGeometry Center="4,4" RadiusX="0.5" RadiusY="0.5" />
-                        </GeometryGroup>
-                    </GeometryDrawing.Geometry>
-                    <GeometryDrawing.Brush>
-                        <SolidColorBrush Color="#606060"/>
-                    </GeometryDrawing.Brush>
-                </GeometryDrawing>
-            </DrawingBrush.Drawing>
-        </DrawingBrush>-->
 
         <DrawingBrush x:Key="GridPatternBrush" Viewport="0,0,8,8" ViewportUnits="Absolute" TileMode="Tile">
             <DrawingBrush.Drawing>
@@ -134,11 +120,21 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
 
                             <Grid Grid.Row="1" Margin="2">
                                 <Canvas x:Name="DesignSurface" 
-                                        Background="Transparent" 
-                                        ClipToBounds="True"
-                                        AllowDrop="True"  
-                                        Drop="DesignSurface_Drop"
-                                        MouseDown="DesignSurface_MouseDown">
+        Background="Transparent" 
+        ClipToBounds="True"
+        AllowDrop="True"  
+        Drop="DesignSurface_Drop"
+        MouseDown="DesignSurface_MouseDown"
+        MouseMove="DesignSurface_MouseMove" 
+        MouseUp="DesignSurface_MouseUp">
+                                    <Rectangle x:Name="SelectionRect"
+               Stroke="#3399FF"
+               StrokeThickness="1"
+               Fill="#336495ED"
+               Visibility="Collapsed"
+               IsHitTestVisible="False"
+               Panel.ZIndex="9999"/>
+                                
                                 </Canvas>
                             </Grid>
                         </Grid>

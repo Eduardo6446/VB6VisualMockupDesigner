@@ -12,6 +12,7 @@ namespace VB6VisualMockupDesigner
 {
     /// <summary>
     /// Interaction logic for DesignerCanvas.xaml
+    /// Clase Principal (Contiene Carga, Renderizado y Limpieza)
     /// </summary>
     public partial class DesignerCanvas : UserControl
     {
@@ -45,9 +46,26 @@ namespace VB6VisualMockupDesigner
 
         public void ClearCanvas()
         {
+            // 1. Limpiar hijos visuales
             DesignSurface.Children.Clear();
-            _resizeHandles.Clear(); // Variable definida en la clase parcial Interaction
-            _selectionBorder = null;
+
+            // 2. Limpiar variables de la clase parcial Interaction (Multiselección)
+            _resizeHandles.Clear();
+            _selectionAdorners.Clear(); // CORREGIDO: Antes era _selectionBorder
+            _selectedControls.Clear();  // Importante limpiar la selección lógica también
+
+            // 3. Notificar que no hay nada seleccionado
+            ControlSelected?.Invoke(this, null);
+
+            if (SelectionRect != null)
+            {
+                // Lo agregamos de nuevo
+                DesignSurface.Children.Add(SelectionRect);
+
+                // (Opcional) Aseguramos que se dibuje por encima de todo lo demás
+                Panel.SetZIndex(SelectionRect, int.MaxValue);
+            }
+
         }
 
         // ============================
@@ -69,7 +87,7 @@ namespace VB6VisualMockupDesigner
             if (rootModel.Properties.ContainsKey("ClientHeight")) fHeight = Vb6Helpers.TwipsToPixels(rootModel.Properties["ClientHeight"]) + chromeH;
             else if (rootModel.Properties.ContainsKey("ScaleHeight")) fHeight = Vb6Helpers.TwipsToPixels(rootModel.Properties["ScaleHeight"]) + chromeH;
 
-            SetFormDimensions(fWidth, fHeight); // Definido en FormResizing.cs
+            SetFormDimensions(fWidth, fHeight); // Definido en DesignerCanvas.FormResizing.cs
 
             if (rootModel.Properties.ContainsKey("Caption")) FormTitle = rootModel.Properties["Caption"];
 
@@ -120,7 +138,14 @@ namespace VB6VisualMockupDesigner
                     // Textos
                     if (element is ContentControl cc && child.Properties.ContainsKey("Caption")) cc.Content = child.Properties["Caption"];
                     if (element is TextBox tb && child.Properties.ContainsKey("Text")) tb.Text = child.Properties["Text"];
-                    if (child.Properties.ContainsKey("Index")) fe.Tag = "Array: " + child.Properties["Index"];
+
+                    // IMPORTANTE: Si es un array, guardamos esa info en el Tag, 
+                    // pero intentamos no perder el Tipo original para el Undo/Redo
+                    if (child.Properties.ContainsKey("Index"))
+                    {
+                        // Guardamos un formato compuesto si es necesario, o priorizamos el index visualmente
+                        fe.Tag = "Array: " + child.Properties["Index"];
+                    }
 
                     targetPanel.Children.Add(element);
                     Canvas.SetLeft(element, l);
@@ -131,7 +156,6 @@ namespace VB6VisualMockupDesigner
                 }
             }
         }
-        
     }
 
 
