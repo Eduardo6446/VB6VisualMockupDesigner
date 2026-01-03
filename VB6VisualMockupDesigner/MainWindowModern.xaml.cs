@@ -641,5 +641,9 @@ namespace VB6VisualMockupDesigner
         // 4. TAMAÑO
         private void BtnSameWidth_Click(object sender, RoutedEventArgs e) => ExecuteOnActiveDesigner(d => d.AlignSelected("SameWidth"));
         private void BtnSameHeight_Click(object sender, RoutedEventArgs e) => ExecuteOnActiveDesigner(d => d.AlignSelected("SameHeight"));
+
+        // 5. ORDENAMIENTO (Z-ORDER)
+        private void BtnBringToFront_Click(object sender, RoutedEventArgs e) => ExecuteOnActiveDesigner(d => d.BringToFront());
+        private void BtnSendToBack_Click(object sender, RoutedEventArgs e) => ExecuteOnActiveDesigner(d => d.SendToBack());
     }
 }

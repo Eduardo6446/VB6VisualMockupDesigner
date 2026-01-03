@@ -648,5 +648,60 @@ namespace VB6VisualMockupDesigner
             // Actualizar los bordes azules a las nuevas posiciones
             UpdateSelectionVisuals();
         }
+
+
+        // ==========================================
+        // 8. ORDENAMIENTO (Z-ORDER)
+        // ==========================================
+
+        public void BringToFront()
+        {
+            if (_selectedControls.Count == 0) return;
+
+            SaveUndoSnapshot();
+
+            // Ordenamos por su índice actual para mantener el orden relativo entre ellos
+            var sortedSelection = _selectedControls
+                                  .OrderBy(c => DesignSurface.Children.IndexOf(c))
+                                  .ToList();
+
+            foreach (var ctrl in sortedSelection)
+            {
+                // El truco más simple en WPF/Canvas:
+                // Quitarlo y volverlo a agregar lo pone al final de la lista visual (arriba de todo)
+                DesignSurface.Children.Remove(ctrl);
+                DesignSurface.Children.Add(ctrl);
+            }
+
+            // Aseguramos que el recuadro de selección (Rubberband) siga estando ENCIMA de todo
+            if (SelectionRect != null && DesignSurface.Children.Contains(SelectionRect))
+            {
+                DesignSurface.Children.Remove(SelectionRect);
+                DesignSurface.Children.Add(SelectionRect);
+            }
+
+            UpdateSelectionVisuals(); // Re-dibujar los bordes azules encima
+        }
+
+        public void SendToBack()
+        {
+            if (_selectedControls.Count == 0) return;
+
+            SaveUndoSnapshot();
+
+            // Para enviar al fondo, iteramos al revés para no invertir el orden relativo
+            var sortedSelection = _selectedControls
+                                  .OrderByDescending(c => DesignSurface.Children.IndexOf(c))
+                                  .ToList();
+
+            foreach (var ctrl in sortedSelection)
+            {
+                // Insertar en el índice 0 lo pone al fondo de todo
+                DesignSurface.Children.Remove(ctrl);
+                DesignSurface.Children.Insert(0, ctrl);
+            }
+
+            UpdateSelectionVisuals();
+        }
     }
 }

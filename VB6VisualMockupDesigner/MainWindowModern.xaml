@@ -407,6 +407,24 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                 <Button Style="{StaticResource ToolbarBtnStyle}" ToolTip="Igualar Alto" Click="BtnSameHeight_Click">
                     <Path Data="M2,9 V13 H14 V9 Z M4,2 V6 H12 V2 Z" Stroke="#F1F1F1" StrokeThickness="1"/>
                 </Button>
+
+                <Border Style="{StaticResource ToolbarSeparator}"/>
+
+                <Button Style="{StaticResource ToolbarBtnStyle}" ToolTip="Traer al Frente" Click="BtnBringToFront_Click">
+                    <Grid Width="16" Height="16">
+                        <Rectangle Width="10" Height="10" Fill="#666" Margin="0,0,6,6"/>
+                        <Rectangle Width="10" Height="10" Fill="#F1F1F1" Stroke="#333" StrokeThickness="1" Margin="4,4,0,0"/>
+                    </Grid>
+                </Button>
+
+                <Button Style="{StaticResource ToolbarBtnStyle}" ToolTip="Enviar al Fondo" Click="BtnSendToBack_Click">
+                    <Grid Width="16" Height="16">
+                        <Rectangle Width="10" Height="10" Fill="#F1F1F1" Stroke="#333" StrokeThickness="1" Margin="0,0,6,6"/>
+                        <Rectangle Width="10" Height="10" Fill="#666" Stroke="#333" StrokeThickness="1" Margin="4,4,0,0"/>
+                    </Grid>
+                </Button>
+
+
             </StackPanel>
         </Border>
 
