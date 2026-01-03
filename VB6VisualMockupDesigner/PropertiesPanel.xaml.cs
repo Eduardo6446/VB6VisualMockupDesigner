@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Text.RegularExpressions; // Necesario para Regex
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
@@ -16,6 +17,9 @@ namespace VB6VisualMockupDesigner
         public event EventHandler PropertyChanged;
         public event EventHandler CloseRequested;
 
+        // Delegado para preguntar afuera si el nombre está libre
+        public Predicate<string> CheckNameAvailability;
+
         public PropertiesPanel()
         {
             InitializeComponent();
@@ -23,8 +27,6 @@ namespace VB6VisualMockupDesigner
 
         public void InspectObject(FrameworkElement control)
         {
-            // Si es el mismo control, no recargamos todo para no cortar el flujo,
-            // a menos que sea una actualización forzada (control == null)
             if (_currentControl == control && control != null && !_isUpdating) return;
 
             _currentControl = control;
@@ -38,9 +40,11 @@ namespace VB6VisualMockupDesigner
                 return;
             }
 
+            // Mostrar Info en el Combo Superior
             string typeName = control.Tag as string ?? control.GetType().Name;
-            string name = string.IsNullOrEmpty(control.Name) ? typeName : control.Name;
-            ObjectSelector.Text = $"{name} ({typeName})";
+            // Si el nombre está vacío (recién creado), sugerimos uno o mostramos vacío
+            string name = string.IsNullOrEmpty(control.Name) ? "" : control.Name;
+            ObjectSelector.Text = string.IsNullOrEmpty(name) ? $"[{typeName}]" : $"{name} ({typeName})";
 
             LoadProperties();
             _isUpdating = false;
@@ -52,12 +56,18 @@ namespace VB6VisualMockupDesigner
 
             var props = new List<PropertyItem>();
 
-            // Usamos GetSafeValue para evitar NaNs al cargar
+            // 0. PROPIEDAD ESPECIAL: (Name) - Va primero como en VB6
+            // Usamos paréntesis para que salga arriba visualmente
+            string currentName = string.IsNullOrEmpty(_currentControl.Name) ? "" : _currentControl.Name;
+            props.Add(new PropertyItem { Name = "(Name)", Value = currentName });
+
+            // 1. Diseño
             props.Add(new PropertyItem { Name = "Left", Value = GetSafeValue(Canvas.GetLeft(_currentControl)) });
             props.Add(new PropertyItem { Name = "Top", Value = GetSafeValue(Canvas.GetTop(_currentControl)) });
             props.Add(new PropertyItem { Name = "Width", Value = GetSafeValue(_currentControl.Width, _currentControl.ActualWidth) });
             props.Add(new PropertyItem { Name = "Height", Value = GetSafeValue(_currentControl.Height, _currentControl.ActualHeight) });
 
+            // 2. Específicas
             if (_currentControl is ContentControl cc)
                 props.Add(new PropertyItem { Name = "Caption", Value = cc.Content });
             else if (_currentControl is TextBox tb)
@@ -80,24 +90,23 @@ namespace VB6VisualMockupDesigner
         {
             if (_isUpdating || _currentControl == null) return;
 
-            // Detectar qué se editó
             if (e.EditingElement is TextBox tb && e.Row.Item is PropertyItem item)
             {
                 string newValue = tb.Text;
                 string propName = item.Name;
 
-                // Usamos Dispatcher para salir del ciclo de bloqueo del DataGrid
-                // Priority.Input suele ser más seguro que Render para operaciones de datos
                 Dispatcher.BeginInvoke(new Action(() =>
                 {
                     bool success = ApplyPropertyChange(propName, newValue);
                     if (success)
                     {
                         PropertyChanged?.Invoke(this, EventArgs.Empty);
+                        // Si cambiamos el nombre, actualizamos el título del combo superior
+                        if (propName == "(Name)") InspectObject(_currentControl);
                     }
                     else
                     {
-                        // Si falló (valor inválido), recargamos para revertir el valor visual en el grid
+                        // Si falló, recargamos para revertir el texto visualmente
                         _isUpdating = true;
                         LoadProperties();
                         _isUpdating = false;
@@ -110,44 +119,52 @@ namespace VB6VisualMockupDesigner
         {
             try
             {
-                // Avisamos antes de tocar nada (para Undo)
-                PropertyChanging?.Invoke(this, EventArgs.Empty);
+                // Validación especial para NOMBRES
+                if (propName == "(Name)")
+                {
+                    if (!IsValidVb6Name(value))
+                    {
+                        MessageBox.Show("Nombre inválido. Debe comenzar con una letra, no tener espacios y solo contener letras, números o guiones bajos.", "Error de Sintaxis", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        return false;
+                    }
 
+                    // Verificar Unicidad (Si el nombre cambió)
+                    if (value != _currentControl.Name)
+                    {
+                        // Preguntamos al padre si el nombre está libre (si el delegado existe)
+                        if (CheckNameAvailability != null && !CheckNameAvailability(value))
+                        {
+                            MessageBox.Show("Ya existe un control con este nombre en el formulario.", "Nombre Duplicado", MessageBoxButton.OK, MessageBoxImage.Warning);
+                            return false;
+                        }
+                    }
+
+                    // Si pasa, asignamos (esto también actualiza el x:Name interno de WPF)
+                    PropertyChanging?.Invoke(this, EventArgs.Empty);
+                    _currentControl.Name = value;
+                    return true;
+                }
+
+                // Resto de propiedades normales
+                PropertyChanging?.Invoke(this, EventArgs.Empty);
                 double valNum = ParseDouble(value);
 
                 switch (propName)
                 {
-                    case "Left":
-                        if (!double.IsNaN(valNum)) Canvas.SetLeft(_currentControl, valNum);
-                        break;
-                    case "Top":
-                        if (!double.IsNaN(valNum)) Canvas.SetTop(_currentControl, valNum);
-                        break;
-
-                    case "Width":
-                        // PROTECCIÓN: No permitir ancho menor a 10
-                        if (!double.IsNaN(valNum))
-                            _currentControl.Width = Math.Max(10, valNum);
-                        break;
-
-                    case "Height":
-                        // PROTECCIÓN: No permitir alto menor a 10
-                        if (!double.IsNaN(valNum))
-                            _currentControl.Height = Math.Max(10, valNum);
-                        break;
+                    case "Left": if (!double.IsNaN(valNum)) Canvas.SetLeft(_currentControl, valNum); break;
+                    case "Top": if (!double.IsNaN(valNum)) Canvas.SetTop(_currentControl, valNum); break;
+                    case "Width": if (!double.IsNaN(valNum)) _currentControl.Width = Math.Max(10, valNum); break;
+                    case "Height": if (!double.IsNaN(valNum)) _currentControl.Height = Math.Max(10, valNum); break;
 
                     case "Caption":
                         if (_currentControl is ContentControl cc) cc.Content = value;
                         if (_currentControl is TextBlock lbl) lbl.Text = value;
                         if (_currentControl is GroupBox gb) gb.Header = value;
                         break;
-
                     case "Text":
                         if (_currentControl is TextBox txt) txt.Text = value;
                         break;
-
-                    default:
-                        return false;
+                    default: return false;
                 }
                 return true;
             }
@@ -157,18 +174,21 @@ namespace VB6VisualMockupDesigner
             }
         }
 
+        // Validador Estilo VB6
+        private bool IsValidVb6Name(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name)) return false;
+            if (name.Length > 40) return false; // Límite VB6
+            // Regex: Empieza con letra, sigue con letras/números/guion bajo.
+            return Regex.IsMatch(name, @"^[a-zA-Z][a-zA-Z0-9_]*$");
+        }
+
         private double ParseDouble(string text)
         {
             if (string.IsNullOrWhiteSpace(text)) return double.NaN;
-
-            // Intentamos parsear punto, luego coma, luego sistema actual
-            if (double.TryParse(text, NumberStyles.Any, CultureInfo.InvariantCulture, out double result))
-                return result;
-
-            if (double.TryParse(text, NumberStyles.Any, CultureInfo.CurrentCulture, out double result2))
-                return result2;
-
-            return double.NaN; // Retornamos NaN si falla, para no poner 0
+            if (double.TryParse(text, NumberStyles.Any, CultureInfo.InvariantCulture, out double result)) return result;
+            if (double.TryParse(text, NumberStyles.Any, CultureInfo.CurrentCulture, out double result2)) return result2;
+            return double.NaN;
         }
 
         private void CloseBtn_Click(object sender, RoutedEventArgs e)

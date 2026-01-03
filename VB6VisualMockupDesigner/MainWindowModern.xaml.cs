@@ -65,6 +65,30 @@ namespace VB6VisualMockupDesigner
                 }
             };
 
+            //VALIDACIÓN DE NOMBRES
+            PropertiesPanel.CheckNameAvailability = (candidateName) =>
+            {
+                // Obtenemos el designer activo
+                if (MainTabControl.SelectedItem is TabItem tab && tab.Content is DesignerCanvas designer)
+                {
+                    // Buscamos en todos los hijos del canvas
+                    foreach (UIElement child in designer.GetDesignSurface().Children)
+                    {
+                        if (child is FrameworkElement fe)
+                        {
+                            // Si encontramos uno con el mismo nombre, devolvemos FALSE (No disponible)
+                            // (Ignoramos mayúsculas/minúsculas porque VB6 no es case-sensitive estricto para nombres)
+                            if (string.Equals(fe.Name, candidateName, StringComparison.OrdinalIgnoreCase))
+                            {
+                                return false;
+                            }
+                        }
+                    }
+                    return true; // Nombre libre
+                }
+                return false; // No hay designer, no se puede validar (bloquear)
+            };
+
         }
 
         private void MainTabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
