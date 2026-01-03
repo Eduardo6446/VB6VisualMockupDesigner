@@ -67,6 +67,9 @@ namespace VB6VisualMockupDesigner
             props.Add(new PropertyItem { Name = "Width", Value = GetSafeValue(_currentControl.Width, _currentControl.ActualWidth) });
             props.Add(new PropertyItem { Name = "Height", Value = GetSafeValue(_currentControl.Height, _currentControl.ActualHeight) });
 
+            // Usamos "tabCtrl" en lugar de "c" para evitar conflictos de nombres
+            props.Add(new PropertyItem { Name = "TabIndex", Value = (_currentControl is Control tabCtrl) ? tabCtrl.TabIndex : 0 });
+
             // 2. Específicas
             if (_currentControl is ContentControl cc)
                 props.Add(new PropertyItem { Name = "Caption", Value = cc.Content });
@@ -163,6 +166,13 @@ namespace VB6VisualMockupDesigner
                         break;
                     case "Text":
                         if (_currentControl is TextBox txt) txt.Text = value;
+                        break;
+                    case "TabIndex":
+                        if (_currentControl is Control ctrlTab)
+                        {
+                            int index = (int)ParseDouble(value);
+                            if (index >= 0) ctrlTab.TabIndex = index;
+                        }
                         break;
                     default: return false;
                 }

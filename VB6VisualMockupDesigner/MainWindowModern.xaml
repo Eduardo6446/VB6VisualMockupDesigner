@@ -272,6 +272,38 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
             <Setter Property="Background" Value="#3E3E42"/>
             <Setter Property="Margin" Value="4,0"/>
         </Style>
+
+
+        <Style x:Key="ToolbarToggleBtnStyle" TargetType="ToggleButton">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#F1F1F1"/>
+            <Setter Property="Width" Value="32"/>
+            <Setter Property="Height" Value="26"/>
+            <Setter Property="Margin" Value="1,0"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border x:Name="Border" Background="{TemplateBinding Background}" CornerRadius="2">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Border" Property="Background" Value="#3E3E42"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Border" Property="Background" Value="#007ACC"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.4"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        
     </Window.Resources>
 
     <Grid x:Name="RootGrid">
@@ -423,6 +455,15 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                         <Rectangle Width="10" Height="10" Fill="#666" Stroke="#333" StrokeThickness="1" Margin="4,4,0,0"/>
                     </Grid>
                 </Button>
+
+                <Border Style="{StaticResource ToolbarSeparator}"/>
+
+                <ToggleButton Style="{StaticResource ToolbarToggleBtnStyle}" 
+              ToolTip="Editar Orden de Tabulación" 
+              Click="BtnTabOrder_Click">
+                    <TextBlock Text="&#xE7FD;" FontFamily="Segoe MDL2 Assets" FontSize="14" 
+               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </ToggleButton>
 
 
             </StackPanel>

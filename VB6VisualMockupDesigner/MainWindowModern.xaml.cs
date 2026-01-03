@@ -693,5 +693,8 @@ namespace VB6VisualMockupDesigner
         // 5. ORDENAMIENTO (Z-ORDER)
         private void BtnBringToFront_Click(object sender, RoutedEventArgs e) => ExecuteOnActiveDesigner(d => d.BringToFront());
         private void BtnSendToBack_Click(object sender, RoutedEventArgs e) => ExecuteOnActiveDesigner(d => d.SendToBack());
+
+        private void BtnTabOrder_Click(object sender, RoutedEventArgs e) => ExecuteOnActiveDesigner(d => d.ToggleTabOrderMode());
+
     }
 }

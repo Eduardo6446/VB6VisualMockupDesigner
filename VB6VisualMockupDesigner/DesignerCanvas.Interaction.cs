@@ -37,14 +37,38 @@ namespace VB6VisualMockupDesigner
 
         private UIElement _primarySelection => _selectedControls.Count == 1 ? _selectedControls.First() : null;
 
+        private bool _isTabOrderMode = false;
+        private List<Border> _tabOrderIndicators = new List<Border>();
+        private int _nextTabIndex = 0;
+
+
         // ==========================================
         // 2. EVENTOS DEL MOUSE (SELECCIÓN Y ARRASTRE)
         // ==========================================
 
         private void Control_PreviewMouseDown(object sender, MouseButtonEventArgs e)
         {
+
+            if (_isTabOrderMode)
+            {
+                if (sender is Control clickedControl)
+                {
+                    // Asignar el nuevo índice
+                    clickedControl.TabIndex = _nextTabIndex;
+                    _nextTabIndex++;
+
+                    // Refrescar visualmente TODOS los números para ver el cambio
+                    // (Poco eficiente pero seguro para actualizar duplicados)
+                    ShowTabIndices();
+                }
+                e.Handled = true; // Evitar selección/arrastre
+                return;
+            }
+
+
             var control = sender as UIElement;
             if (control == null) return;
+
 
             bool isCtrlPressed = (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control;
 
@@ -716,7 +740,101 @@ namespace VB6VisualMockupDesigner
         }
 
 
+        // ==========================================
+        // 10. EDITOR DE TAB ORDER (TAB INDEX)
+        // ==========================================
 
+
+        public void ToggleTabOrderMode()
+        {
+            _isTabOrderMode = !_isTabOrderMode;
+
+            if (_isTabOrderMode)
+            {
+                // Entrar al modo
+                ClearSelection();
+
+                // --- CORRECCIÓN ---
+                // Reiniciamos el contador AQUÍ, solo cuando activas la herramienta.
+                _nextTabIndex = 0;
+
+                ShowTabIndices();
+            }
+            else
+            {
+                // Salir del modo
+                HideTabIndices();
+            }
+        }
+
+        private void ShowTabIndices()
+        {
+            HideTabIndices();
+
+            var newIndicators = new List<Border>();
+
+            foreach (UIElement child in DesignSurface.Children)
+            {
+                // Filtramos solo Controles (Botones, TextBoxes, etc.) ignorando adornos
+                if (child is Control control && !(child is Border))
+                {
+                    var border = new Border
+                    {
+                        Background = System.Windows.Media.Brushes.Blue,
+                        BorderBrush = System.Windows.Media.Brushes.White,
+                        BorderThickness = new Thickness(1),
+                        CornerRadius = new CornerRadius(2),
+                        Width = 20,
+                        Height = 20,
+                        IsHitTestVisible = false
+                    };
+
+                    // --- LÓGICA DEL # ---
+                    // Si el índice es el valor máximo (int.MaxValue) o muy grande, mostramos #
+                    // Esto indica que el control aún no tiene un orden definido por el usuario.
+                    string indexText = (control.TabIndex >= int.MaxValue - 100) ? "#" : control.TabIndex.ToString();
+
+                    var text = new TextBlock
+                    {
+                        Text = indexText,
+                        Foreground = System.Windows.Media.Brushes.White,
+                        FontSize = 11,
+                        FontWeight = FontWeights.Bold,
+                        HorizontalAlignment = HorizontalAlignment.Center,
+                        VerticalAlignment = VerticalAlignment.Center
+                    };
+
+                    border.Child = text;
+
+                    double l = GetSafeLeft(control);
+                    double t = GetSafeTop(control);
+
+                    Canvas.SetLeft(border, l);
+                    Canvas.SetTop(border, t);
+                    Canvas.SetZIndex(border, 99999);
+
+                    newIndicators.Add(border);
+                    _tabOrderIndicators.Add(border);
+                }
+            }
+
+            // Agregamos todos los indicadores de golpe al final
+            foreach (var indicator in newIndicators)
+            {
+                DesignSurface.Children.Add(indicator);
+            }
+
+            
+        }
+
+        private void HideTabIndices()
+        {
+            foreach (var indicator in _tabOrderIndicators)
+            {
+                DesignSurface.Children.Remove(indicator);
+            }
+            _tabOrderIndicators.Clear();
+        }
 
 
 
