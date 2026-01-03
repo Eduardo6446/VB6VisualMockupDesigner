@@ -703,5 +703,22 @@ namespace VB6VisualMockupDesigner
 
             UpdateSelectionVisuals();
         }
+
+        // ==========================================
+        // 9. Panel bidireccional de propiedades
+        // ==========================================
+
+        // Método público para forzar el redibujado de los bordes azules
+        // (Llamado desde MainWindow cuando el Panel de Propiedades cambia algo)
+        public void RefreshSelectionVisuals()
+        {
+            UpdateSelectionVisuals();
+        }
+
+
+
+
+
+
     }
 }

@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Threading;
 
 namespace VB6VisualMockupDesigner
 {
@@ -10,9 +12,8 @@ namespace VB6VisualMockupDesigner
         private FrameworkElement _currentControl;
         private bool _isUpdating = false;
 
-        // Evento para notificar que algo cambió (útil para actualizar los puntos de selección en el Canvas)
+        public event EventHandler PropertyChanging;
         public event EventHandler PropertyChanged;
-
         public event EventHandler CloseRequested;
 
         public PropertiesPanel()
@@ -22,8 +23,12 @@ namespace VB6VisualMockupDesigner
 
         public void InspectObject(FrameworkElement control)
         {
+            // Si es el mismo control, no recargamos todo para no cortar el flujo,
+            // a menos que sea una actualización forzada (control == null)
+            if (_currentControl == control && control != null && !_isUpdating) return;
+
             _currentControl = control;
-            _isUpdating = true; // Pausar eventos
+            _isUpdating = true;
 
             if (control == null)
             {
@@ -33,58 +38,71 @@ namespace VB6VisualMockupDesigner
                 return;
             }
 
-            // Nombre y Tipo (Usamos el Tag o el Tipo de clase)
             string typeName = control.Tag as string ?? control.GetType().Name;
-            // Si el control tiene nombre en el XAML (x:Name), úsalo, sino usa el Tipo
             string name = string.IsNullOrEmpty(control.Name) ? typeName : control.Name;
-
             ObjectSelector.Text = $"{name} ({typeName})";
 
-            var props = new List<PropertyItem>();
-
-            // 1. Propiedades de Diseño (Redondeamos a 0 decimales para limpieza)
-            props.Add(new PropertyItem { Name = "Left", Value = Math.Round(Canvas.GetLeft(control)) });
-            props.Add(new PropertyItem { Name = "Top", Value = Math.Round(Canvas.GetTop(control)) });
-            props.Add(new PropertyItem { Name = "Width", Value = Math.Round(control.Width) });
-            props.Add(new PropertyItem { Name = "Height", Value = Math.Round(control.Height) });
-
-            // 2. Propiedades Específicas
-            if (control is ContentControl cc) // Button, Label, Frame
-            {
-                props.Add(new PropertyItem { Name = "Caption", Value = cc.Content });
-            }
-            else if (control is TextBox tb) // TextBox
-            {
-                props.Add(new PropertyItem { Name = "Text", Value = tb.Text });
-            }
-            else if (control is TextBlock txt) // TextBlock (usado en algunos placeholders)
-            {
-                props.Add(new PropertyItem { Name = "Caption", Value = txt.Text });
-            }
-
-            // 3. Propiedades Visuales (Color de fondo simple)
-            if (control is Control c && c.Background != null)
-            {
-                props.Add(new PropertyItem { Name = "BackColor", Value = c.Background.ToString() });
-            }
-
-            PropGrid.ItemsSource = props;
+            LoadProperties();
             _isUpdating = false;
         }
 
-        // Se dispara al terminar de editar una celda
+        private void LoadProperties()
+        {
+            if (_currentControl == null) return;
+
+            var props = new List<PropertyItem>();
+
+            // Usamos GetSafeValue para evitar NaNs al cargar
+            props.Add(new PropertyItem { Name = "Left", Value = GetSafeValue(Canvas.GetLeft(_currentControl)) });
+            props.Add(new PropertyItem { Name = "Top", Value = GetSafeValue(Canvas.GetTop(_currentControl)) });
+            props.Add(new PropertyItem { Name = "Width", Value = GetSafeValue(_currentControl.Width, _currentControl.ActualWidth) });
+            props.Add(new PropertyItem { Name = "Height", Value = GetSafeValue(_currentControl.Height, _currentControl.ActualHeight) });
+
+            if (_currentControl is ContentControl cc)
+                props.Add(new PropertyItem { Name = "Caption", Value = cc.Content });
+            else if (_currentControl is TextBox tb)
+                props.Add(new PropertyItem { Name = "Text", Value = tb.Text });
+            else if (_currentControl is TextBlock txt)
+                props.Add(new PropertyItem { Name = "Caption", Value = txt.Text });
+
+            if (_currentControl is Control c && c.Background != null)
+                props.Add(new PropertyItem { Name = "BackColor", Value = c.Background.ToString() });
+
+            PropGrid.ItemsSource = props;
+        }
+
+        private double GetSafeValue(double val, double fallback = 0)
+        {
+            return double.IsNaN(val) ? Math.Round(fallback) : Math.Round(val);
+        }
+
         private void PropGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
         {
             if (_isUpdating || _currentControl == null) return;
 
-            // Obtenemos la propiedad y el control de edición (TextBox)
-            if (e.Row.Item is PropertyItem item && e.EditingElement is TextBox tb)
+            // Detectar qué se editó
+            if (e.EditingElement is TextBox tb && e.Row.Item is PropertyItem item)
             {
                 string newValue = tb.Text;
-                bool success = ApplyPropertyChange(item.Name, newValue);
+                string propName = item.Name;
 
-                // Si el cambio fue visual (tamaño/pos), notificamos
-                if (success) PropertyChanged?.Invoke(this, EventArgs.Empty);
+                // Usamos Dispatcher para salir del ciclo de bloqueo del DataGrid
+                // Priority.Input suele ser más seguro que Render para operaciones de datos
+                Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    bool success = ApplyPropertyChange(propName, newValue);
+                    if (success)
+                    {
+                        PropertyChanged?.Invoke(this, EventArgs.Empty);
+                    }
+                    else
+                    {
+                        // Si falló (valor inválido), recargamos para revertir el valor visual en el grid
+                        _isUpdating = true;
+                        LoadProperties();
+                        _isUpdating = false;
+                    }
+                }), DispatcherPriority.Input);
             }
         }
 
@@ -92,28 +110,42 @@ namespace VB6VisualMockupDesigner
         {
             try
             {
+                // Avisamos antes de tocar nada (para Undo)
+                PropertyChanging?.Invoke(this, EventArgs.Empty);
+
+                double valNum = ParseDouble(value);
+
                 switch (propName)
                 {
                     case "Left":
-                        Canvas.SetLeft(_currentControl, double.Parse(value));
+                        if (!double.IsNaN(valNum)) Canvas.SetLeft(_currentControl, valNum);
                         break;
                     case "Top":
-                        Canvas.SetTop(_currentControl, double.Parse(value));
+                        if (!double.IsNaN(valNum)) Canvas.SetTop(_currentControl, valNum);
                         break;
+
                     case "Width":
-                        _currentControl.Width = double.Parse(value);
+                        // PROTECCIÓN: No permitir ancho menor a 10
+                        if (!double.IsNaN(valNum))
+                            _currentControl.Width = Math.Max(10, valNum);
                         break;
+
                     case "Height":
-                        _currentControl.Height = double.Parse(value);
+                        // PROTECCIÓN: No permitir alto menor a 10
+                        if (!double.IsNaN(valNum))
+                            _currentControl.Height = Math.Max(10, valNum);
                         break;
+
                     case "Caption":
                         if (_currentControl is ContentControl cc) cc.Content = value;
                         if (_currentControl is TextBlock lbl) lbl.Text = value;
-                        if (_currentControl is GroupBox gb) gb.Header = value; // Para Frames
+                        if (_currentControl is GroupBox gb) gb.Header = value;
                         break;
+
                     case "Text":
                         if (_currentControl is TextBox txt) txt.Text = value;
                         break;
+
                     default:
                         return false;
                 }
@@ -121,9 +153,22 @@ namespace VB6VisualMockupDesigner
             }
             catch
             {
-                // Si el usuario escribe texto en un campo numérico, ignoramos el cambio
                 return false;
             }
+        }
+
+        private double ParseDouble(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return double.NaN;
+
+            // Intentamos parsear punto, luego coma, luego sistema actual
+            if (double.TryParse(text, NumberStyles.Any, CultureInfo.InvariantCulture, out double result))
+                return result;
+
+            if (double.TryParse(text, NumberStyles.Any, CultureInfo.CurrentCulture, out double result2))
+                return result2;
+
+            return double.NaN; // Retornamos NaN si falla, para no poner 0
         }
 
         private void CloseBtn_Click(object sender, RoutedEventArgs e)

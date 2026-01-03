@@ -47,6 +47,24 @@ namespace VB6VisualMockupDesigner
             // Iniciar layout (Por defecto mostramos Propiedades, ocultamos el auxiliar)
             SecondaryPanel.Visibility = Visibility.Collapsed;
             UpdateRightLayout();
+
+            PropertiesPanel.PropertyChanging += (s, e) =>
+            {
+                if (MainTabControl.SelectedItem is TabItem tab && tab.Content is DesignerCanvas designer)
+                {
+                    designer.SaveUndoSnapshot();
+                }
+            };
+
+            // 2. Después de editar: Refrescar los bordes azules en el designer activo
+            PropertiesPanel.PropertyChanged += (s, e) =>
+            {
+                if (MainTabControl.SelectedItem is TabItem tab && tab.Content is DesignerCanvas designer)
+                {
+                    designer.RefreshSelectionVisuals();
+                }
+            };
+
         }
 
         private void MainTabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -473,6 +491,12 @@ namespace VB6VisualMockupDesigner
 
         private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
         {
+
+            if (e.OriginalSource is TextBox || e.OriginalSource is PasswordBox)
+            {
+                return;
+            }
+
             // Verificamos si hay un diseñador activo
             if (!(MainTabControl.SelectedItem is TabItem tab) || !(tab.Content is DesignerCanvas designer))
                 return;
