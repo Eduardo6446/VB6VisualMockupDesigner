@@ -10,7 +10,7 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
 
     <UserControl.Resources>
         <HierarchicalDataTemplate x:Key="ExplorerItemTemplate" ItemsSource="{Binding Children}" DataType="{x:Type local:ExplorerItem}">
-            <StackPanel Orientation="Horizontal" Margin="0,2">
+            <StackPanel Orientation="Horizontal" Margin="0,0">
                 <TextBlock Text="{Binding IconCode}" 
                            FontFamily="Segoe MDL2 Assets" 
                            Foreground="{StaticResource BrandColor}" 
@@ -26,6 +26,7 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
 
         <Style TargetType="TreeViewItem">
             <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}"/>
+            <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}"/>
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Padding" Value="3,2"/>
             <Setter Property="Template">
@@ -98,7 +99,6 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
 
     <Grid Background="#252526">
         <StackPanel>
-            <TextBlock Text="EXPLORADOR" Foreground="#969696" FontSize="11" FontWeight="Bold" Margin="10,10,0,5"/>
 
             <TreeView x:Name="ProjectTree" 
                       Background="Transparent" 

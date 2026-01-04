@@ -139,14 +139,14 @@ namespace VB6VisualMockupDesigner
 
         private void MainTabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            // Verificamos que el origen sea el TabControl y no un control hijo
             if (e.Source is TabControl && MainTabControl.SelectedItem is TabItem selectedTab)
             {
-                // Obtenemos el nombre del archivo del Header de la pestaña
-                string fileName = selectedTab.Header.ToString();
-
-                // Le decimos al explorador que destaque ese archivo
-                _explorerView.SelectFile(fileName);
+                // Obtenemos la ruta completa del Tag (que guardamos al crear la pestaña)
+                if (selectedTab.Tag is string fullPath)
+                {
+                    // ¡Sincronizamos el explorador!
+                    _explorerView.SelectFile(fullPath);
+                }
             }
         }
 
@@ -567,6 +567,8 @@ namespace VB6VisualMockupDesigner
                 return;
             }
 
+
+
             // Verificamos si hay un diseñador activo
             if (!(MainTabControl.SelectedItem is TabItem tab) || !(tab.Content is DesignerCanvas designer))
                 return;
@@ -579,6 +581,7 @@ namespace VB6VisualMockupDesigner
             {
                 designer.DeleteSelectedControl();
             }
+
 
             // 2. COMBINACIONES CON CTRL
             if (isCtrl)
@@ -610,6 +613,14 @@ namespace VB6VisualMockupDesigner
                         e.Handled = true; // Evitar bubbling
                         break;
                 }
+
+            }
+
+            // 3. GLOBAL SEARCH (Ctrl + P)
+            if (isCtrl && e.Key == Key.P)
+            {
+                TxtGlobalSearch.Focus();
+                e.Handled = true;
             }
 
 
@@ -696,6 +707,106 @@ namespace VB6VisualMockupDesigner
 
 
 
+        }
+
+
+        // 1. Evento al escribir texto
+        private void TxtGlobalSearch_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            string query = TxtGlobalSearch.Text;
+
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                SearchPopup.IsOpen = false;
+                return;
+            }
+
+            // Buscamos usando el método que creamos en el Paso 1
+            var results = _explorerView.SearchFiles(query);
+
+            if (results.Count > 0)
+            {
+                LstSearchResults.ItemsSource = results;
+                SearchPopup.IsOpen = true;
+
+                // Seleccionamos el primero por defecto para navegación rápida
+                LstSearchResults.SelectedIndex = 0;
+            }
+            else
+            {
+                SearchPopup.IsOpen = false;
+            }
+        }
+
+        // 2. Manejo de Teclas en el TextBox (Flechas y Enter)
+        private void TxtGlobalSearch_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (!SearchPopup.IsOpen) return;
+
+            if (e.Key == Key.Down)
+            {
+                // Mover foco a la lista
+                LstSearchResults.Focus();
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Enter)
+            {
+                // Ejecutar selección actual
+                ConfirmSearchSelection();
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Escape)
+            {
+                SearchPopup.IsOpen = false;
+                e.Handled = true;
+            }
+        }
+
+        // 3. Manejo de Teclas en la Lista (Enter para seleccionar)
+        private void LstSearchResults_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                ConfirmSearchSelection();
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Up && LstSearchResults.SelectedIndex == 0)
+            {
+                // Si estamos arriba del todo y subimos, volver al textbox
+                TxtGlobalSearch.Focus();
+            }
+        }
+
+        // 4. Click con el mouse
+        private void LstSearchResults_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            ConfirmSearchSelection();
+        }
+
+        // 5. Lógica central de confirmación
+        private void ConfirmSearchSelection()
+        {
+            if (LstSearchResults.SelectedItem is ExplorerItem selectedItem)
+            {
+                // 1. Cerrar popup
+                SearchPopup.IsOpen = false;
+                TxtGlobalSearch.Text = ""; // Limpiar búsqueda
+
+                // 2. USAR LA SINCRONIZACIÓN QUE YA CREAMOS
+                // Esto automáticamente:
+                //    a) Buscará el archivo en el árbol
+                //    b) Expandirá las carpetas
+                //    c) Lo seleccionará visualmente
+                //    d) Disparará el evento OnSelectedItemChanged
+                //    e) Que a su vez llamará a OpenFileTab
+
+                _explorerView.SelectFile(selectedItem.FullPath);
+
+                OpenFileTab(selectedItem.FullPath);
+
+                // Foco al editor (opcional)
+                MainTabControl.Focus();
+            }
         }
 
 

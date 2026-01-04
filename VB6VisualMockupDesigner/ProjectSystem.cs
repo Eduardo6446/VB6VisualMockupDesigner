@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.ComponentModel; 
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
@@ -10,7 +10,7 @@ namespace VB6VisualMockupDesigner
 {
     public enum ExplorerItemType { Project, Folder, File }
 
-    public class ExplorerItem
+    public class ExplorerItem : INotifyPropertyChanged
     {
         public string Name { get; set; }
         public string FullPath { get; set; }
@@ -27,7 +27,38 @@ namespace VB6VisualMockupDesigner
             }
         }
 
-        public bool IsExpanded { get; set; } = true;
+        private bool _isExpanded = true;
+        public bool IsExpanded
+        {
+            get { return _isExpanded; }
+            set
+            {
+                if (_isExpanded != value)
+                {
+                    _isExpanded = value;
+                    OnPropertyChanged("IsExpanded");
+                }
+            }
+        }
+
+        private bool _isSelected;
+        public bool IsSelected
+        {
+            get { return _isSelected; }
+            set
+            {
+                if (_isSelected != value)
+                {
+                    _isSelected = value;
+                    OnPropertyChanged("IsSelected");
+                }
+            }
+        }
+
+        // --- IMPLEMENTACIÓN DE LA INTERFAZ ---
+        public event PropertyChangedEventHandler PropertyChanged;
+        protected void OnPropertyChanged(string name) =>
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
 
     public static class VbpParser
