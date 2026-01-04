@@ -68,6 +68,7 @@ namespace VB6VisualMockupDesigner
 
             // 3. Mostramos la nueva ventana
             editor.Show();
+            
 
             // 4. Cerramos la pantalla de inicio
             this.Close();

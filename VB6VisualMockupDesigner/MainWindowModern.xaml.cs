@@ -28,6 +28,8 @@ namespace VB6VisualMockupDesigner
         {
             InitializeComponent();
 
+            this.WindowState = WindowState.Maximized;
+
             // Inicializamos el toolbox
             _toolboxView = new ToolboxView();
             _toolboxView.OnControlSelected += Toolbox_ControlSelected;
@@ -854,7 +856,12 @@ namespace VB6VisualMockupDesigner
         private void BtnTabOrder_Click(object sender, RoutedEventArgs e) => ExecuteOnActiveDesigner(d => d.ToggleTabOrderMode());
 
 
-
+        private void BtnAbout_Click(object sender, RoutedEventArgs e)
+        {
+            AboutWindow about = new AboutWindow();
+            about.Owner = this;
+            about.ShowDialog();
+        }
 
 
     }
