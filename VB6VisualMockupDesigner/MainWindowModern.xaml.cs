@@ -863,6 +863,21 @@ namespace VB6VisualMockupDesigner
             about.ShowDialog();
         }
 
+        private void Lienzo_MouseMove(object sender, MouseEventArgs e)
+        {
+            // Obtener la posición del mouse relativa al contenedor (sender)
+            Point p = e.GetPosition((IInputElement)sender);
+
+            // Actualizar el texto en la barra de estado
+            // Usamos (int) para quitar los decimales, pixel perfect como en los 90s
+            txtCursorPos.Text = $"X: {(int)p.X},  Y: {(int)p.Y}";
+        }
+
+        private void Lienzo_MouseLeave(object sender, MouseEventArgs e)
+        {
+            txtCursorPos.Text = "X: 0, Y: 0"; // O dejarlo vacío
+        }
+
 
     }
 }

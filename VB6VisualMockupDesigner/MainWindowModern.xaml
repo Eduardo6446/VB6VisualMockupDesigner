@@ -638,7 +638,9 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                             BorderThickness="0" 
                             Padding="0"
                             ItemContainerStyle="{StaticResource VsCodeTabStyle}"
-                            Visibility="Hidden">
+                            Visibility="Hidden"
+                            MouseMove="Lienzo_MouseMove"
+                            >
                 </TabControl>
             </Grid>
 
@@ -678,15 +680,100 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
             </Grid>
         </Grid>
 
-        <StatusBar Grid.Row="3" Background="#007ACC" Foreground="White" Padding="10,0">
-            <StatusBarItem>
-                <TextBlock Text="Listo"/>
+        <StatusBar Grid.Row="3" Background="#007ACC" Foreground="White" Padding="5,0">
+            <StatusBar.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                    </Grid>
+                </ItemsPanelTemplate>
+            </StatusBar.ItemsPanel>
+
+            <StatusBar.Resources>
+                <Style TargetType="TextBlock">
+                    <Setter Property="VerticalAlignment" Value="Center"/>
+                    <Setter Property="FontSize" Value="11"/>
+                    <Setter Property="FontFamily" Value="Consolas"/>
+                    <Setter Property="Margin" Value="10,0"/>
+                </Style>
+
+                <Style TargetType="Separator">
+                    <Setter Property="Width" Value="1"/>
+                    <Setter Property="Height" Value="14"/>
+                    <Setter Property="Background" Value="#33FFFFFF"/>
+                    <Setter Property="Margin" Value="0"/>
+                </Style>
+            </StatusBar.Resources>
+
+            <StatusBarItem Grid.Column="0" HorizontalContentAlignment="Stretch">
+                <TextBlock Text="Listo" 
+                   FontFamily="Segoe UI" 
+                   Margin="5,0,0,0" />
             </StatusBarItem>
 
-            <StatusBarItem HorizontalAlignment="Right">
+            <StatusBarItem Grid.Column="2">
+                <TextBlock x:Name="txtCursorPos" Text="X: 0, Y: 0" />
+            </StatusBarItem>
+
+            <Separator Grid.Column="3" />
+
+            <StatusBarItem Grid.Column="4">
+                <TextBlock Text="UTF-8" />
+            </StatusBarItem>
+
+            <Separator Grid.Column="5" />
+
+            <StatusBarItem Grid.Column="6">
+                <TextBlock Text="INS" Opacity="0.8"/>
+            </StatusBarItem>
+
+            <Separator Grid.Column="7" />
+
+            <StatusBarItem Grid.Column="8" Margin="5,0,10,0">
                 <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="Ln 1, Col 1" Margin="0,0,15,0"/>
-                    <TextBlock Text="VB6 Mockup"/>
+                    <TextBlock Text="100%" Margin="0,0,5,0" Width="35" TextAlignment="Right"/>
+                    <Slider Width="80" 
+                    VerticalAlignment="Center" 
+                    Minimum="20" 
+                    Maximum="200" 
+                    Value="100"
+                    IsSnapToTickEnabled="True"
+                    TickFrequency="10">
+                        <Slider.Style>
+                            <Style TargetType="Slider">
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="Slider">
+                                            <Grid VerticalAlignment="Center">
+                                                <Border Height="2" Background="#55FFFFFF" CornerRadius="1"/>
+                                                <Track x:Name="PART_Track">
+                                                    <Track.Thumb>
+                                                        <Thumb Width="10" Height="10">
+                                                            <Thumb.Template>
+                                                                <ControlTemplate>
+                                                                    <Ellipse Fill="White" Stroke="#007ACC" StrokeThickness="1"/>
+                                                                </ControlTemplate>
+                                                            </Thumb.Template>
+                                                        </Thumb>
+                                                    </Track.Thumb>
+                                                </Track>
+                                            </Grid>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </Slider.Style>
+                    </Slider>
                 </StackPanel>
             </StatusBarItem>
         </StatusBar>
