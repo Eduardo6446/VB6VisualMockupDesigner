@@ -1,10 +1,11 @@
-﻿using System.Windows;
+﻿using System;
+using System.IO;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
-using System;
-using System.IO;
+using static VB6VisualMockupDesigner.DesignerCanvas;
 
 
 
@@ -68,25 +69,70 @@ namespace VB6VisualMockupDesigner
             //VALIDACIÓN DE NOMBRES
             PropertiesPanel.CheckNameAvailability = (candidateName) =>
             {
-                // Obtenemos el designer activo
                 if (MainTabControl.SelectedItem is TabItem tab && tab.Content is DesignerCanvas designer)
                 {
-                    // Buscamos en todos los hijos del canvas
+                    // 1. Buscamos si existe alguien con ese nombre
+                    FrameworkElement existingControl = null;
                     foreach (UIElement child in designer.GetDesignSurface().Children)
                     {
-                        if (child is FrameworkElement fe)
+                        if (child is FrameworkElement fe &&
+                            string.Equals(fe.Name, candidateName, StringComparison.OrdinalIgnoreCase))
                         {
-                            // Si encontramos uno con el mismo nombre, devolvemos FALSE (No disponible)
-                            // (Ignoramos mayúsculas/minúsculas porque VB6 no es case-sensitive estricto para nombres)
-                            if (string.Equals(fe.Name, candidateName, StringComparison.OrdinalIgnoreCase))
-                            {
-                                return false;
-                            }
+                            existingControl = fe;
+                            break;
                         }
                     }
-                    return true; // Nombre libre
+
+                    // 2. Si NO existe, el nombre está libre. ¡Adelante!
+                    if (existingControl == null) return true;
+
+                    // 3. Si SÍ existe, preguntamos si quiere crear Array
+                    var result = MessageBox.Show(
+                        $"Ya existe un control llamado '{candidateName}'.\n¿Desea crear una matriz de controles?",
+                        "Visual Basic 6 Mockup",
+                        MessageBoxButton.YesNo, // Solo Yes/No. Si cancela, devuelve false.
+                        MessageBoxImage.Question);
+
+                    if (result == MessageBoxResult.Yes)
+                    {
+                        // --- LÓGICA DE CREACIÓN DE ARRAY MANUAL ---
+
+                        // A. Preparamos el control EXISTENTE (el que ya tenía el nombre)
+                        int? idxExisting = VB6Data.GetIndex(existingControl);
+                        if (idxExisting == null)
+                        {
+                            VB6Data.SetIndex(existingControl, 0);
+                        }
+
+                        // B. Buscamos el siguiente índice libre para este nombre
+                        // (Necesitamos acceder a la función auxiliar o recalcularla aquí)
+                        int maxIndex = 0;
+                        if (idxExisting.HasValue) maxIndex = idxExisting.Value;
+
+                        // Buscamos en todo el canvas otros hermanos del array para hallar el max
+                        foreach (UIElement child in designer.GetDesignSurface().Children)
+                        {
+                            if (child is FrameworkElement fe &&
+                                string.Equals(fe.Name, candidateName, StringComparison.OrdinalIgnoreCase))
+                            {
+                                int? idx = VB6Data.GetIndex(fe);
+                                if (idx.HasValue && idx.Value > maxIndex) maxIndex = idx.Value;
+                            }
+                        }
+
+                        // C. Asignamos el índice al control ACTUAL (el que estamos renombrando en el panel)
+                        // OJO: El panel asignará el Nombre después de que retornemos true.
+                        // Nosotros solo asignamos el Index aquí.
+                        FrameworkElement currentCtrl = designer.GetSelectedControls()[0]; // El que se está editando
+                        VB6Data.SetIndex(currentCtrl, maxIndex + 1);
+
+                        return true; // Permitimos el cambio de nombre
+                    }
+
+                    // Si dijo NO, rechazamos el cambio
+                    return false;
                 }
-                return false; // No hay designer, no se puede validar (bloquear)
+                return false;
             };
 
         }
@@ -695,6 +741,10 @@ namespace VB6VisualMockupDesigner
         private void BtnSendToBack_Click(object sender, RoutedEventArgs e) => ExecuteOnActiveDesigner(d => d.SendToBack());
 
         private void BtnTabOrder_Click(object sender, RoutedEventArgs e) => ExecuteOnActiveDesigner(d => d.ToggleTabOrderMode());
+
+
+
+
 
     }
 }

@@ -5,6 +5,7 @@ using System.Text.RegularExpressions; // Necesario para Regex
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
+using static VB6VisualMockupDesigner.DesignerCanvas;
 
 namespace VB6VisualMockupDesigner
 {
@@ -70,6 +71,9 @@ namespace VB6VisualMockupDesigner
             // Usamos "tabCtrl" en lugar de "c" para evitar conflictos de nombres
             props.Add(new PropertyItem { Name = "TabIndex", Value = (_currentControl is Control tabCtrl) ? tabCtrl.TabIndex : 0 });
 
+            // Leemos la propiedad adjunta. Si es null, mostramos vacío.
+            props.Add(new PropertyItem { Name = "Index", Value = VB6Data.GetIndex(_currentControl) });
+
             // 2. Específicas
             if (_currentControl is ContentControl cc)
                 props.Add(new PropertyItem { Name = "Caption", Value = cc.Content });
@@ -125,19 +129,23 @@ namespace VB6VisualMockupDesigner
                 // Validación especial para NOMBRES
                 if (propName == "(Name)")
                 {
+
+
                     if (!IsValidVb6Name(value))
                     {
                         MessageBox.Show("Nombre inválido. Debe comenzar con una letra, no tener espacios y solo contener letras, números o guiones bajos.", "Error de Sintaxis", MessageBoxButton.OK, MessageBoxImage.Warning);
                         return false;
                     }
 
-                    // Verificar Unicidad (Si el nombre cambió)
                     if (value != _currentControl.Name)
                     {
-                        // Preguntamos al padre si el nombre está libre (si el delegado existe)
+                        // Preguntamos al padre si el nombre es válido.
+                        // NOTA: Quitamos el MessageBox de aquí. La lógica de preguntar "Ya existe, ¿quieres array?"
+                        // ahora será responsabilidad del MainWindow.
                         if (CheckNameAvailability != null && !CheckNameAvailability(value))
                         {
-                            MessageBox.Show("Ya existe un control con este nombre en el formulario.", "Nombre Duplicado", MessageBoxButton.OK, MessageBoxImage.Warning);
+                            // Si devuelve false, es que el usuario canceló o el nombre es inválido.
+                            // Simplemente revertimos y salimos.
                             return false;
                         }
                     }
@@ -172,6 +180,21 @@ namespace VB6VisualMockupDesigner
                         {
                             int index = (int)ParseDouble(value);
                             if (index >= 0) ctrlTab.TabIndex = index;
+                        }
+                        break;
+                    case "Index":
+                        // Si el usuario borra el texto, ponemos null
+                        if (string.IsNullOrWhiteSpace(value))
+                        {
+                            VB6Data.SetIndex(_currentControl, null);
+                        }
+                        else
+                        {
+                            // Intentamos parsear el entero
+                            if (int.TryParse(value, out int idx) && idx >= 0)
+                            {
+                                VB6Data.SetIndex(_currentControl, idx);
+                            }
                         }
                         break;
                     default: return false;

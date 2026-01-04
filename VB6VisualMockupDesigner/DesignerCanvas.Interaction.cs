@@ -5,9 +5,22 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using System.Linq;
 
 namespace VB6VisualMockupDesigner
 {
+
+    public static class VB6Data
+    {
+        public static readonly DependencyProperty IndexProperty =
+            DependencyProperty.RegisterAttached("Index", typeof(int?), typeof(VB6Data), new PropertyMetadata(null));
+
+        public static void SetIndex(DependencyObject element, int? value) => element.SetValue(IndexProperty, value);
+
+        public static int? GetIndex(DependencyObject element) => (int?)element.GetValue(IndexProperty);
+    }
+
+
     // PARTIAL CLASS: Manejo de Interacción con Controles
     public partial class DesignerCanvas
     {
@@ -21,6 +34,8 @@ namespace VB6VisualMockupDesigner
         private readonly HashSet<UIElement> _selectedControls = new HashSet<UIElement>();
         private Dictionary<UIElement, FrameworkElement> _selectionAdorners = new Dictionary<UIElement, FrameworkElement>();
         private Dictionary<UIElement, Point> _initialPositions = new Dictionary<UIElement, Point>();
+
+        private List<string> _clipboardControls = new List<string>();
 
         private bool _isDragging = false;
         private Point _dragStartPoint;
@@ -40,6 +55,13 @@ namespace VB6VisualMockupDesigner
         private bool _isTabOrderMode = false;
         private List<Border> _tabOrderIndicators = new List<Border>();
         private int _nextTabIndex = 0;
+
+        public List<FrameworkElement> GetSelectedControls()
+        {
+            // 'OfType' filtra y convierte a FrameworkElement, 'ToList' crea la lista requerida
+            return _selectedControls.OfType<FrameworkElement>().ToList();
+        }
+
 
 
         // ==========================================
@@ -836,7 +858,6 @@ namespace VB6VisualMockupDesigner
             _tabOrderIndicators.Clear();
         }
 
-
-
+        
     }
 }
