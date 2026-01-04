@@ -331,32 +331,47 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
-            <Menu Grid.Column="0" Style="{StaticResource TopMenuStyle}" 
-                  VerticalAlignment="Center" Margin="5,0,0,0"
+            <StackPanel Grid.Column="0" 
+                  Orientation="Horizontal" 
+                  VerticalAlignment="Center" 
+                  Margin="10,0,0,0"
                   WindowChrome.IsHitTestVisibleInChrome="True">
-                <MenuItem Header="Archivo">
-                    <MenuItem Header="Nuevo Proyecto..." Click="BtnNew_Click"/>
-                    <MenuItem Header="Abrir..." Click="BtnOpen_Click"/>
-                    <Separator Background="{StaticResource BorderColor}"/>
-                    <MenuItem Header="Guardar" InputGestureText="Ctrl+S" Click="MnuSave_Click"/>
-                    <MenuItem Header="Guardar como..." Click="MnuSaveAs_Click"/>
-                    <MenuItem Header="Exportar a Imagen" Click="MnuExportPng_Click"/>
-                    <Separator Background="{StaticResource BorderColor}"/>
-                    <MenuItem Header="Cerrar Pestaña" Click="BtnCloseProject_Click"/>
-                    <MenuItem Header="Salir" Click="BtnClose_Click"/>
-                </MenuItem>
-                <MenuItem Header="Editar">
-                    <MenuItem Header="Deshacer" Click="BtnUndo_Click"/>
-                    <MenuItem Header="Rehacer" Click="BtnRedo_Click"/>
-                </MenuItem>
-                <MenuItem Header="Ver">
-                    <MenuItem Header="Propiedades" Click="MnuShowProperties_Click"/>
-                    <MenuItem Header="Vista Auxiliar" Click="MnuShowAux_Click"/>
-                </MenuItem>
-                <MenuItem Header="Ayuda">
-                    <MenuItem Header="Acerca de..." Click="BtnAbout_Click"/>
-                </MenuItem>
-            </Menu>
+
+                <Image Source="/Resource/icon.ico"
+                 Width="18" Height="18"
+                 Margin="0,0,5,0"
+                 VerticalAlignment="Center"
+                 RenderOptions.BitmapScalingMode="HighQuality">
+                    <Image.Effect>
+                        <DropShadowEffect Color="Black" BlurRadius="2" ShadowDepth="1" Opacity="0.3"/>
+                    </Image.Effect>
+                </Image>
+
+                <Menu Style="{StaticResource TopMenuStyle}" Background="Transparent">
+                    <MenuItem Header="Archivo">
+                        <MenuItem Header="Nuevo Proyecto..." Click="BtnNew_Click"/>
+                        <MenuItem Header="Abrir..." Click="BtnOpen_Click"/>
+                        <Separator Background="{StaticResource BorderColor}"/>
+                        <MenuItem Header="Guardar" InputGestureText="Ctrl+S" Click="MnuSave_Click"/>
+                        <MenuItem Header="Guardar como..." Click="MnuSaveAs_Click"/>
+                        <MenuItem Header="Exportar a Imagen" Click="MnuExportPng_Click"/>
+                        <Separator Background="{StaticResource BorderColor}"/>
+                        <MenuItem Header="Cerrar Pestaña" Click="BtnCloseProject_Click"/>
+                        <MenuItem Header="Salir" Click="BtnClose_Click"/>
+                    </MenuItem>
+                    <MenuItem Header="Editar">
+                        <MenuItem Header="Deshacer" Click="BtnUndo_Click"/>
+                        <MenuItem Header="Rehacer" Click="BtnRedo_Click"/>
+                    </MenuItem>
+                    <MenuItem Header="Ver">
+                        <MenuItem Header="Propiedades" Click="MnuShowProperties_Click"/>
+                        <MenuItem Header="Vista Auxiliar" Click="MnuShowAux_Click"/>
+                    </MenuItem>
+                    <MenuItem Header="Ayuda">
+                        <MenuItem Header="Acerca de..." Click="BtnAbout_Click"/>
+                    </MenuItem>
+                </Menu>
+            </StackPanel>
 
             <Grid Grid.Column="1" 
       HorizontalAlignment="Center" 

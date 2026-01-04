@@ -868,8 +868,6 @@ namespace VB6VisualMockupDesigner
             // Obtener la posición del mouse relativa al contenedor (sender)
             Point p = e.GetPosition((IInputElement)sender);
 
-            // Actualizar el texto en la barra de estado
-            // Usamos (int) para quitar los decimales, pixel perfect como en los 90s
             txtCursorPos.Text = $"X: {(int)p.X},  Y: {(int)p.Y}";
         }
 
