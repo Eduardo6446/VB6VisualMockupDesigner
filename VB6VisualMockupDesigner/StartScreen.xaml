@@ -9,18 +9,14 @@
         WindowStartupLocation="CenterScreen"
         WindowStyle="None"
         ResizeMode="NoResize"
-        Background="#1E1E1E"
+        Background="{DynamicResource AppBackground}"
         FontFamily="Segoe UI"
-        Icon="/Resource/icon.ico"
-        >
+        Icon="/Resource/icon.ico">
 
     <Window.Resources>
-        <SolidColorBrush x:Key="BrandBrush" Color="#005A9E"/>
-        <SolidColorBrush x:Key="HoverBrush" Color="#3E3E42"/>
-
         <Style x:Key="ActionButtonStyle" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryText}"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Padding" Value="10,15"/>
             <Setter Property="HorizontalContentAlignment" Value="Left"/>
@@ -38,19 +34,19 @@
                                            FontSize="20" 
                                            VerticalAlignment="Center" 
                                            HorizontalAlignment="Center"
-                                           Foreground="{StaticResource BrandBrush}"/>
+                                           Foreground="{DynamicResource BrandColor}"/>
 
                                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                     <TextBlock Text="{Binding Content, RelativeSource={RelativeSource TemplatedParent}}" 
                                                FontSize="16" FontWeight="SemiBold"/>
                                     <TextBlock Text="{Binding ToolTip, RelativeSource={RelativeSource TemplatedParent}}" 
-                                               FontSize="12" Foreground="#999999" Margin="0,2,0,0"/>
+                                               FontSize="12" Foreground="{DynamicResource SecondaryText}" Margin="0,2,0,0"/>
                                 </StackPanel>
                             </Grid>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="{StaticResource HoverBrush}"/>
+                                <Setter Property="Background" Value="{DynamicResource HoverBrush}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -60,7 +56,7 @@
 
         <Style x:Key="RecentItemStyle" TargetType="ListBoxItem">
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryText}"/>
             <Setter Property="Padding" Value="10"/>
             <Setter Property="Template">
                 <Setter.Value>
@@ -69,14 +65,14 @@
                             <StackPanel>
                                 <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="Medium"/>
 
-                                <TextBlock Text="{Binding FullPath}" FontSize="11" Foreground="#888888" TextTrimming="CharacterEllipsis"/>
+                                <TextBlock Text="{Binding FullPath}" FontSize="11" Foreground="{DynamicResource SecondaryText}" TextTrimming="CharacterEllipsis"/>
 
-                                <TextBlock Text="{Binding LastAccess, StringFormat='{}{0:dd/MM/yyyy HH:mm}'}" FontSize="11" Foreground="#666666"/>
+                                <TextBlock Text="{Binding LastAccess, StringFormat='{}{0:dd/MM/yyyy HH:mm}'}" FontSize="11" Foreground="{DynamicResource SecondaryText}" Opacity="0.7"/>
                             </StackPanel>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="{StaticResource HoverBrush}"/>
+                                <Setter Property="Background" Value="{DynamicResource HoverBrush}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -98,19 +94,20 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
-            <TextBlock Text="VB6 Visual Mockup Designer" FontSize="28" FontWeight="Light" Foreground="White"/>
-            <TextBlock Grid.Row="1" Text="Abrir recientes" FontSize="18" FontWeight="SemiBold" Foreground="White" Margin="0,30,0,15"/>
+            <TextBlock Text="VB6 Visual Mockup Designer" FontSize="28" FontWeight="Light" Foreground="{DynamicResource PrimaryText}"/>
+            <TextBlock Grid.Row="1" Text="Abrir recientes" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource PrimaryText}" Margin="0,30,0,15"/>
 
             <TextBox Grid.Row="1" HorizontalAlignment="Right" Width="200" Margin="0,30,0,10"
-                     Background="#333333" Foreground="White" BorderThickness="0" 
+                     Background="{DynamicResource HeaderBackground}" Foreground="{DynamicResource PrimaryText}" BorderThickness="0" 
                      Padding="5" Text="Buscar recientes..." Opacity="0.5"/>
 
             <ListBox Grid.Row="2" x:Name="RecentProjectsList" 
                  Background="Transparent" BorderThickness="0" 
                  ItemContainerStyle="{StaticResource RecentItemStyle}"
                  SelectionChanged="RecentProjectsList_SelectionChanged">
-                
+
             </ListBox>
+
             <StackPanel Grid.Row="2" x:Name="EmptyRecentState" 
             VerticalAlignment="Center" 
             HorizontalAlignment="Center"
@@ -118,19 +115,19 @@
                 <TextBlock Text="&#xE81C;" 
                FontFamily="Segoe MDL2 Assets" 
                FontSize="48" 
-               Foreground="#3E3E42"
+               Foreground="{DynamicResource HoverBrush}"
                HorizontalAlignment="Center" 
                Margin="0,0,0,15"/>
 
                 <TextBlock Text="No hay elementos recientes" 
                FontSize="16" 
-               Foreground="White" 
+               Foreground="{DynamicResource PrimaryText}" 
                FontWeight="SemiBold"
                HorizontalAlignment="Center"/>
 
                 <TextBlock Text="Tus proyectos aparecerán aquí una vez que los abras." 
                FontSize="12" 
-               Foreground="#888888" 
+               Foreground="{DynamicResource SecondaryText}" 
                HorizontalAlignment="Center" 
                Margin="0,5,0,0"
                TextWrapping="Wrap" 
@@ -139,9 +136,9 @@
             </StackPanel>
         </Grid>
 
-        <Border Grid.Column="1" Background="#252526" Padding="40">
+        <Border Grid.Column="1" Background="{DynamicResource PanelBackground}" Padding="40">
             <StackPanel>
-                <TextBlock Text="Empezar" FontSize="24" FontWeight="SemiBold" Foreground="White" Margin="0,0,0,20"/>
+                <TextBlock Text="Empezar" FontSize="24" FontWeight="SemiBold" Foreground="{DynamicResource PrimaryText}" Margin="0,0,0,20"/>
 
                 <Button Style="{StaticResource ActionButtonStyle}" 
                         Content="Crear nuevo mockup" 
@@ -163,19 +160,39 @@
                         Tag="&#xE8B7;" 
                         Margin="0,0,0,10"/>
 
-                <Separator Background="#3E3E42" Margin="0,20"/>
+                <Separator Background="{DynamicResource BorderBrush}" Margin="0,20"/>
 
-                <TextBlock Text="Novedades v0.8" FontSize="16" FontWeight="Bold" Foreground="White" Margin="0,0,0,10"/>
-                <TextBlock Text="• Selección Múltiple (Ctrl+Click)" Foreground="#AAAAAA" Margin="0,0,0,5"/>
-                <TextBlock Text="• Historial Deshacer/Rehacer" Foreground="#AAAAAA" Margin="0,0,0,5"/>
-                <TextBlock Text="• Exportación a PNG" Foreground="#AAAAAA" Margin="0,0,0,5"/>
+                <TextBlock Text="Novedades v0.8" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource PrimaryText}" Margin="0,0,0,10"/>
+                <TextBlock Text="• Selección Múltiple (Ctrl+Click)" Foreground="{DynamicResource SecondaryText}" Margin="0,0,0,5"/>
+                <TextBlock Text="• Historial Deshacer/Rehacer" Foreground="{DynamicResource SecondaryText}" Margin="0,0,0,5"/>
+                <TextBlock Text="• Exportación a PNG" Foreground="{DynamicResource SecondaryText}" Margin="0,0,0,5"/>
 
             </StackPanel>
         </Border>
 
         <Button Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Top" 
                 Content="&#xE8BB;" FontFamily="Segoe MDL2 Assets"
-                Background="Transparent" Foreground="#AAAAAA" BorderThickness="0"
-                Width="40" Height="40" Click="BtnClose_Click" Margin="0,5,5,0"/>
+                Background="Transparent" Foreground="{DynamicResource SecondaryText}" BorderThickness="0"
+                Width="40" Height="40" Click="BtnClose_Click" Margin="0,5,5,0">
+            <Button.Style>
+                <Style TargetType="Button">
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="Button">
+                                <Border Background="{TemplateBinding Background}">
+                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                    <Style.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Background" Value="#E81123"/>
+                            <Setter Property="Foreground" Value="White"/>
+                        </Trigger>
+                    </Style.Triggers>
+                </Style>
+            </Button.Style>
+        </Button>
     </Grid>
 </Window>

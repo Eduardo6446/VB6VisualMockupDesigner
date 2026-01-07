@@ -5,13 +5,20 @@
              StartupUri="StartScreen.xaml">
     <Application.Resources>
 
+        <SolidColorBrush x:Key="AppBackground" Color="#1E1E1E"/>
+        <SolidColorBrush x:Key="PanelBackground" Color="#252526"/>
+        <SolidColorBrush x:Key="SideBarBackground" Color="#252526"/>
+        <SolidColorBrush x:Key="HeaderBackground" Color="#2D2D30"/>
+
+        <SolidColorBrush x:Key="BorderBrush" Color="#3E3E42"/>
+        <SolidColorBrush x:Key="HoverBrush" Color="#3E3E42"/>
+        <SolidColorBrush x:Key="PressedBrush" Color="#007ACC"/>
+
+        <SolidColorBrush x:Key="PrimaryText" Color="#F1F1F1"/>
+        <SolidColorBrush x:Key="SecondaryText" Color="#969696"/>
+        <SolidColorBrush x:Key="IconColor" Color="#C5C5C5"/>
         <SolidColorBrush x:Key="BrandColor" Color="#005A9E"/>
-        <SolidColorBrush x:Key="BgColor" Color="#1E1E1E"/>
-        <SolidColorBrush x:Key="SideBarColor" Color="#252526"/>
-        <SolidColorBrush x:Key="HoverColor" Color="#3E3E42"/>
-        <SolidColorBrush x:Key="BorderColor" Color="#3E3E42"/>
-        <SolidColorBrush x:Key="TextColor" Color="#F1F1F1"/>
-        <SolidColorBrush x:Key="MutedTextColor" Color="#969696"/>
+        <SolidColorBrush x:Key="AccentColor" Color="#007ACC"/>
 
         <SolidColorBrush x:Key="ScrollBarTrackBrush" Color="Transparent" />
         <SolidColorBrush x:Key="ScrollBarThumbBrush" Color="#686868" />
@@ -25,16 +32,16 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="{x:Type Thumb}">
                         <Rectangle x:Name="rectangle" 
-                                   Fill="{StaticResource ScrollBarThumbBrush}" 
+                                   Fill="{DynamicResource ScrollBarThumbBrush}" 
                                    RadiusX="4" RadiusY="4" 
                                    Margin="2"
                                    SnapsToDevicePixels="True"/>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="true">
-                                <Setter TargetName="rectangle" Property="Fill" Value="{StaticResource ScrollBarThumbHoverBrush}" />
+                                <Setter TargetName="rectangle" Property="Fill" Value="{DynamicResource ScrollBarThumbHoverBrush}" />
                             </Trigger>
                             <Trigger Property="IsDragging" Value="true">
-                                <Setter TargetName="rectangle" Property="Fill" Value="{StaticResource ScrollBarThumbPressedBrush}" />
+                                <Setter TargetName="rectangle" Property="Fill" Value="{DynamicResource ScrollBarThumbPressedBrush}" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -57,14 +64,13 @@
 
         <Style TargetType="{x:Type ScrollBar}">
             <Setter Property="Stylus.IsFlicksEnabled" Value="false" />
-            <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" />
+            <Setter Property="Foreground" Value="{DynamicResource SecondaryText}" />
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="Width" Value="14" />
             <Setter Property="Height" Value="Auto" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="{x:Type ScrollBar}">
-
                         <Grid x:Name="Bg" Background="{TemplateBinding Background}" SnapsToDevicePixels="true">
                             <Track x:Name="PART_Track" IsDirectionReversed="true" Focusable="false">
                                 <Track.Thumb>
@@ -78,16 +84,12 @@
                                 </Track.DecreaseRepeatButton>
                             </Track>
                         </Grid>
-
                         <ControlTemplate.Triggers>
                             <Trigger Property="Orientation" Value="Horizontal">
-
                                 <Setter Property="Width" Value="Auto" />
                                 <Setter Property="Height" Value="14" />
-
                                 <Setter TargetName="PART_Track" Property="Orientation" Value="Horizontal" />
                                 <Setter TargetName="PART_Track" Property="IsDirectionReversed" Value="False" />
-
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>

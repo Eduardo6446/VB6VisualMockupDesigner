@@ -1,5 +1,5 @@
 ﻿<Window x:Class="VB6VisualMockupDesigner.AboutWindow"
-xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Acerca de VB6 Mockup Studio" 
         Height="320" Width="520"
@@ -7,8 +7,8 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         WindowStyle="None" 
         ResizeMode="NoResize"
         Icon="/Resource/icon.ico"
-        Background="#1E1E1E" 
-        BorderBrush="#007ACC" 
+        Background="{DynamicResource AppBackground}" 
+        BorderBrush="{DynamicResource BrandColor}" 
         BorderThickness="1"
         MouseLeftButtonDown="Window_MouseLeftButtonDown"
         Loaded="Window_Loaded">
@@ -32,7 +32,7 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
             <Button.Style>
                 <Style TargetType="Button">
                     <Setter Property="Background" Value="Transparent"/>
-                    <Setter Property="Foreground" Value="#CCCCCC"/>
+                    <Setter Property="Foreground" Value="{DynamicResource SecondaryText}"/>
                     <Setter Property="FontSize" Value="14"/>
                     <Setter Property="Template">
                         <Setter.Value>
@@ -76,27 +76,28 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
 
             <StackPanel Grid.Column="1">
                 <TextBlock Text="VB6 Mockup Studio" 
-                           Foreground="White" 
+                           Foreground="{DynamicResource PrimaryText}" 
                            FontSize="26" 
                            FontFamily="Segoe UI Light"
                            Margin="0,0,0,5"/>
 
                 <TextBlock Text="Versión 0.9.15 (Build 2026)" 
-                           Foreground="#007ACC" 
+                           Foreground="{DynamicResource BrandColor}" 
                            FontSize="14" 
                            FontWeight="SemiBold"
                            Margin="0,0,0,15"/>
 
                 <TextBlock Text="Herramienta de modernización y prototipado rápido." 
-                           Foreground="#DDDDDD" 
+                           Foreground="{DynamicResource SecondaryText}" 
                            TextWrapping="Wrap"
                            Margin="0,0,0,5"/>
 
                 <TextBlock Text="© 2026 Eduardo Orozco / Grupo SyntexNic" 
-                           Foreground="#888888" 
+                           Foreground="{DynamicResource SecondaryText}" 
+                           Opacity="0.7"
                            FontSize="12"/>
 
-                <Separator Background="#3F3F46" Margin="0,15"/>
+                <Separator Background="{DynamicResource BorderBrush}" Margin="0,15"/>
 
                 <Grid>
                     <Grid.ColumnDefinitions>
@@ -105,19 +106,19 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     </Grid.ColumnDefinitions>
 
                     <StackPanel>
-                        <TextBlock Text="Entorno:" Foreground="#666666" FontSize="11" FontWeight="Bold"/>
-                        <TextBlock Text="Memoria:" Foreground="#666666" FontSize="11" FontWeight="Bold" Margin="0,2,0,0"/>
+                        <TextBlock Text="Entorno:" Foreground="{DynamicResource SecondaryText}" FontSize="11" FontWeight="Bold"/>
+                        <TextBlock Text="Memoria:" Foreground="{DynamicResource SecondaryText}" FontSize="11" FontWeight="Bold" Margin="0,2,0,0"/>
                     </StackPanel>
 
                     <StackPanel Grid.Column="1" Margin="10,0,0,0">
-                        <TextBlock Text=".NET 8.0 - Windows 11" Foreground="#999999" FontSize="11"/>
+                        <TextBlock Text=".NET 8.0 - Windows 11" Foreground="{DynamicResource SecondaryText}" FontSize="11"/>
                         <TextBlock x:Name="txtMemory" Text="Calculando..." Foreground="#4CAF50" FontSize="11" Margin="0,2,0,0" FontFamily="Consolas"/>
                     </StackPanel>
                 </Grid>
             </StackPanel>
         </Grid>
 
-        <Border Grid.Row="2" Background="#252526" Padding="15">
+        <Border Grid.Row="2" Background="{DynamicResource PanelBackground}" Padding="15">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -129,8 +130,8 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                         HorizontalAlignment="Left"
                         Padding="10,4"
                         Background="Transparent"
-                        Foreground="#CCCCCC"
-                        BorderBrush="#555555"
+                        Foreground="{DynamicResource SecondaryText}"
+                        BorderBrush="{DynamicResource BorderBrush}"
                         Click="BtnSysInfo_Click"/>
 
 
@@ -138,7 +139,7 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
 
                     <TextBlock Text="Hecho con ♥ y WPF" 
                                VerticalAlignment="Center" 
-                               Foreground="#555555" 
+                               Foreground="{DynamicResource SecondaryText}" 
                                Margin="0,0,20,0" 
                                FontSize="11" 
                                FontStyle="Italic"
@@ -147,7 +148,7 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     <Button Content="Aceptar" 
                             Width="90" 
                             Height="26"
-                            Background="#007ACC"
+                            Background="{DynamicResource BrandColor}"
                             Foreground="White"
                             BorderThickness="0"
                             Click="BtnClose_Click">

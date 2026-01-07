@@ -1,16 +1,13 @@
 ﻿<Window x:Class="VB6VisualMockupDesigner.MainWindowModern"
-xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:local="clr-namespace:VB6VisualMockupDesigner"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d"
         Title="VB6 Visual Mockup Designer" Height="720" Width="1080"
         WindowStartupLocation="CenterScreen"
         PreviewKeyDown="Window_PreviewKeyDown"
         WindowStyle="SingleBorderWindow"
         ResizeMode="CanResize"
-        Background="{DynamicResource BgColor}"
+        Background="{DynamicResource AppBackground}"
         FontFamily="Segoe UI">
 
     <WindowChrome.WindowChrome>
@@ -23,7 +20,7 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
 
     <Window.Resources>
         <Style TargetType="Separator">
-            <Setter Property="Background" Value="#3E3E42"/>
+            <Setter Property="Background" Value="{DynamicResource BorderBrush}"/>
             <Setter Property="Margin" Value="0,4,0,4"/>
             <Setter Property="Focusable" Value="False"/>
             <Setter Property="Template">
@@ -40,13 +37,13 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
 
         <Style x:Key="TopMenuStyle" TargetType="Menu">
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="{StaticResource TextColor}"/>
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryText}"/>
             <Setter Property="FontSize" Value="13"/>
         </Style>
 
         <Style TargetType="MenuItem">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="{StaticResource TextColor}"/>
+            <Setter Property="Background" Value="{DynamicResource AppBackground}"/>
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryText}"/>
             <Setter Property="FontSize" Value="13"/>
             <Setter Property="Padding" Value="10,5"/>
             <Setter Property="BorderThickness" Value="0"/>
@@ -66,15 +63,14 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                                                           HorizontalAlignment="Left"
                                                           RecognizesAccessKey="True"/>
                                     </Border>
-
                                     <Popup x:Name="Popup" Placement="Bottom" 
                                            IsOpen="{TemplateBinding IsSubmenuOpen}" 
                                            AllowsTransparency="True" 
                                            Focusable="False" 
                                            PopupAnimation="Fade">
                                         <Border x:Name="SubmenuBorder" SnapsToDevicePixels="True" 
-                                                Background="#1E1E1E" 
-                                                BorderBrush="#3E3E42" 
+                                                Background="{DynamicResource AppBackground}" 
+                                                BorderBrush="{DynamicResource BorderBrush}" 
                                                 BorderThickness="1" 
                                                 Padding="2">
                                             <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Cycle"/>
@@ -83,7 +79,7 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                                 </Grid>
                                 <ControlTemplate.Triggers>
                                     <Trigger Property="IsHighlighted" Value="True">
-                                        <Setter TargetName="Border" Property="Background" Value="#3E3E42"/>
+                                        <Setter TargetName="Border" Property="Background" Value="{DynamicResource HoverBrush}"/>
                                     </Trigger>
                                 </ControlTemplate.Triggers>
                             </ControlTemplate>
@@ -99,17 +95,14 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                                         <ContentPresenter ContentSource="Icon" Margin="0,0,10,0" Width="16" Height="16"/>
                                         <ContentPresenter ContentSource="Header"/>
                                         <TextBlock Text="{TemplateBinding InputGestureText}" 
-                                                   Foreground="#888888" Margin="20,0,0,0" 
+                                                   Foreground="{DynamicResource SecondaryText}" Margin="20,0,0,0" 
                                                    HorizontalAlignment="Right" DockPanel.Dock="Right"/>
                                     </DockPanel>
                                 </Border>
                                 <ControlTemplate.Triggers>
                                     <Trigger Property="IsHighlighted" Value="True">
-                                        <Setter TargetName="Border" Property="Background" Value="#005A9E"/>
+                                        <Setter TargetName="Border" Property="Background" Value="{DynamicResource BrandColor}"/>
                                         <Setter Property="Foreground" Value="White"/>
-                                    </Trigger>
-                                    <Trigger Property="IsEnabled" Value="False">
-                                        <Setter Property="Opacity" Value="0.5"/>
                                     </Trigger>
                                 </ControlTemplate.Triggers>
                             </ControlTemplate>
@@ -121,7 +114,7 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
 
         <Style x:Key="WindowControlButtonStyle" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="#AAAAAA"/>
+            <Setter Property="Foreground" Value="{DynamicResource IconColor}"/>
             <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="Width" Value="46"/>
@@ -135,8 +128,8 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="{StaticResource HoverColor}"/>
-                                <Setter Property="Foreground" Value="White"/>
+                                <Setter Property="Background" Value="{DynamicResource HoverBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource PrimaryText}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -148,13 +141,14 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
                     <Setter Property="Background" Value="#E81123"/>
+                    <Setter Property="Foreground" Value="White"/>
                 </Trigger>
             </Style.Triggers>
         </Style>
 
         <Style x:Key="ActivityBarToggleStyle" TargetType="ToggleButton">
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="{StaticResource MutedTextColor}"/>
+            <Setter Property="Foreground" Value="{DynamicResource SecondaryText}"/>
             <Setter Property="Width" Value="50"/>
             <Setter Property="Height" Value="50"/>
             <Setter Property="BorderThickness" Value="0"/>
@@ -164,15 +158,15 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                         <Grid Background="{TemplateBinding Background}">
                             <Border x:Name="Indicator" Width="2" HorizontalAlignment="Left" Background="Transparent"/>
                             <TextBlock Text="{TemplateBinding Content}" FontFamily="Segoe MDL2 Assets" FontSize="20"
-                                       VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="{TemplateBinding Foreground}"/>
+                                     VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="{TemplateBinding Foreground}"/>
                         </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Foreground" Value="White"/>
+                                <Setter Property="Foreground" Value="{DynamicResource PrimaryText}"/>
                             </Trigger>
                             <Trigger Property="IsChecked" Value="True">
-                                <Setter Property="Foreground" Value="White"/>
-                                <Setter TargetName="Indicator" Property="Background" Value="{StaticResource BrandColor}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource PrimaryText}"/>
+                                <Setter TargetName="Indicator" Property="Background" Value="{DynamicResource BrandColor}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -191,11 +185,11 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     <ControlTemplate TargetType="Button">
                         <Border Background="{TemplateBinding Background}" CornerRadius="2">
                             <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="10" 
-                                       Foreground="#CCCCCC" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                     Foreground="{DynamicResource IconColor}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#454545"/>
+                                <Setter Property="Background" Value="{DynamicResource HoverBrush}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -204,8 +198,8 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         </Style>
 
         <Style x:Key="VsCodeTabStyle" TargetType="TabItem">
-            <Setter Property="Background" Value="#2D2D2D"/>
-            <Setter Property="Foreground" Value="#969696"/>
+            <Setter Property="Background" Value="{DynamicResource HeaderBackground}"/>
+            <Setter Property="Foreground" Value="{DynamicResource SecondaryText}"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="FontSize" Value="13"/>
             <Setter Property="Height" Value="35"/>
@@ -214,7 +208,7 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     <ControlTemplate TargetType="TabItem">
                         <Grid>
                             <Border x:Name="TopIndicator" VerticalAlignment="Top" Height="1" Background="Transparent" Panel.ZIndex="10"/>
-                            <Border x:Name="Border" Background="{TemplateBinding Background}" BorderBrush="#252526" BorderThickness="0,0,1,0" Padding="10,0">
+                            <Border x:Name="Border" Background="{TemplateBinding Background}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,1,0" Padding="10,0">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                     <TextBlock Text="&#xE8A5;" FontFamily="Segoe MDL2 Assets" Foreground="{TemplateBinding Foreground}" Margin="0,1,5,0" FontSize="12"/>
                                     <ContentPresenter ContentSource="Header" VerticalAlignment="Center"/>
@@ -224,12 +218,12 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                         </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsSelected" Value="True">
-                                <Setter Property="Background" Value="#1E1E1E"/>
-                                <Setter Property="Foreground" Value="White"/>
-                                <Setter TargetName="TopIndicator" Property="Background" Value="{StaticResource BrandColor}"/>
+                                <Setter Property="Background" Value="{DynamicResource AppBackground}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource PrimaryText}"/>
+                                <Setter TargetName="TopIndicator" Property="Background" Value="{DynamicResource BrandColor}"/>
                             </Trigger>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Foreground" Value="White"/>
+                                <Setter Property="Foreground" Value="{DynamicResource PrimaryText}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -239,7 +233,7 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
 
         <Style x:Key="ToolbarBtnStyle" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="#F1F1F1"/>
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryText}"/>
             <Setter Property="Width" Value="32"/>
             <Setter Property="Height" Value="26"/>
             <Setter Property="Margin" Value="1,0"/>
@@ -252,10 +246,10 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#3E3E42"/>
+                                <Setter Property="Background" Value="{DynamicResource HoverBrush}"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter Property="Background" Value="#007ACC"/>
+                                <Setter Property="Background" Value="{DynamicResource BrandColor}"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter Property="Opacity" Value="0.4"/>
@@ -269,14 +263,13 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         <Style x:Key="ToolbarSeparator" TargetType="Border">
             <Setter Property="Width" Value="1"/>
             <Setter Property="Height" Value="16"/>
-            <Setter Property="Background" Value="#3E3E42"/>
+            <Setter Property="Background" Value="{DynamicResource BorderBrush}"/>
             <Setter Property="Margin" Value="4,0"/>
         </Style>
 
-
         <Style x:Key="ToolbarToggleBtnStyle" TargetType="ToggleButton">
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="#F1F1F1"/>
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryText}"/>
             <Setter Property="Width" Value="32"/>
             <Setter Property="Height" Value="26"/>
             <Setter Property="Margin" Value="1,0"/>
@@ -289,10 +282,10 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Border" Property="Background" Value="#3E3E42"/>
+                                <Setter TargetName="Border" Property="Background" Value="{DynamicResource HoverBrush}"/>
                             </Trigger>
                             <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="Border" Property="Background" Value="#007ACC"/>
+                                <Setter TargetName="Border" Property="Background" Value="{DynamicResource BrandColor}"/>
                                 <Setter Property="Foreground" Value="White"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
@@ -303,7 +296,6 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                 </Setter.Value>
             </Setter>
         </Style>
-        
     </Window.Resources>
 
     <Grid x:Name="RootGrid">
@@ -324,7 +316,7 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <Grid Grid.Row="0" Background="{StaticResource BgColor}">
+        <Grid Grid.Row="0" Background="{DynamicResource AppBackground}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
@@ -338,10 +330,10 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                   WindowChrome.IsHitTestVisibleInChrome="True">
 
                 <Image Source="/Resource/icon.ico"
-                 Width="18" Height="18"
-                 Margin="0,0,2,0"
-                 VerticalAlignment="Center"
-                 RenderOptions.BitmapScalingMode="HighQuality">
+                Width="18" Height="18"
+                Margin="0,0,2,0"
+                VerticalAlignment="Center"
+                RenderOptions.BitmapScalingMode="HighQuality">
                     <Image.Effect>
                         <DropShadowEffect Color="Black" BlurRadius="2" ShadowDepth="1" Opacity="0.3"/>
                     </Image.Effect>
@@ -351,12 +343,14 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     <MenuItem Header="Archivo">
                         <MenuItem Header="Nuevo Proyecto..." Click="BtnNew_Click"/>
                         <MenuItem Header="Abrir..." Click="BtnOpen_Click"/>
-                        <Separator Background="{StaticResource BorderColor}"/>
+                        <Separator/>
                         <MenuItem Header="Guardar" InputGestureText="Ctrl+S" Click="MnuSave_Click"/>
                         <MenuItem Header="Guardar como..." Click="MnuSaveAs_Click"/>
                         <MenuItem Header="Exportar a Imagen" Click="MnuExportPng_Click"/>
-                        <Separator Background="{StaticResource BorderColor}"/>
+                        <Separator/>
                         <MenuItem Header="Cerrar Pestaña" Click="BtnCloseProject_Click"/>
+                        <Separator/>
+                        <MenuItem Header="Preferencias..." Click="MnuPreferences_Click"/>
                         <MenuItem Header="Salir" Click="BtnClose_Click"/>
                     </MenuItem>
                     <MenuItem Header="Editar">
@@ -374,17 +368,17 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
             </StackPanel>
 
             <Grid Grid.Column="1" 
-      HorizontalAlignment="Center" 
-      VerticalAlignment="Center" 
-      Width="400"
-      WindowChrome.IsHitTestVisibleInChrome="True">
+                HorizontalAlignment="Center" 
+                VerticalAlignment="Center" 
+                Width="400"
+                WindowChrome.IsHitTestVisibleInChrome="True">
 
                 <Border x:Name="SearchContainer" 
-            Background="#3C3C3C" 
-            CornerRadius="4" 
-            BorderBrush="#555" 
-            BorderThickness="1"
-            Height="24">
+                    Background="{DynamicResource HeaderBackground}" 
+                    CornerRadius="4" 
+                    BorderBrush="{DynamicResource BorderBrush}" 
+                    BorderThickness="1"
+                    Height="24">
 
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -393,15 +387,15 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                         </Grid.ColumnDefinitions>
 
                         <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="12"
-                       Foreground="#CCCCCC" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                               Foreground="{DynamicResource IconColor}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
 
                         <TextBox x:Name="TxtGlobalSearch" Grid.Column="1"
-                     Background="Transparent" BorderThickness="0"
-                     Foreground="White" CaretBrush="White"
-                     FontSize="12" VerticalContentAlignment="Center"
-                     Padding="0,0,5,2"
-                     TextChanged="TxtGlobalSearch_TextChanged"
-                     PreviewKeyDown="TxtGlobalSearch_PreviewKeyDown">
+                             Background="Transparent" BorderThickness="0"
+                             Foreground="{DynamicResource PrimaryText}" CaretBrush="{DynamicResource PrimaryText}"
+                             FontSize="12" VerticalContentAlignment="Center"
+                             Padding="0,0,5,2"
+                             TextChanged="TxtGlobalSearch_TextChanged"
+                             PreviewKeyDown="TxtGlobalSearch_PreviewKeyDown">
                             <TextBox.Style>
                                 <Style TargetType="TextBox">
                                     <Setter Property="Template">
@@ -416,7 +410,7 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                         </TextBox>
 
                         <TextBlock IsHitTestVisible="False" Text="Buscar (Ctrl+P)" FontSize="12"
-                       Grid.Column="1" VerticalAlignment="Center" Foreground="#888888" Margin="2,0,0,1">
+                               Grid.Column="1" VerticalAlignment="Center" Foreground="{DynamicResource SecondaryText}" Margin="2,0,0,1">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock">
                                     <Setter Property="Visibility" Value="Collapsed"/>
@@ -432,27 +426,27 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                 </Border>
 
                 <Popup x:Name="SearchPopup" 
-           PlacementTarget="{Binding ElementName=SearchContainer}" 
-           Placement="Bottom" 
-           StaysOpen="False" 
-           AllowsTransparency="True" 
-           PopupAnimation="Slide" 
-           Width="400">
+                    PlacementTarget="{Binding ElementName=SearchContainer}" 
+                    Placement="Bottom" 
+                    StaysOpen="False" 
+                    AllowsTransparency="True" 
+                    PopupAnimation="Slide" 
+                    Width="400">
 
-                    <Border Background="#252526" BorderBrush="#007ACC" BorderThickness="1" CornerRadius="4" MaxHeight="300" Margin="0,2,0,0">
+                    <Border Background="{DynamicResource PanelBackground}" BorderBrush="{DynamicResource AccentColor}" BorderThickness="1" CornerRadius="4" MaxHeight="300" Margin="0,2,0,0">
                         <Border.Effect>
                             <DropShadowEffect BlurRadius="10" ShadowDepth="2" Direction="270" Color="Black" Opacity="0.5"/>
                         </Border.Effect>
 
                         <ListBox x:Name="LstSearchResults" 
-                     Background="Transparent" BorderThickness="0" 
-                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                     MouseDoubleClick="LstSearchResults_MouseDoubleClick"
-                     PreviewKeyDown="LstSearchResults_PreviewKeyDown">
+                             Background="Transparent" BorderThickness="0" 
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                             MouseDoubleClick="LstSearchResults_MouseDoubleClick"
+                             PreviewKeyDown="LstSearchResults_PreviewKeyDown">
                             <ListBox.ItemContainerStyle>
                                 <Style TargetType="ListBoxItem">
                                     <Setter Property="Padding" Value="10,5"/>
-                                    <Setter Property="Foreground" Value="#CCCCCC"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource PrimaryText}"/>
                                     <Setter Property="Template">
                                         <Setter.Value>
                                             <ControlTemplate TargetType="ListBoxItem">
@@ -461,10 +455,10 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                                                 </Border>
                                                 <ControlTemplate.Triggers>
                                                     <Trigger Property="IsMouseOver" Value="True">
-                                                        <Setter TargetName="Bd" Property="Background" Value="#2A2D2E"/>
+                                                        <Setter TargetName="Bd" Property="Background" Value="{DynamicResource HoverBrush}"/>
                                                     </Trigger>
                                                     <Trigger Property="IsSelected" Value="True">
-                                                        <Setter TargetName="Bd" Property="Background" Value="#094771"/>
+                                                        <Setter TargetName="Bd" Property="Background" Value="{DynamicResource AccentColor}"/>
                                                         <Setter Property="Foreground" Value="White"/>
                                                     </Trigger>
                                                 </ControlTemplate.Triggers>
@@ -482,10 +476,10 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                                             <ColumnDefinition Width="*"/>
                                         </Grid.ColumnDefinitions>
                                         <TextBlock Text="{Binding IconCode}" FontFamily="Segoe MDL2 Assets" 
-                                       Margin="0,0,10,0" VerticalAlignment="Center" Foreground="#4EC9B0"/>
+                                               Margin="0,0,10,0" VerticalAlignment="Center" Foreground="{DynamicResource AccentColor}"/>
                                         <StackPanel Grid.Column="1">
                                             <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="13"/>
-                                            <TextBlock Text="{Binding FullPath}" FontSize="10" Foreground="#888888" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding FullPath}" FontSize="10" Foreground="{DynamicResource SecondaryText}" TextTrimming="CharacterEllipsis"/>
                                         </StackPanel>
                                     </Grid>
                                 </DataTemplate>
@@ -503,9 +497,9 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
             </StackPanel>
         </Grid>
 
-        <Border Grid.Row="0" VerticalAlignment="Bottom" Height="1" Background="{StaticResource BorderColor}"/>
+        <Border Grid.Row="0" VerticalAlignment="Bottom" Height="1" Background="{DynamicResource BorderBrush}"/>
 
-        <Border Grid.Row="1" Background="{StaticResource BgColor}" BorderBrush="#3E3E42" BorderThickness="0,0,0,1">
+        <Border Grid.Row="1" Background="{DynamicResource AppBackground}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1">
             <StackPanel Orientation="Horizontal" Margin="5,0" VerticalAlignment="Center">
 
                 <Button Style="{StaticResource ToolbarBtnStyle}" ToolTip="Guardar (Ctrl+S)" Click="MnuSave_Click">
@@ -542,62 +536,60 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                 <Border Style="{StaticResource ToolbarSeparator}"/>
 
                 <Button Style="{StaticResource ToolbarBtnStyle}" ToolTip="Alinear a la Izquierda" Click="BtnAlignLeft_Click">
-                    <Path Data="M2,2 H4 V14 H2 Z M6,4 H14 V7 H6 Z M6,9 H12 V12 H6 Z" Fill="#F1F1F1" Width="14" Height="14" Stretch="Uniform"/>
+                    <Path Data="M2,2 H4 V14 H2 Z M6,4 H14 V7 H6 Z M6,9 H12 V12 H6 Z" Fill="{DynamicResource PrimaryText}" Width="14" Height="14" Stretch="Uniform"/>
                 </Button>
                 <Button Style="{StaticResource ToolbarBtnStyle}" ToolTip="Alinear al Centro" Click="BtnAlignCenter_Click">
-                    <Path Data="M7,2 H9 V14 H7 Z M3,4 H13 V7 H3 Z M4,9 H12 V12 H4 Z" Fill="#F1F1F1" Width="14" Height="14" Stretch="Uniform"/>
+                    <Path Data="M7,2 H9 V14 H7 Z M3,4 H13 V7 H3 Z M4,9 H12 V12 H4 Z" Fill="{DynamicResource PrimaryText}" Width="14" Height="14" Stretch="Uniform"/>
                 </Button>
                 <Button Style="{StaticResource ToolbarBtnStyle}" ToolTip="Alinear a la Derecha" Click="BtnAlignRight_Click">
-                    <Path Data="M12,2 H14 V14 H12 Z M2,4 H10 V7 H2 Z M4,9 H10 V12 H4 Z" Fill="#F1F1F1" Width="14" Height="14" Stretch="Uniform"/>
+                    <Path Data="M12,2 H14 V14 H12 Z M2,4 H10 V7 H2 Z M4,9 H10 V12 H4 Z" Fill="{DynamicResource PrimaryText}" Width="14" Height="14" Stretch="Uniform"/>
                 </Button>
 
                 <Border Style="{StaticResource ToolbarSeparator}"/>
 
                 <Button Style="{StaticResource ToolbarBtnStyle}" ToolTip="Alinear Arriba" Click="BtnAlignTop_Click">
-                    <Path Data="M2,2 V4 H14 V2 Z M4,6 V14 H7 V6 Z M9,6 V12 H12 V6 Z" Fill="#F1F1F1" Width="14" Height="14" Stretch="Uniform"/>
+                    <Path Data="M2,2 V4 H14 V2 Z M4,6 V14 H7 V6 Z M9,6 V12 H12 V6 Z" Fill="{DynamicResource PrimaryText}" Width="14" Height="14" Stretch="Uniform"/>
                 </Button>
                 <Button Style="{StaticResource ToolbarBtnStyle}" ToolTip="Alinear al Medio" Click="BtnAlignMiddle_Click">
-                    <Path Data="M2,7 V9 H14 V7 Z M4,2 V14 H7 V2 Z M9,4 V12 H12 V4 Z" Fill="#F1F1F1" Width="14" Height="14" Stretch="Uniform"/>
+                    <Path Data="M2,7 V9 H14 V7 Z M4,2 V14 H7 V2 Z M9,4 V12 H12 V4 Z" Fill="{DynamicResource PrimaryText}" Width="14" Height="14" Stretch="Uniform"/>
                 </Button>
                 <Button Style="{StaticResource ToolbarBtnStyle}" ToolTip="Alinear Abajo" Click="BtnAlignBottom_Click">
-                    <Path Data="M2,12 V14 H14 V12 Z M4,2 V10 H7 V2 Z M9,4 V10 H12 V4 Z" Fill="#F1F1F1" Width="14" Height="14" Stretch="Uniform"/>
+                    <Path Data="M2,12 V14 H14 V12 Z M4,2 V10 H7 V2 Z M9,4 V10 H12 V4 Z" Fill="{DynamicResource PrimaryText}" Width="14" Height="14" Stretch="Uniform"/>
                 </Button>
 
                 <Border Style="{StaticResource ToolbarSeparator}"/>
 
                 <Button Style="{StaticResource ToolbarBtnStyle}" ToolTip="Igualar Ancho" Click="BtnSameWidth_Click">
-                    <Path Data="M2,4 H6 V12 H2 Z M9,2 H13 V14 H9 Z M7,8 L9,8 M6,8 L4,8" Stroke="#F1F1F1" StrokeThickness="1"/>
+                    <Path Data="M2,4 H6 V12 H2 Z M9,2 H13 V14 H9 Z M7,8 L9,8 M6,8 L4,8" Stroke="{DynamicResource PrimaryText}" StrokeThickness="1"/>
                 </Button>
                 <Button Style="{StaticResource ToolbarBtnStyle}" ToolTip="Igualar Alto" Click="BtnSameHeight_Click">
-                    <Path Data="M2,9 V13 H14 V9 Z M4,2 V6 H12 V2 Z" Stroke="#F1F1F1" StrokeThickness="1"/>
+                    <Path Data="M2,9 V13 H14 V9 Z M4,2 V6 H12 V2 Z" Stroke="{DynamicResource PrimaryText}" StrokeThickness="1"/>
                 </Button>
 
                 <Border Style="{StaticResource ToolbarSeparator}"/>
 
                 <Button Style="{StaticResource ToolbarBtnStyle}" ToolTip="Traer al Frente" Click="BtnBringToFront_Click">
                     <Grid Width="16" Height="16">
-                        <Rectangle Width="10" Height="10" Fill="#666" Margin="0,0,6,6"/>
-                        <Rectangle Width="10" Height="10" Fill="#F1F1F1" Stroke="#333" StrokeThickness="1" Margin="4,4,0,0"/>
+                        <Rectangle Width="10" Height="10" Fill="{DynamicResource SecondaryText}" Margin="0,0,6,6"/>
+                        <Rectangle Width="10" Height="10" Fill="{DynamicResource PrimaryText}" Stroke="{DynamicResource BorderBrush}" StrokeThickness="1" Margin="4,4,0,0"/>
                     </Grid>
                 </Button>
 
                 <Button Style="{StaticResource ToolbarBtnStyle}" ToolTip="Enviar al Fondo" Click="BtnSendToBack_Click">
                     <Grid Width="16" Height="16">
-                        <Rectangle Width="10" Height="10" Fill="#F1F1F1" Stroke="#333" StrokeThickness="1" Margin="0,0,6,6"/>
-                        <Rectangle Width="10" Height="10" Fill="#666" Stroke="#333" StrokeThickness="1" Margin="4,4,0,0"/>
+                        <Rectangle Width="10" Height="10" Fill="{DynamicResource PrimaryText}" Stroke="{DynamicResource BorderBrush}" StrokeThickness="1" Margin="0,0,6,6"/>
+                        <Rectangle Width="10" Height="10" Fill="{DynamicResource SecondaryText}" Stroke="{DynamicResource BorderBrush}" StrokeThickness="1" Margin="4,4,0,0"/>
                     </Grid>
                 </Button>
 
                 <Border Style="{StaticResource ToolbarSeparator}"/>
 
                 <ToggleButton Style="{StaticResource ToolbarToggleBtnStyle}" 
-              ToolTip="Editar Orden de Tabulación" 
-              Click="BtnTabOrder_Click">
+                          ToolTip="Editar Orden de Tabulación" 
+                          Click="BtnTabOrder_Click">
                     <TextBlock Text="&#xE7FD;" FontFamily="Segoe MDL2 Assets" FontSize="14" 
-               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </ToggleButton>
-
-
             </StackPanel>
         </Border>
 
@@ -609,7 +601,7 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                 <ColumnDefinition Width="250" x:Name="ColProperties"/>
             </Grid.ColumnDefinitions>
 
-            <Grid Grid.Column="0" Background="{StaticResource SideBarColor}">
+            <Grid Grid.Column="0" Background="{DynamicResource SideBarBackground}">
                 <StackPanel>
                     <ToggleButton Style="{StaticResource ActivityBarToggleStyle}" 
                                   Content="&#xE8B7;" ToolTip="Explorador de Proyectos (Ctrl+Shift+E)"
@@ -618,34 +610,34 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                                   Content="&#xe152;" ToolTip="Caja de Herramientas (Ctrl+Shift+X)"
                                   Click="ActivityBar_Click" Tag="Toolbox"/>
                 </StackPanel>
-                <Border HorizontalAlignment="Right" Width="1" Background="{StaticResource BorderColor}"/>
+                <Border HorizontalAlignment="Right" Width="1" Background="{DynamicResource BorderBrush}"/>
             </Grid>
 
-            <Grid Grid.Column="1" x:Name="SideBarContainer" Background="{StaticResource SideBarColor}" Width="0">
+            <Grid Grid.Column="1" x:Name="SideBarContainer" Background="{DynamicResource SideBarBackground}" Width="0">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="35"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
                 <TextBlock Grid.Row="0" x:Name="SideBarTitle" 
-                           Text="EXPLORADOR" Foreground="{StaticResource MutedTextColor}" 
+                           Text="EXPLORADOR" Foreground="{DynamicResource SecondaryText}" 
                            FontSize="11" FontWeight="Bold" VerticalAlignment="Center" Margin="20,0,0,0"/>
 
                 <ContentControl Grid.Row="1" x:Name="SideBarContent" Margin="10">
-                    <TextBlock Text="Contenido del panel..." Foreground="#888888"/>
+                    <TextBlock Text="Contenido del panel..." Foreground="{DynamicResource SecondaryText}"/>
                 </ContentControl>
 
-                <Border Grid.RowSpan="2" HorizontalAlignment="Right" Width="1" Background="{StaticResource BorderColor}"/>
+                <Border Grid.RowSpan="2" HorizontalAlignment="Right" Width="1" Background="{DynamicResource BorderBrush}"/>
             </Grid>
 
-            <Grid Grid.Column="2" Background="{StaticResource BgColor}">
+            <Grid Grid.Column="2" Background="{DynamicResource AppBackground}">
                 <Grid x:Name="EmptyStateOverlay" Panel.ZIndex="0">
                     <TextBlock Text="&#xE70C;" FontFamily="Segoe MDL2 Assets" 
-                               FontSize="150" Foreground="{StaticResource HoverColor}"
+                               FontSize="150" Foreground="{DynamicResource HoverBrush}"
                                VerticalAlignment="Center" HorizontalAlignment="Center"
                                Opacity="0.3"/>
                     <TextBlock Text="Selecciona un archivo del explorador para editar" 
-                               Foreground="#666666" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,200,0,0"/>
+                               Foreground="{DynamicResource SecondaryText}" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,200,0,0"/>
                 </Grid>
 
                 <TabControl x:Name="MainTabControl" 
@@ -654,12 +646,11 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                             Padding="0"
                             ItemContainerStyle="{StaticResource VsCodeTabStyle}"
                             Visibility="Hidden"
-                            MouseMove="Lienzo_MouseMove"
-                            >
+                            MouseMove="Lienzo_MouseMove">
                 </TabControl>
             </Grid>
 
-            <Grid Grid.Column="3" x:Name="RightSidebarGrid" Background="#252526">
+            <Grid Grid.Column="3" x:Name="RightSidebarGrid" Background="{DynamicResource PanelBackground}">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*" x:Name="RightRow1"/>
                     <RowDefinition Height="5" x:Name="RightSplitterRow"/>
@@ -668,34 +659,33 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
 
                 <local:PropertiesPanel x:Name="PropertiesPanel" 
                            Grid.Row="0"
-                           BorderBrush="#3E3E42" 
+                           BorderBrush="{DynamicResource BorderBrush}" 
                            BorderThickness="1,0,0,0"/>
 
-                <GridSplitter Grid.Row="1" Height="5" HorizontalAlignment="Stretch" Background="#3E3E42" ResizeBehavior="PreviousAndNext"/>
+                <GridSplitter Grid.Row="1" Height="5" HorizontalAlignment="Stretch" Background="{DynamicResource BorderBrush}" ResizeBehavior="PreviousAndNext"/>
 
-                <Grid x:Name="SecondaryPanel" Grid.Row="2" Background="#2D2D30">
+                <Grid x:Name="SecondaryPanel" Grid.Row="2" Background="{DynamicResource HeaderBackground}">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <Border Padding="5" BorderBrush="#3E3E42" BorderThickness="1,1,0,0">
+                    <Border Padding="5" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1,1,0,0">
                         <DockPanel>
                             <Button DockPanel.Dock="Right" Click="BtnCloseSecondary_Click" Width="16" Height="16" Background="Transparent" BorderThickness="0">
-                                <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="10" Foreground="#969696"/>
+                                <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="10" Foreground="{DynamicResource SecondaryText}"/>
                             </Button>
-                            <TextBlock Text="VISTA AUXILIAR" Foreground="#969696" FontSize="11" FontWeight="Bold"/>
+                            <TextBlock Text="VISTA AUXILIAR" Foreground="{DynamicResource SecondaryText}" FontSize="11" FontWeight="Bold"/>
                         </DockPanel>
                     </Border>
 
-                    <TextBlock Grid.Row="1" Text="Aquí iría otro control..." Foreground="#666" 
+                    <TextBlock Grid.Row="1" Text="Aquí iría otro control..." Foreground="{DynamicResource SecondaryText}" 
                    VerticalAlignment="Center" HorizontalAlignment="Center" TextWrapping="Wrap" Margin="10"/>
                 </Grid>
-
             </Grid>
         </Grid>
 
-        <StatusBar Grid.Row="3" Background="#007ACC" Foreground="White" Padding="5,0">
+        <StatusBar Grid.Row="3" Background="{DynamicResource BrandColor}" Foreground="White" Padding="5,0">
             <StatusBar.ItemsPanel>
                 <ItemsPanelTemplate>
                     <Grid>
@@ -725,15 +715,13 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                 <Style TargetType="Separator">
                     <Setter Property="Width" Value="1"/>
                     <Setter Property="Height" Value="14"/>
-                    <Setter Property="Background" Value="#33FFFFFF"/>
+                    <Setter Property="Background" Value="{DynamicResource BorderBrush}"/>
                     <Setter Property="Margin" Value="0"/>
                 </Style>
             </StatusBar.Resources>
 
             <StatusBarItem Grid.Column="0" HorizontalContentAlignment="Stretch">
-                <TextBlock Text="Listo" 
-                   FontFamily="Segoe UI" 
-                   Margin="5,0,0,0" />
+                <TextBlock Text="Listo" FontFamily="Segoe UI" Margin="5,0,0,0" />
             </StatusBarItem>
 
             <StatusBarItem Grid.Column="2">
@@ -758,25 +746,25 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Text="100%" Margin="0,0,5,0" Width="35" TextAlignment="Right"/>
                     <Slider Width="80" 
-                    VerticalAlignment="Center" 
-                    Minimum="20" 
-                    Maximum="200" 
-                    Value="100"
-                    IsSnapToTickEnabled="True"
-                    TickFrequency="10">
+                        VerticalAlignment="Center" 
+                        Minimum="20" 
+                        Maximum="200" 
+                        Value="100"
+                        IsSnapToTickEnabled="True"
+                        TickFrequency="10">
                         <Slider.Style>
                             <Style TargetType="Slider">
                                 <Setter Property="Template">
                                     <Setter.Value>
                                         <ControlTemplate TargetType="Slider">
                                             <Grid VerticalAlignment="Center">
-                                                <Border Height="2" Background="#55FFFFFF" CornerRadius="1"/>
+                                                <Border Height="2" Background="{DynamicResource SecondaryText}" CornerRadius="1"/>
                                                 <Track x:Name="PART_Track">
                                                     <Track.Thumb>
                                                         <Thumb Width="10" Height="10">
                                                             <Thumb.Template>
                                                                 <ControlTemplate>
-                                                                    <Ellipse Fill="White" Stroke="#007ACC" StrokeThickness="1"/>
+                                                                    <Ellipse Fill="White" Stroke="{DynamicResource AccentColor}" StrokeThickness="1"/>
                                                                 </ControlTemplate>
                                                             </Thumb.Template>
                                                         </Thumb>

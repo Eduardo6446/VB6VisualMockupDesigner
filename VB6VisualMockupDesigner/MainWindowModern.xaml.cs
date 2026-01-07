@@ -876,6 +876,30 @@ namespace VB6VisualMockupDesigner
             txtCursorPos.Text = "X: 0, Y: 0"; // O dejarlo vacío
         }
 
+        private void MnuPreferences_Click(object sender, RoutedEventArgs e)
+        {
+            // Lógica para mostrar SettingsView. 
+            // Como tu diseño usa pestañas o paneles laterales, puedes cargarlo ahí.
+            // Ejemplo rápido: abrirlo en una ventana modal o en una nueva pestaña
+
+            Window settingsWindow = new Window
+            {
+                Title = "Preferencias",
+                Content = new SettingsView(), // Tu UserControl
+                Width = 650,
+                Height = 500,
+                WindowStartupLocation = WindowStartupLocation.CenterScreen,
+                Style = null, // Para usar ventana estándar por ahora
+                WindowStyle = WindowStyle.None, // Quita la barra de Windows
+                AllowsTransparency = false, // Mantenemos opacidad
+                BorderThickness = new Thickness(1), // Un borde fino
+                                                    // El color del borde usa el recurso dinámico del tema actual
+                BorderBrush = (System.Windows.Media.Brush)Application.Current.Resources["BrandColor"],
+                Background = (System.Windows.Media.Brush)Application.Current.Resources["AppBackground"]
+            };
+            settingsWindow.ShowDialog();
+        }
+
 
     }
 }
