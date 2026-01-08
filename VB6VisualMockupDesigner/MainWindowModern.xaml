@@ -590,6 +590,19 @@
                     <TextBlock Text="&#xE7FD;" FontFamily="Segoe MDL2 Assets" FontSize="14" 
                            HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </ToggleButton>
+
+                <Border Style="{StaticResource ToolbarSeparator}"/>
+
+                <Button Style="{StaticResource ToolbarBtnStyle}" ToolTip="Bloquear Controles (Ctrl+L)" Click="BtnLock_Click">
+                    <TextBlock Text="&#xE72E;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
+                </Button>
+
+                <Button Style="{StaticResource ToolbarBtnStyle}" ToolTip="Desbloquear Controles (Ctrl+Shift+L)" Click="BtnUnlock_Click">
+                    <TextBlock Text="&#xE785;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
+                </Button>
+
+
+
             </StackPanel>
         </Border>
 

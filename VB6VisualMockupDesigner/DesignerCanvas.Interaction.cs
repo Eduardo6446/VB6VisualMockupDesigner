@@ -18,6 +18,13 @@ namespace VB6VisualMockupDesigner
         public static void SetIndex(DependencyObject element, int? value) => element.SetValue(IndexProperty, value);
 
         public static int? GetIndex(DependencyObject element) => (int?)element.GetValue(IndexProperty);
+
+
+        public static readonly DependencyProperty IsLockedProperty =
+            DependencyProperty.RegisterAttached("IsLocked", typeof(bool), typeof(VB6Data), new PropertyMetadata(false));
+
+        public static void SetIsLocked(DependencyObject element, bool value) => element.SetValue(IsLockedProperty, value);
+        public static bool GetIsLocked(DependencyObject element) => (bool)element.GetValue(IsLockedProperty);
     }
 
 
@@ -32,7 +39,7 @@ namespace VB6VisualMockupDesigner
         private Point _areaStartPoint;
 
         private readonly HashSet<UIElement> _selectedControls = new HashSet<UIElement>();
-        private Dictionary<UIElement, FrameworkElement> _selectionAdorners = new Dictionary<UIElement, FrameworkElement>();
+        private Dictionary<UIElement, Border> _selectionAdorners = new Dictionary<UIElement, Border>();
         private Dictionary<UIElement, Point> _initialPositions = new Dictionary<UIElement, Point>();
 
         private List<string> _clipboardControls = new List<string>();
@@ -60,6 +67,32 @@ namespace VB6VisualMockupDesigner
         {
             // 'OfType' filtra y convierte a FrameworkElement, 'ToList' crea la lista requerida
             return _selectedControls.OfType<FrameworkElement>().ToList();
+        }
+
+        // ==========================================
+        // NUEVOS MÉTODOS DE BLOQUEO
+        // ==========================================
+
+        public void LockSelected()
+        {
+            if (_selectedControls.Count == 0) return;
+            SaveUndoSnapshot();
+            foreach (var ctrl in _selectedControls)
+            {
+                VB6Data.SetIsLocked(ctrl, true);
+            }
+            UpdateSelectionVisuals(); // Refrescar para quitar los handles
+        }
+
+        public void UnlockSelected()
+        {
+            if (_selectedControls.Count == 0) return;
+            SaveUndoSnapshot();
+            foreach (var ctrl in _selectedControls)
+            {
+                VB6Data.SetIsLocked(ctrl, false);
+            }
+            UpdateSelectionVisuals(); // Refrescar para mostrar los handles
         }
 
 
@@ -105,6 +138,14 @@ namespace VB6VisualMockupDesigner
                     ClearSelection();
                     AddToSelection(control);
                 }
+            }
+
+            // Si está bloqueado, permitimos la selección (arriba), pero NO el arrastre.
+            if (VB6Data.GetIsLocked(control))
+            {
+                e.Handled = true; // Detenemos el evento aquí para que no propague arrastre
+                NotifySelectionChanged();
+                return;
             }
 
             _isDragging = true;
@@ -307,6 +348,12 @@ namespace VB6VisualMockupDesigner
 
                 var visualBorder = _selectionAdorners[control];
 
+                // Cambiar color visualmente si está bloqueado (Feedback visual)
+                bool isLocked = VB6Data.GetIsLocked(control);
+                visualBorder.BorderBrush = isLocked ? Brushes.Gray : Brushes.Blue;
+                visualBorder.BorderThickness = isLocked ? new Thickness(1) : new Thickness(1);
+
+
                 // USAMOS LOS HELPERS:
                 double l = GetSafeLeft(item);
                 double t = GetSafeTop(item);
@@ -318,16 +365,20 @@ namespace VB6VisualMockupDesigner
             }
 
             // B) Actualizar Handles (Cuadraditos blancos)
-            if (_selectedControls.Count == 1)
+
+
+            bool primaryLocked = _primarySelection != null && VB6Data.GetIsLocked(_primarySelection);
+
+            if (_selectedControls.Count == 1 && !primaryLocked)
             {
                 var item = _primarySelection as FrameworkElement;
                 if (_resizeHandles.Count == 0) CreateResizeHandles();
+                foreach (var h in _resizeHandles) h.Visibility = Visibility.Visible;
                 UpdateHandlePositions(item);
             }
             else
             {
-                foreach (var h in _resizeHandles) DesignSurface.Children.Remove(h);
-                _resizeHandles.Clear();
+                foreach (var h in _resizeHandles) h.Visibility = Visibility.Collapsed;
             }
         }
 

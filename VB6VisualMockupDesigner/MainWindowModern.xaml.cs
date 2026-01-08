@@ -577,6 +577,7 @@ namespace VB6VisualMockupDesigner
 
             // Detectar Control presionado
             bool isCtrl = (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control;
+            bool isShift = (Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift;
 
             // 1. SUPRIMIR (Delete)
             if (e.Key == Key.Delete || e.Key == Key.Back)
@@ -625,7 +626,16 @@ namespace VB6VisualMockupDesigner
                 e.Handled = true;
             }
 
+            // 4. LOCK / UNLOCK SHORTCUTS
+            if (isCtrl && e.Key == Key.L)
+            {
+                if (isShift)
+                    designer.UnlockSelected(); // Ctrl + Shift + L
+                else
+                    designer.LockSelected();   // Ctrl + L
 
+                e.Handled = true;
+            }
 
 
 
@@ -855,7 +865,8 @@ namespace VB6VisualMockupDesigner
 
         private void BtnTabOrder_Click(object sender, RoutedEventArgs e) => ExecuteOnActiveDesigner(d => d.ToggleTabOrderMode());
 
-
+        private void BtnLock_Click(object sender, RoutedEventArgs e) => ExecuteOnActiveDesigner(d => d.LockSelected());
+        private void BtnUnlock_Click(object sender, RoutedEventArgs e) => ExecuteOnActiveDesigner(d => d.UnlockSelected());
         private void BtnAbout_Click(object sender, RoutedEventArgs e)
         {
             AboutWindow about = new AboutWindow();
