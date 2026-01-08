@@ -916,6 +916,9 @@ namespace VB6VisualMockupDesigner
         {
             // 1. Guardar la selección actual
             var currentSelection = _selectedControls.ToList();
+            double scale = 3.0; // <--- 1.0 es calidad normal, 2.0 es retina, 3.0 es alta resolución
+            double dpi = 96d;
+
 
             // 2. Limpiar selección visualmente
             ClearSelection();
@@ -934,23 +937,27 @@ namespace VB6VisualMockupDesigner
                 return;
             }
 
+
+
             // 4. TRUCO PARA EVITAR LA IMAGEN NEGRA: USAR DRAWINGVISUAL
             // En lugar de renderizar el grid directamente, creamos un "Lienzo Virtual"
             DrawingVisual drawingVisual = new DrawingVisual();
             using (DrawingContext context = drawingVisual.RenderOpen())
             {
-                // Creamos un "Pincel" visual con la apariencia de nuestro grid
+                context.PushTransform(new ScaleTransform(scale, scale));
+
                 VisualBrush brush = new VisualBrush(elementToCapture);
 
-                // Dibujamos un rectángulo exacto con ese pincel
+                // El pincel sigue tomando el tamaño original del control
                 context.DrawRectangle(brush, null, new Rect(0, 0, elementToCapture.ActualWidth, elementToCapture.ActualHeight));
+
+                context.Pop(); // Cerramos la transformación
             }
 
             // 5. Renderizamos el Lienzo Virtual (no el grid directo)
-            double dpi = 96d;
             RenderTargetBitmap bmp = new RenderTargetBitmap(
-                (int)elementToCapture.ActualWidth,
-                (int)elementToCapture.ActualHeight,
+               (int)(elementToCapture.ActualWidth * scale),  // <--- Ancho x3
+                (int)(elementToCapture.ActualHeight * scale), // <--- Alto x3
                 dpi,
                 dpi,
                 PixelFormats.Pbgra32);
