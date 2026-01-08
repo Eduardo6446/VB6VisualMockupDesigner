@@ -713,7 +713,29 @@ namespace VB6VisualMockupDesigner
             }
 
             // 2. Configurar el diálogo de guardado
-            return;
+            var sfd = new Microsoft.Win32.SaveFileDialog
+            {
+                Filter = "PNG Image (*.png)|*.png",
+                FileName = designer.FormTitle + ".png", // Sugerir el nombre del form
+                Title = "Exportar Mockup a Imagen"
+            };
+
+            if (sfd.ShowDialog() == true)
+            {
+                try
+                {
+                    // 3. Llamar al método del canvas
+                    designer.SaveAsImage(sfd.FileName);
+
+                    // Opcional: Abrir la imagen automáticamente o mostrar mensaje
+                    //System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(sfd.FileName) { UseShellExecute = true });
+                    MessageBox.Show("Imagen exportada correctamente.", "Éxito", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                catch (System.Exception ex)
+                {
+                    MessageBox.Show($"Error al exportar imagen: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
 
 
 

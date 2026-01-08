@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
-using System.Linq;
 
 namespace VB6VisualMockupDesigner
 {
@@ -909,6 +911,75 @@ namespace VB6VisualMockupDesigner
             _tabOrderIndicators.Clear();
         }
 
-        
+
+        public void SaveAsImage(string filePath)
+        {
+            // 1. Guardar la selección actual
+            var currentSelection = _selectedControls.ToList();
+
+            // 2. Limpiar selección visualmente
+            ClearSelection();
+
+            // Forzamos que WPF recalcule el layout visual YA, para asegurar que no hay bordes azules
+            this.UpdateLayout();
+
+            // 3. Elemento a capturar
+            FrameworkElement elementToCapture = this.WindowResizerGrid;
+
+            // Validación de seguridad: Si el ancho/alto es 0, no hay nada que guardar
+            if (elementToCapture.ActualWidth == 0 || elementToCapture.ActualHeight == 0)
+            {
+                RestoreSelection(currentSelection);
+                MessageBox.Show("El formulario tiene un tamaño inválido.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            // 4. TRUCO PARA EVITAR LA IMAGEN NEGRA: USAR DRAWINGVISUAL
+            // En lugar de renderizar el grid directamente, creamos un "Lienzo Virtual"
+            DrawingVisual drawingVisual = new DrawingVisual();
+            using (DrawingContext context = drawingVisual.RenderOpen())
+            {
+                // Creamos un "Pincel" visual con la apariencia de nuestro grid
+                VisualBrush brush = new VisualBrush(elementToCapture);
+
+                // Dibujamos un rectángulo exacto con ese pincel
+                context.DrawRectangle(brush, null, new Rect(0, 0, elementToCapture.ActualWidth, elementToCapture.ActualHeight));
+            }
+
+            // 5. Renderizamos el Lienzo Virtual (no el grid directo)
+            double dpi = 96d;
+            RenderTargetBitmap bmp = new RenderTargetBitmap(
+                (int)elementToCapture.ActualWidth,
+                (int)elementToCapture.ActualHeight,
+                dpi,
+                dpi,
+                PixelFormats.Pbgra32);
+
+            bmp.Render(drawingVisual); // Renderizamos el visual que acabamos de dibujar
+
+            // 6. Guardar en disco
+            PngBitmapEncoder encoder = new PngBitmapEncoder();
+            encoder.Frames.Add(BitmapFrame.Create(bmp));
+
+            using (FileStream fs = new FileStream(filePath, FileMode.Create))
+            {
+                encoder.Save(fs);
+            }
+
+            // 7. Restaurar la selección
+            RestoreSelection(currentSelection);
+        }
+
+        // Helper pequeño para no repetir código de restauración
+        private void RestoreSelection(List<UIElement> selection)
+        {
+            foreach (var ctrl in selection)
+            {
+                AddToSelection(ctrl);
+            }
+            NotifySelectionChanged();
+        }
+
+
     }
 }
