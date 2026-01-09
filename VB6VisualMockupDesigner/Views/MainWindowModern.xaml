@@ -537,6 +537,22 @@
 
                 <Border Style="{StaticResource ToolbarSeparator}"/>
 
+                <ToggleButton Style="{StaticResource ToolbarToggleBtnStyle}" 
+                              IsChecked="True"
+                              ToolTip="Ajustar a la cuadrícula (Snapping)"
+                              Click="BtnToggleSnap_Click">
+                    <TextBlock Text="&#xF45E;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
+                </ToggleButton>
+
+                <ToggleButton Style="{StaticResource ToolbarToggleBtnStyle}" 
+                              IsChecked="False"
+                              ToolTip="Mostrar/Ocultar Cuadrícula"
+                              Click="BtnToggleGrid_Click">
+                    <TextBlock Text="&#xE80A;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
+                </ToggleButton>
+
+                <Border Style="{StaticResource ToolbarSeparator}"/>
+
                 <Button Style="{StaticResource ToolbarBtnStyle}" ToolTip="Alinear a la Izquierda" Click="BtnAlignLeft_Click">
                     <Path Data="M2,2 H4 V14 H2 Z M6,4 H14 V7 H6 Z M6,9 H12 V12 H6 Z" Fill="{DynamicResource PrimaryText}" Width="14" Height="14" Stretch="Uniform"/>
                 </Button>

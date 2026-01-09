@@ -13,11 +13,12 @@
                 <GeometryDrawing>
                     <GeometryDrawing.Geometry>
                         <GeometryGroup>
-                            <EllipseGeometry Center="1,1" RadiusX="0.5" RadiusY="0.5"/>
+                            <RectangleGeometry Rect="0,0,8,0.5" />
+                            <RectangleGeometry Rect="0,0,0.5,8" />
                         </GeometryGroup>
                     </GeometryDrawing.Geometry>
                     <GeometryDrawing.Brush>
-                        <SolidColorBrush Color="#404040"/>
+                        <SolidColorBrush Color="#707070" Opacity="0.5"/>
                     </GeometryDrawing.Brush>
                 </GeometryDrawing>
             </DrawingBrush.Drawing>

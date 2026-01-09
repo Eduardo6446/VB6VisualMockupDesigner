@@ -996,5 +996,20 @@ namespace VB6VisualMockupDesigner.Views
         }
 
 
+        // ==========================================
+        // GRID Y SNAPPING
+        // ==========================================
+
+        private void BtnToggleSnap_Click(object sender, RoutedEventArgs e)
+        {
+            ExecuteOnActiveDesigner(d => d.ToggleSnapping());
+        }
+
+        private void BtnToggleGrid_Click(object sender, RoutedEventArgs e)
+        {
+            ExecuteOnActiveDesigner(d => d.ToggleGrid());
+        }
+
+
     }
 }

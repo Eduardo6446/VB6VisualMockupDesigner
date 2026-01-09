@@ -557,7 +557,12 @@ namespace VB6VisualMockupDesigner.Controls
         // 6. UTILIDADES
         // ==========================================
 
-        private double SnapToGrid(double val) => Math.Round(val / 8.0) * 8.0;
+        private double SnapToGrid(double val)
+        {
+            if (!_isSnappingEnabled) return val; // Si no hay imán, movimiento libre (1px)
+
+            return Math.Round(val / _gridSize) * _gridSize;
+        }
 
         private void DesignSurface_DragOver(object sender, DragEventArgs e)
         {
@@ -1036,6 +1041,44 @@ namespace VB6VisualMockupDesigner.Controls
 
             MainScrollViewer.ScrollToHorizontalOffset(newH);
             MainScrollViewer.ScrollToVerticalOffset(newV);
+        }
+
+        // ==========================================
+        // 12. GRID & SNAPPING
+        // ==========================================
+
+        private bool _isSnappingEnabled = true;
+        private bool _isGridVisible = false;
+        private double _gridSize = 8.0;
+
+        public void ToggleSnapping()
+        {
+            _isSnappingEnabled = !_isSnappingEnabled;
+        }
+
+        public void ToggleGrid()
+        {
+            _isGridVisible = !_isGridVisible;
+
+            // Accedemos al Grid principal definido en el XAML
+            if (DesignSurface != null)
+            {
+                // Si es visible, restauramos el Brush de recursos. Si no, transparente.
+                DesignSurface.Background = _isGridVisible
+                    ? (Brush)FindResource("GridPatternBrush")
+                    : Brushes.Transparent;
+            }
+        }
+
+        public void SetGridSize(double size)
+        {
+            _gridSize = size;
+
+            // Actualizar visualmente el tamaño de los puntitos
+            if (FindResource("GridPatternBrush") is DrawingBrush brush)
+            {
+                brush.Viewport = new Rect(0, 0, size, size);
+            }
         }
 
 
