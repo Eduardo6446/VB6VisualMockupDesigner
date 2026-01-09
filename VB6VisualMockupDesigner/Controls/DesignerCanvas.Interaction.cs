@@ -101,6 +101,25 @@ namespace VB6VisualMockupDesigner.Controls
             UpdateSelectionVisuals(); // Refrescar para mostrar los handles
         }
 
+        // ==========================================
+        // HELPER DE ESTADO DE BLOQUEO
+        // ==========================================
+
+        public bool IsSelectionLocked()
+        {
+            if (_selectedControls.Count == 0) return false;
+
+            // Si AL MENOS UNO está bloqueado, consideramos la selección como "mixta/bloqueada" visualmente
+            // o podemos ser estrictos: solo devuelve true si TODOS están bloqueados.
+            // Convención estándar: Si todos están bloqueados -> True. Si hay mezcla -> False.
+
+            foreach (var ctrl in _selectedControls)
+            {
+                if (!VB6Data.GetIsLocked(ctrl)) return false; // Encontró uno desbloqueado
+            }
+            return true; // Todos están bloqueados
+        }
+
 
 
         // ==========================================
@@ -1080,6 +1099,92 @@ namespace VB6VisualMockupDesigner.Controls
                 brush.Viewport = new Rect(0, 0, size, size);
             }
         }
+
+
+        // ==========================================
+        // 13. DISTRIBUCIÓN (Espaciado Equitativo)
+        // ==========================================
+
+        public void DistributeSelected(string axis)
+        {
+            // Necesitamos al menos 3 controles para que distribuir tenga sentido
+            // (Con 2 controles, distribuir no hace nada porque los extremos no se mueven)
+            if (_selectedControls.Count < 3) return;
+
+            SaveUndoSnapshot();
+
+            // Convertir a lista para poder ordenar
+            var sortedList = _selectedControls.OfType<FrameworkElement>().ToList();
+
+            if (axis == "Horizontal")
+            {
+                // 1. Ordenar por posición visual actual (de Izquierda a Derecha)
+                sortedList.Sort((a, b) => Canvas.GetLeft(a).CompareTo(Canvas.GetLeft(b)));
+
+                // 2. Identificar extremos (que NO se moverán)
+                var first = sortedList.First();
+                var last = sortedList.Last();
+
+                // 3. Calcular espacio total disponible para huecos
+                // Distancia desde el final del primero hasta el inicio del último
+                double startEdge = Canvas.GetLeft(first) + first.ActualWidth;
+                double endEdge = Canvas.GetLeft(last);
+                double totalSpan = endEdge - startEdge;
+
+                // 4. Restar el ancho de los controles intermedios
+                double middleItemsWidth = 0;
+                for (int i = 1; i < sortedList.Count - 1; i++)
+                {
+                    middleItemsWidth += sortedList[i].ActualWidth;
+                }
+
+                // 5. Calcular el tamaño del hueco (Gap)
+                double availableSpace = totalSpan - middleItemsWidth;
+                double gap = availableSpace / (sortedList.Count - 1);
+
+                // 6. Aplicar nuevas posiciones
+                double currentLeft = startEdge + gap;
+                for (int i = 1; i < sortedList.Count - 1; i++)
+                {
+                    Canvas.SetLeft(sortedList[i], Math.Floor(currentLeft)); // Floor para evitar medios pixeles
+                    currentLeft += sortedList[i].ActualWidth + gap;
+                }
+            }
+            else if (axis == "Vertical")
+            {
+                // 1. Ordenar de Arriba a Abajo
+                sortedList.Sort((a, b) => Canvas.GetTop(a).CompareTo(Canvas.GetTop(b)));
+
+                var first = sortedList.First();
+                var last = sortedList.Last();
+
+                double startEdge = Canvas.GetTop(first) + first.ActualHeight;
+                double endEdge = Canvas.GetTop(last);
+                double totalSpan = endEdge - startEdge;
+
+                double middleItemsHeight = 0;
+                for (int i = 1; i < sortedList.Count - 1; i++)
+                {
+                    middleItemsHeight += sortedList[i].ActualHeight;
+                }
+
+                double availableSpace = totalSpan - middleItemsHeight;
+                double gap = availableSpace / (sortedList.Count - 1);
+
+                double currentTop = startEdge + gap;
+                for (int i = 1; i < sortedList.Count - 1; i++)
+                {
+                    Canvas.SetTop(sortedList[i], Math.Floor(currentTop));
+                    currentTop += sortedList[i].ActualHeight + gap;
+                }
+            }
+
+            UpdateSelectionVisuals();
+        }
+
+
+
+
 
 
     }

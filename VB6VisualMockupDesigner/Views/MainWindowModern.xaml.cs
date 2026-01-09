@@ -245,7 +245,16 @@ namespace VB6VisualMockupDesigner.Views
             // Evento de selección para propiedades
             designer.ControlSelected += (s, control) =>
             {
+                // A) Actualizar el Panel de Propiedades
                 this.PropertiesPanel.InspectObject(control);
+
+                // B) Actualizar el estado visual del botón de Bloqueo
+                if (BtnLockToggle != null)
+                {
+                    // Preguntamos al designer si la selección actual está bloqueada
+                    // y actualizamos el botón para que coincida (Candado abierto/cerrado)
+                    BtnLockToggle.IsChecked = designer.IsSelectionLocked();
+                }
             };
 
 
@@ -894,6 +903,19 @@ namespace VB6VisualMockupDesigner.Views
 
         private void BtnLock_Click(object sender, RoutedEventArgs e) => ExecuteOnActiveDesigner(d => d.LockSelected());
         private void BtnUnlock_Click(object sender, RoutedEventArgs e) => ExecuteOnActiveDesigner(d => d.UnlockSelected());
+
+        private void BtnLockToggle_Click(object sender, RoutedEventArgs e)
+        {
+            bool wantLock = BtnLockToggle.IsChecked == true;
+
+            ExecuteOnActiveDesigner(d =>
+            {
+                if (wantLock)
+                    d.LockSelected();
+                else
+                    d.UnlockSelected();
+            });
+        }
         private void BtnAbout_Click(object sender, RoutedEventArgs e)
         {
             AboutWindow about = new AboutWindow();
@@ -1009,6 +1031,25 @@ namespace VB6VisualMockupDesigner.Views
         {
             ExecuteOnActiveDesigner(d => d.ToggleGrid());
         }
+
+
+
+        // ==========================================
+        // DISTRIBUCIÓN
+        // ==========================================
+
+        private void BtnDistributeHoriz_Click(object sender, RoutedEventArgs e)
+        {
+            ExecuteOnActiveDesigner(d => d.DistributeSelected("Horizontal"));
+        }
+
+        private void BtnDistributeVert_Click(object sender, RoutedEventArgs e)
+        {
+            ExecuteOnActiveDesigner(d => d.DistributeSelected("Vertical"));
+        }
+    
+
+
 
 
     }

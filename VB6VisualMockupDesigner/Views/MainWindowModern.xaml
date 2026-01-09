@@ -586,6 +586,24 @@
 
                 <Border Style="{StaticResource ToolbarSeparator}"/>
 
+                <Button Style="{StaticResource ToolbarBtnStyle}" 
+                        ToolTip="Distribuir Horizontalmente" 
+                        Click="BtnDistributeHoriz_Click">
+                    <Path Data="M0,0 L2,0 L2,12 L0,12 Z M5,0 L7,0 L7,12 L5,12 Z M10,0 L12,0 L12,12 L10,12 Z" 
+                          Fill="{DynamicResource IconColor}" 
+                          Height="12" Width="12" Stretch="Uniform"/>
+                </Button>
+
+                <Button Style="{StaticResource ToolbarBtnStyle}" 
+                        ToolTip="Distribuir Verticalmente" 
+                        Click="BtnDistributeVert_Click">
+                    <Path Data="M0,0 L12,0 L12,2 L0,2 Z M0,5 L12,5 L12,7 L0,7 Z M0,10 L12,10 L12,12 L0,12 Z" 
+                          Fill="{DynamicResource IconColor}" 
+                          Height="12" Width="12" Stretch="Uniform"/>
+                </Button>
+                <Border Style="{StaticResource ToolbarSeparator}"/>
+
+
                 <Button Style="{StaticResource ToolbarBtnStyle}" ToolTip="Traer al Frente" Click="BtnBringToFront_Click">
                     <Grid Width="16" Height="16">
                         <Rectangle Width="10" Height="10" Fill="{DynamicResource SecondaryText}" Margin="0,0,6,6"/>
@@ -611,13 +629,32 @@
 
                 <Border Style="{StaticResource ToolbarSeparator}"/>
 
-                <Button Style="{StaticResource ToolbarBtnStyle}" ToolTip="Bloquear Controles (Ctrl+L)" Click="BtnLock_Click">
-                    <TextBlock Text="&#xE72E;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
-                </Button>
+                <ToggleButton x:Name="BtnLockToggle"
+                              ToolTip="Bloquear Selección (Ctrl+L)"
+                              Click="BtnLockToggle_Click">
 
-                <Button Style="{StaticResource ToolbarBtnStyle}" ToolTip="Desbloquear Controles (Ctrl+Shift+L)" Click="BtnUnlock_Click">
-                    <TextBlock Text="&#xE785;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
-                </Button>
+                    <ToggleButton.Style>
+                        <Style TargetType="ToggleButton" BasedOn="{StaticResource ToolbarToggleBtnStyle}">
+
+                            <Setter Property="Content">
+                                <Setter.Value>
+                                    <TextBlock Text="&#xE785;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
+                                </Setter.Value>
+                            </Setter>
+
+                            <Style.Triggers>
+                                <Trigger Property="IsChecked" Value="True">
+                                    <Setter Property="Content">
+                                        <Setter.Value>
+                                            <TextBlock Text="&#xE72E;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
+                                        </Setter.Value>
+                                    </Setter>
+                                    <Setter Property="ToolTip" Value="Desbloquear Controles (Ctrl+Shift+L)"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ToggleButton.Style>
+                </ToggleButton>
 
 
 
