@@ -1,7 +1,8 @@
-﻿<UserControl x:Class="VB6VisualMockupDesigner.ProjectExplorerView"
+﻿<UserControl x:Class="VB6VisualMockupDesigner.Views.ProjectExplorerView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:VB6VisualMockupDesigner"
+             
+             xmlns:models="clr-namespace:VB6VisualMockupDesigner.Models"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              mc:Ignorable="d" 
@@ -9,7 +10,7 @@
              FontFamily="Segoe UI">
 
     <UserControl.Resources>
-        <HierarchicalDataTemplate x:Key="ExplorerItemTemplate" ItemsSource="{Binding Children}" DataType="{x:Type local:ExplorerItem}">
+        <HierarchicalDataTemplate x:Key="ExplorerItemTemplate" ItemsSource="{Binding Children}" DataType="{x:Type models:ExplorerItem}">
             <StackPanel Orientation="Horizontal" Margin="0,0">
                 <TextBlock Text="{Binding IconCode}" 
                            FontFamily="Segoe MDL2 Assets" 

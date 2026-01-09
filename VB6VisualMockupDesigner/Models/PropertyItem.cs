@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace VB6VisualMockupDesigner
+namespace VB6VisualMockupDesigner.Models
 {
     public class PropertyItem
     {

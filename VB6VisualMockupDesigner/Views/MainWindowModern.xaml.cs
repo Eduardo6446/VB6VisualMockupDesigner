@@ -5,12 +5,15 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
-using static VB6VisualMockupDesigner.DesignerCanvas;
+using static VB6VisualMockupDesigner.Controls.DesignerCanvas;
+using VB6VisualMockupDesigner.Models; // Requiere .NET Core 3.1 o superior (o NuGet en .NET Framework)
+using VB6VisualMockupDesigner.Helpers;
+using VB6VisualMockupDesigner.Controls;
+using VB6VisualMockupDesigner.Services;
 
 
 
-
-namespace VB6VisualMockupDesigner
+namespace VB6VisualMockupDesigner.Views
 {
 
     /// <summary>

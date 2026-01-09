@@ -5,8 +5,12 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
+using VB6VisualMockupDesigner.Views; // Requiere .NET Core 3.1 o superior (o NuGet en .NET Framework)
+using VB6VisualMockupDesigner.Models;
+using VB6VisualMockupDesigner.Controls;
+using VB6VisualMockupDesigner.Services;
 
-namespace VB6VisualMockupDesigner
+namespace VB6VisualMockupDesigner.Helpers
 {
     public class ResizeAdorner : Adorner
     {

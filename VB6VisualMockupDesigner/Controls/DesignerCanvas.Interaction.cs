@@ -1,15 +1,19 @@
-﻿using System;
+﻿using System; // Para Math, Exception
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
+using System.Windows.Media; // <--- FALTABA: Para Brushes, ScaleTransform, VisualBrush
+using System.Windows.Media.Imaging; // <--- FALTABA: Para RenderTargetBitmap
+using System.Windows.Shapes; // <--- FALTABA: Para Rectangle
+using VB6VisualMockupDesigner.Controls; // <--- VITAL: Para encontrar el DesignerCanvas
+using VB6VisualMockupDesigner.Services; // Para ThemeManager
+using VB6VisualMockupDesigner.Models;   // Por si acaso usas modelos ahí
+using System.IO; // <--- Agrega esto para arreglar FileStream y FileMode
+using System;
 
-namespace VB6VisualMockupDesigner
+namespace VB6VisualMockupDesigner.Controls
 {
 
     public static class VB6Data

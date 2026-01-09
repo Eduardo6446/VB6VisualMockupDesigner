@@ -4,9 +4,13 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using VB6VisualMockupDesigner.Models; // Requiere .NET Core 3.1 o superior (o NuGet en .NET Framework)
+using VB6VisualMockupDesigner.Helpers;
+using VB6VisualMockupDesigner.Controls;
+using VB6VisualMockupDesigner.Views;
 
 
-namespace VB6VisualMockupDesigner
+
+namespace VB6VisualMockupDesigner.Services
 {
     public static class RecentFilesManager
     {

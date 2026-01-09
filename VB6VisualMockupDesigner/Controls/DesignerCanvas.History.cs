@@ -1,9 +1,14 @@
-﻿using System.Collections.Generic;
+﻿using System; // <--- Faltaba para Exception
+using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using VB6VisualMockupDesigner.Models; // Para CanvasState, ControlSnapshot
+using VB6VisualMockupDesigner.Helpers; // Para RetroControlFactory
+using VB6VisualMockupDesigner.Services;
+using System.Windows.Input; // <--- Importante para Clipboard
 
-namespace VB6VisualMockupDesigner
+namespace VB6VisualMockupDesigner.Controls
 {
     public partial class DesignerCanvas
     {

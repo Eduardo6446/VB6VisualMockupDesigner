@@ -1,6 +1,7 @@
-﻿<Window x:Class="VB6VisualMockupDesigner.MainWindowModern"
+﻿<Window x:Class="VB6VisualMockupDesigner.Views.MainWindowModern"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:local="clr-namespace:VB6VisualMockupDesigner"
+        xmlns:views="clr-namespace:VB6VisualMockupDesigner.Views"
+        xmlns:controls="clr-namespace:VB6VisualMockupDesigner.Controls"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="VB6 Visual Mockup Designer" Height="720" Width="1080"
         WindowStartupLocation="CenterScreen"
@@ -670,7 +671,7 @@
                     <RowDefinition Height="*" x:Name="RightRow2"/>
                 </Grid.RowDefinitions>
 
-                <local:PropertiesPanel x:Name="PropertiesPanel" 
+                <views:PropertiesPanel x:Name="PropertiesPanel" 
                            Grid.Row="0"
                            BorderBrush="{DynamicResource BorderBrush}" 
                            BorderThickness="1,0,0,0"/>

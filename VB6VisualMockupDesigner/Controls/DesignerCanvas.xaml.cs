@@ -6,9 +6,11 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using VB6VisualMockupDesigner.Helpers;
+using VB6VisualMockupDesigner.Helpers; // Para Vb6Helpers
+using VB6VisualMockupDesigner.Models;  // Para VbControlModel
 
-namespace VB6VisualMockupDesigner
+
+namespace VB6VisualMockupDesigner.Controls
 {
     /// <summary>
     /// Interaction logic for DesignerCanvas.xaml

@@ -4,7 +4,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using System.Windows.Shapes;
 
-namespace VB6VisualMockupDesigner
+namespace VB6VisualMockupDesigner.Controls
 {
     public static class RetroControlFactory
     {

@@ -2,9 +2,12 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using VB6VisualMockupDesigner.Models;
+using VB6VisualMockupDesigner.Models; // Requiere .NET Core 3.1 o superior (o NuGet en .NET Framework)
+using VB6VisualMockupDesigner.Helpers;
+using VB6VisualMockupDesigner.Controls;
+using VB6VisualMockupDesigner.Services;
 
-namespace VB6VisualMockupDesigner
+namespace VB6VisualMockupDesigner.Views
 {
     /// <summary>
     /// Interaction logic for StartScreen.xaml

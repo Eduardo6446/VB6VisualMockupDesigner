@@ -1,4 +1,4 @@
-﻿<Window x:Class="VB6VisualMockupDesigner.AboutWindow"
+﻿<Window x:Class="VB6VisualMockupDesigner.Views.AboutWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Acerca de VB6 Mockup Studio" 
