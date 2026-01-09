@@ -992,5 +992,52 @@ namespace VB6VisualMockupDesigner.Controls
         }
 
 
+        // ==========================================
+        // 11. ZOOM
+        // ==========================================
+
+        public void SetZoom(double zoomPercentage, Point? relativeMousePos = null)
+        {
+            if (CanvasScale == null || MainScrollViewer == null) return;
+
+            double oldFactor = CanvasScale.ScaleX;
+            double newFactor = zoomPercentage / 100.0;
+
+            // 1. Determinar el punto de anclaje (Pivote)
+            // Si nos dan la posición del mouse, la usamos.
+            // Si no (ej: desde el slider), usamos el centro exacto de la pantalla visible.
+            Point targetPoint;
+            if (relativeMousePos.HasValue)
+            {
+                targetPoint = relativeMousePos.Value;
+            }
+            else
+            {
+                targetPoint = new Point(MainScrollViewer.ViewportWidth / 2, MainScrollViewer.ViewportHeight / 2);
+            }
+
+            // 2. Calcular qué punto del CONTENIDO REAL está bajo ese pivote
+            // (Offset actual + Posición en pantalla) / Factor Viejo = Posición Real sin escala
+            double absoluteX = (MainScrollViewer.HorizontalOffset + targetPoint.X) / oldFactor;
+            double absoluteY = (MainScrollViewer.VerticalOffset + targetPoint.Y) / oldFactor;
+
+            // 3. Aplicar el nuevo Zoom
+            CanvasScale.ScaleX = newFactor;
+            CanvasScale.ScaleY = newFactor;
+
+            // 4. IMPORTANTE: Forzar actualización del layout
+            // El ScrollViewer necesita recalcular el tamaño del contenido (Extent) ANTES de que movamos el scroll.
+            this.UpdateLayout();
+
+            // 5. Calcular y aplicar el nuevo Scroll
+            // (Posición Real * Nuevo Factor) - Posición en pantalla = Nuevo Offset
+            double newH = (absoluteX * newFactor) - targetPoint.X;
+            double newV = (absoluteY * newFactor) - targetPoint.Y;
+
+            MainScrollViewer.ScrollToHorizontalOffset(newH);
+            MainScrollViewer.ScrollToVerticalOffset(newV);
+        }
+
+
     }
 }

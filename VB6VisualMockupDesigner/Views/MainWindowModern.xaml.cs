@@ -152,6 +152,8 @@ namespace VB6VisualMockupDesigner.Views
                     // ¡Sincronizamos el explorador!
                     _explorerView.SelectFile(fullPath);
                 }
+
+                ZoomSlider.Value = 100;
             }
         }
 
@@ -934,6 +936,63 @@ namespace VB6VisualMockupDesigner.Views
                 Background = (System.Windows.Media.Brush)Application.Current.Resources["AppBackground"]
             };
             settingsWindow.ShowDialog();
+        }
+
+        // Evento del Slider de Zoom
+        private void ZoomSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (TxtZoomLevel != null)
+            {
+                TxtZoomLevel.Text = $"{(int)e.NewValue}%";
+            }
+
+            if (MainTabControl.SelectedItem is TabItem tab && tab.Content is DesignerCanvas designer)
+            {
+                // Pasamos null para que use el centro de la pantalla
+                designer.SetZoom(e.NewValue, null);
+            }
+        }
+
+        // ==========================================
+        // ZOOM CON RUEDA DEL MOUSE (Ctrl + Wheel)
+        // ==========================================
+        private void Window_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            if ((Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+            {
+                if (MainTabControl.SelectedItem is TabItem tab && tab.Content is DesignerCanvas designer)
+                {
+                    // 1. Obtener posición del mouse RELATIVA AL AREA DE DIBUJO VISIBLE
+                    // Usamos el designer como referencia, pero el cálculo interno del canvas usa el ScrollViewer
+                    // Lo ideal es pasar la posición relativa al UserControl del designer.
+                    Point mousePos = e.GetPosition(designer);
+
+                    // 2. Calcular nuevo valor
+                    double step = 10;
+                    double newVal = ZoomSlider.Value;
+
+                    if (e.Delta > 0) newVal += step;
+                    else newVal -= step;
+
+                    // 3. Validar límites manualmente (porque no estamos usando el slider directamente todavía)
+                    if (newVal < ZoomSlider.Minimum) newVal = ZoomSlider.Minimum;
+                    if (newVal > ZoomSlider.Maximum) newVal = ZoomSlider.Maximum;
+
+                    // 4. Actualizar el slider (esto disparará ValueChanged)
+                    // TRUCO: Desuscribimos momentáneamente el evento del slider para llamar a SetZoom nosotros mismos con el mousePos
+                    ZoomSlider.ValueChanged -= ZoomSlider_ValueChanged;
+                    ZoomSlider.Value = newVal;
+                    ZoomSlider.ValueChanged += ZoomSlider_ValueChanged;
+
+                    // Actualizar texto
+                    if (TxtZoomLevel != null) TxtZoomLevel.Text = $"{(int)newVal}%";
+
+                    // 5. Llamar al Zoom con la posición del mouse
+                    designer.SetZoom(newVal, mousePos);
+                }
+
+                e.Handled = true;
+            }
         }
 
 

@@ -6,6 +6,7 @@
         Title="VB6 Visual Mockup Designer" Height="720" Width="1080"
         WindowStartupLocation="CenterScreen"
         PreviewKeyDown="Window_PreviewKeyDown"
+        PreviewMouseWheel="Window_PreviewMouseWheel"
         WindowStyle="SingleBorderWindow"
         ResizeMode="CanResize"
         Background="{DynamicResource AppBackground}"
@@ -758,14 +759,17 @@
 
             <StatusBarItem Grid.Column="8" Margin="5,0,10,0">
                 <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="100%" Margin="0,0,5,0" Width="35" TextAlignment="Right"/>
-                    <Slider Width="80" 
-                        VerticalAlignment="Center" 
-                        Minimum="20" 
-                        Maximum="200" 
-                        Value="100"
-                        IsSnapToTickEnabled="True"
-                        TickFrequency="10">
+                    <TextBlock Text="100%" Margin="0,0,5,0" Width="35" TextAlignment="Right" x:Name="TxtZoomLevel"/>
+                    <Slider x:Name="ZoomSlider" 
+                            Width="80" 
+                            VerticalAlignment="Center" 
+                            Minimum="20" 
+                            Maximum="200" 
+                            Value="100"
+                            IsSnapToTickEnabled="True"
+                            TickFrequency="10"
+                            ValueChanged="ZoomSlider_ValueChanged">
+
                         <Slider.Style>
                             <Style TargetType="Slider">
                                 <Setter Property="Template">

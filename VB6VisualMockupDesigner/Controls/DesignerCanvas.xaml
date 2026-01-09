@@ -53,6 +53,9 @@
             <Grid x:Name="DesignGrid" Width="2000" Height="2000" 
                   Background="Transparent" 
                   MouseLeftButtonDown="DesignSurface_MouseDown">
+                <Grid.LayoutTransform>
+                    <ScaleTransform x:Name="CanvasScale" ScaleX="1" ScaleY="1"/>
+                </Grid.LayoutTransform>
 
                 <Grid x:Name="WindowResizerGrid" 
                       Width="480" Height="360"
