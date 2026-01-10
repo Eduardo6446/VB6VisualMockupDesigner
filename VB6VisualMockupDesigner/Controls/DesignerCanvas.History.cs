@@ -29,13 +29,16 @@ namespace VB6VisualMockupDesigner.Controls
             var snapshot = GetCurrentState();
             _undoStack.Push(snapshot);
             _redoStack.Clear();
+            GenerateNewVersion();
         }
 
         public void Undo()
         {
             if (_undoStack.Count == 0) return;
 
-            _redoStack.Push(GetCurrentState());
+            var currentState = GetCurrentState();
+            _redoStack.Push(currentState);
+
             var previousState = _undoStack.Pop();
             RestoreState(previousState);
         }
@@ -44,7 +47,9 @@ namespace VB6VisualMockupDesigner.Controls
         {
             if (_redoStack.Count == 0) return;
 
-            _undoStack.Push(GetCurrentState());
+            var currentState = GetCurrentState();
+            _undoStack.Push(currentState);
+
             var nextState = _redoStack.Pop();
             RestoreState(nextState);
         }
@@ -53,6 +58,7 @@ namespace VB6VisualMockupDesigner.Controls
         private CanvasState GetCurrentState()
         {
             var state = new CanvasState();
+            state.VersionId = _currentVersionId; // <--- GUARDAMOS EL ID ACTUAL
             foreach (UIElement child in DesignSurface.Children)
             {
                 if (child is FrameworkElement fe && !(child is System.Windows.Shapes.Rectangle) && !(child is Border))
@@ -86,6 +92,9 @@ namespace VB6VisualMockupDesigner.Controls
 
         private void RestoreState(CanvasState state)
         {
+
+            _currentVersionId = state.VersionId;
+
             // 1. Limpiar estado actual
             ClearSelection();
             DesignSurface.Children.Clear();
@@ -131,6 +140,8 @@ namespace VB6VisualMockupDesigner.Controls
                     }
 
                 }
+
+                CheckDirtyStatus();
             }
 
 

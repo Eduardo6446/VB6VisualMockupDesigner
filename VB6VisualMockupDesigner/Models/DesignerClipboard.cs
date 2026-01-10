@@ -39,6 +39,7 @@ namespace VB6VisualMockupDesigner.Models
     {
         // Aquí guardamos la foto completa del lienzo
         public List<ControlSnapshot> Controls { get; set; } = new List<ControlSnapshot>();
+        public Guid VersionId { get; set; }
     }
 
     public class ControlSnapshot

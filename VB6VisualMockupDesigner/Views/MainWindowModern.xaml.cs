@@ -210,6 +210,8 @@ namespace VB6VisualMockupDesigner.Views
                 }
             }
 
+
+
             // 2. Crear nueva pestaña
             var newTab = new TabItem
             {
@@ -242,6 +244,8 @@ namespace VB6VisualMockupDesigner.Views
 
             // Configurar título interno (Overlay del form)
             designer.FormTitle = System.IO.Path.GetFileNameWithoutExtension(fullPath);
+
+            designer.IsDirtyChanged += Designer_IsDirtyChanged;
 
             // Evento de selección para propiedades
             designer.ControlSelected += (s, control) =>
@@ -438,6 +442,8 @@ namespace VB6VisualMockupDesigner.Views
             designer.FormTitle = defaultName;
 
             designer.SetFormDimensions(600, 450);
+
+            designer.IsDirtyChanged += Designer_IsDirtyChanged;
 
             // 4. Configurar eventos (Igual que en OpenFileTab)
             // Esto es vital para que el panel de propiedades funcione con el nuevo form
@@ -717,6 +723,8 @@ namespace VB6VisualMockupDesigner.Views
 
                 // Feedback visual en la barra de estado (Opcional, si tienes una)
                 // StatusBarText.Text = $"Guardado: {System.DateTime.Now.ToShortTimeString()}";
+
+                designer.MarkAsClean();
 
                 // Solo mostramos MessageBox si fue "Guardar Como" para confirmar
                 if (forceSaveAs)
@@ -1058,9 +1066,35 @@ namespace VB6VisualMockupDesigner.Views
         {
             ExecuteOnActiveDesigner(d => d.DistributeSelected("Vertical"));
         }
-    
 
 
+        // Actualiza el título de la pestaña cuando cambia el estado Dirty
+        private void Designer_IsDirtyChanged(object sender, EventArgs e)
+        {
+            if (sender is DesignerCanvas designer)
+            {
+                foreach (TabItem tab in MainTabControl.Items)
+                {
+                    if (tab.Content == designer)
+                    {
+                        string currentHeader = tab.Header.ToString();
+
+                        // AQUÍ ES DONDE SE MODIFICA VISUALMENTE EL ASTERISCO
+                        if (designer.IsDirty) // <--- Llama a tu nueva lógica de IDs
+                        {
+                            if (!currentHeader.EndsWith("*"))
+                                tab.Header = currentHeader + "*";
+                        }
+                        else
+                        {
+                            if (currentHeader.EndsWith("*"))
+                                tab.Header = currentHeader.TrimEnd('*');
+                        }
+                        break;
+                    }
+                }
+            }
+        }
 
 
 

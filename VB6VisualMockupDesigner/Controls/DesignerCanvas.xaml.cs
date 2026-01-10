@@ -18,10 +18,23 @@ namespace VB6VisualMockupDesigner.Controls
     /// </summary>
     public partial class DesignerCanvas : UserControl
     {
+
+        public event EventHandler IsDirtyChanged;
+
+        // Identificador de la versión actual en pantalla
+        private Guid _currentVersionId = Guid.NewGuid();
+
+        // Identificador de la versión que está guardada en disco
+        // Al inicio son iguales (recién creado/cargado = limpio)
+        private Guid _savedVersionId;
+
+
         public DesignerCanvas()
         {
             InitializeComponent();
             this.Loaded += (s, e) => { CenterView(); };
+            _savedVersionId = _currentVersionId; // Sincronizamos al nacer
+
         }
 
         public event EventHandler<FrameworkElement> ControlSelected;
@@ -88,6 +101,39 @@ namespace VB6VisualMockupDesigner.Controls
             }
         }
 
+        // ============================
+        // CONTROL DE ESTADO (DIRTY)
+        // ============================
+
+        
+
+        private bool _isDirty;
+        public bool IsDirty
+        {
+            get { return _currentVersionId != _savedVersionId; }
+        }
+
+
+
+        public void MarkAsClean()
+        {
+            _currentVersionId = Guid.NewGuid(); // Generamos identidad inicial
+            _savedVersionId = _currentVersionId; // Decimos "Esto es lo guardado"
+            CheckDirtyStatus(); // Debería dar Clean
+        }
+
+        private void CheckDirtyStatus()
+        {
+            // Notificamos siempre, la ventana principal decidirá poner o quitar el *
+            IsDirtyChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void GenerateNewVersion()
+        {
+            _currentVersionId = Guid.NewGuid();
+            CheckDirtyStatus();
+        }
+
         public void ClearCanvas()
         {
             // 1. Limpiar hijos visuales
@@ -138,6 +184,8 @@ namespace VB6VisualMockupDesigner.Controls
             RenderChildren(rootModel, DesignSurface);
 
             CenterFormOnCanvas();
+
+            MarkAsClean();
         }
 
         private void RenderChildren(VbControlModel model, FrameworkElement container)
