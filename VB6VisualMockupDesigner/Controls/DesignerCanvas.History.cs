@@ -15,7 +15,7 @@ namespace VB6VisualMockupDesigner.Controls
         // PILAS DE HISTORIAL
         private Stack<CanvasState> _undoStack = new Stack<CanvasState>();
         private Stack<CanvasState> _redoStack = new Stack<CanvasState>();
-
+        private bool _hasSavedUndoForDrag = false; // <--- AGREGAR ESTA VARIABLE
 
         // Offset para que al pegar varias veces no queden uno encima de otro
         private double _pasteOffset = 10;
@@ -75,7 +75,9 @@ namespace VB6VisualMockupDesigner.Controls
                         Height = double.IsNaN(fe.Height) ? fe.ActualHeight : fe.Height,
 
                         Text = text,
-                        Tag = fe.Tag?.ToString()
+                        Tag = fe.Tag?.ToString(),
+
+                        IsSelected = _selectedControls.Contains(fe)
                     });
                 }
             }
@@ -87,9 +89,12 @@ namespace VB6VisualMockupDesigner.Controls
             // 1. Limpiar estado actual
             ClearSelection();
             DesignSurface.Children.Clear();
+            _resizeHandles.Clear();
 
             // Re-agregar SelectionRect si es necesario (manejado en ClearCanvas, pero por seguridad notificamos)
             ControlSelected?.Invoke(this, null);
+
+
 
             // 2. Reconstruir controles
             foreach (var item in state.Controls)
@@ -119,8 +124,15 @@ namespace VB6VisualMockupDesigner.Controls
                     // Al restaurar, queremos la posición EXACTA del historial, no redondearla de nuevo.
                     Canvas.SetLeft(newControl, item.Left);
                     Canvas.SetTop(newControl, item.Top);
+
+                    if (item.IsSelected)
+                    {
+                        _selectedControls.Add(newControl);
+                    }
+
                 }
             }
+
 
             // Asegurar que el recuadro de selección esté presente (si se borró en el Clear)
             // (Tu método ClearCanvas ya debería manejar esto, pero no hace daño verificar)
@@ -128,6 +140,15 @@ namespace VB6VisualMockupDesigner.Controls
             {
                 DesignSurface.Children.Add(SelectionRect);
             }
+
+            this.UpdateLayout();
+
+            // 4. Restaurar Adornos Visuales (Bordes azules y Handles blancos)
+            // Esto se basa en la lista _selectedControls que acabamos de llenar en el paso 2
+            UpdateSelectionVisuals();
+
+            // 5. Avisar a la UI (Propiedades)
+            NotifySelectionChanged();
         }
 
         // ==========================================

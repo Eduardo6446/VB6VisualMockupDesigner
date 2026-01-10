@@ -52,7 +52,6 @@ namespace VB6VisualMockupDesigner.Controls
 
         private bool _isDragging = false;
         private Point _dragStartPoint;
-        private bool _hasSavedUndoForDrag = false; // <--- AGREGAR ESTA VARIABLE
 
         // Variables de Redimensión
         private List<Rectangle> _resizeHandles = new List<Rectangle>();
@@ -393,6 +392,9 @@ namespace VB6VisualMockupDesigner.Controls
                 // USAMOS LOS HELPERS:
                 double l = GetSafeLeft(item);
                 double t = GetSafeTop(item);
+
+                double realW = item.Width;
+                double realH = item.Height;
 
                 visualBorder.Width = item.ActualWidth + 4;
                 visualBorder.Height = item.ActualHeight + 4;
