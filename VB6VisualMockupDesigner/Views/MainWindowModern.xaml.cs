@@ -223,6 +223,7 @@ namespace VB6VisualMockupDesigner.Views
 
 
 
+
             // === CORRECCIÓN AQUÍ ===
             // En lugar de FrmParser.Parse, leemos el archivo y usamos el método interno del designer
             if (System.IO.File.Exists(fullPath))
@@ -421,38 +422,46 @@ namespace VB6VisualMockupDesigner.Views
         // 1. MENÚ ARCHIVO > NUEVO PROYECTO
         private void BtnNew_Click(object sender, RoutedEventArgs e)
         {
-            // 1. Crear el ScrollViewer (La ventana al mundo)
-            ScrollViewer scroller = new ScrollViewer
+            // 1. Generar un nombre temporal (Form1, Form2, etc.)
+            // Aquí podrías iterar para buscar el siguiente libre, por ahora usaremos Form1
+            string defaultName = "Form1";
+
+            // 2. Crear nueva pestaña
+            var newTab = new TabItem
             {
-                HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
-                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-                Background = new SolidColorBrush(Color.FromRgb(50, 50, 50)) // Fondo gris oscuro
+                Header = defaultName,
+                Tag = null // IMPORTANTE: Tag es null porque aún no existe el archivo en disco
             };
 
-            // 2. Crear el Lienzo de Trabajo (El área total disponible)
-            // IMPORTANTE: Aquí definimos el tamaño del scrollbar
-            Grid workspace = new Grid
+            // 3. Instanciar el Diseñador (Usamos DesignerCanvas, NO un Grid suelto)
+            var designer = new DesignerCanvas();
+            designer.FormTitle = defaultName;
+
+            // 4. Configurar eventos (Igual que en OpenFileTab)
+            // Esto es vital para que el panel de propiedades funcione con el nuevo form
+            designer.ControlSelected += (s, control) =>
             {
-                Width = 2000,   // <--- ESTO CONTROLA EL TAMAÑO DEL SCROLL HORIZONTAL
-                Height = 2000,  // <--- ESTO CONTROLA EL TAMAÑO DEL SCROLL VERTICAL
-                Background = (Brush)FindResource("DotPatternBrush") // Tu patrón de puntos
+                this.PropertiesPanel.InspectObject(control);
+
+                if (BtnLockToggle != null)
+                {
+                    BtnLockToggle.IsChecked = designer.IsSelectionLocked();
+                }
             };
 
-            // 3. Crear el "Formulario" Mockup (centrado visualmente en el workspace)
-            Border mockForm = new Border
-            {
-                Width = 600,
-                Height = 400,
-                Background = Brushes.White,
-                BorderBrush = Brushes.Navy,
-                BorderThickness = new Thickness(2),
-                // Truco para que aparezca "en medio" del lienzo grande al inicio
-                HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Center
-            };
+            // 5. Asignar el diseñador a la pestaña
+            newTab.Content = designer;
 
-            workspace.Children.Add(mockForm);
-            scroller.Content = workspace;
+            // 6. Agregar al TabControl y Seleccionar
+            MainTabControl.Items.Add(newTab);
+            MainTabControl.SelectedItem = newTab;
+
+            // 7. Configurar botón de cerrar pestaña
+            newTab.Loaded += NewTab_Loaded;
+
+            // 8. Actualizar visibilidad y habilitar herramientas
+            UpdateTabVisibility();
+            _toolboxView.EnableTools(true);
         }
 
         // 2. MENÚ ARCHIVO > ABRIR
@@ -1048,6 +1057,8 @@ namespace VB6VisualMockupDesigner.Views
             ExecuteOnActiveDesigner(d => d.DistributeSelected("Vertical"));
         }
     
+
+
 
 
 
