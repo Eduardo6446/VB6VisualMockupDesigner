@@ -140,6 +140,8 @@ namespace VB6VisualMockupDesigner.Views
                 return false;
             };
 
+            this.Closing += MainWindowModern_Closing; // <--- AGREGAR ESTO
+
         }
 
         private void MainTabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -290,6 +292,32 @@ namespace VB6VisualMockupDesigner.Views
 
         private void CloseTab(TabItem tab)
         {
+            // 1. Verificar si hay cambios sin guardar
+            if (tab.Content is DesignerCanvas designer && designer.IsDirty)
+            {
+                string docName = tab.Header.ToString().TrimEnd('*');
+
+                var result = MessageBox.Show(
+                    $"¿Desea guardar los cambios en '{docName}'?",
+                    "Guardar cambios",
+                    MessageBoxButton.YesNoCancel,
+                    MessageBoxImage.Warning);
+
+                if (result == MessageBoxResult.Cancel) return; // Cancelar cierre
+
+                if (result == MessageBoxResult.Yes)
+                {
+                    // Intentar guardar. Si falla o cancela el diálogo de archivo, abortamos cierre.
+                    // (Necesitamos seleccionar la pestaña temporalmente para que SaveProject funcione sobre ella)
+                    MainTabControl.SelectedItem = tab;
+                    SaveProject(false);
+
+                    // Verificamos si realmente se guardó (se limpió el Dirty)
+                    if (designer.IsDirty) return;
+                }
+            }
+
+            // 2. Proceder al cierre
             MainTabControl.Items.Remove(tab);
             UpdateTabVisibility();
         }
@@ -1098,7 +1126,43 @@ namespace VB6VisualMockupDesigner.Views
         }
 
 
+        private void MainWindowModern_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            // Recorremos todas las pestañas buscando cambios sin guardar
+            foreach (TabItem tab in MainTabControl.Items)
+            {
+                if (tab.Content is DesignerCanvas designer && designer.IsDirty)
+                {
+                    // Seleccionamos la pestaña sucia para que el usuario vea qué es
+                    MainTabControl.SelectedItem = tab;
+                    string docName = tab.Header.ToString().TrimEnd('*');
 
+                    var result = MessageBox.Show(
+                        $"Hay cambios sin guardar en '{docName}'.\n\n¿Desea guardarlos antes de salir?",
+                        "Salir de la aplicación",
+                        MessageBoxButton.YesNoCancel,
+                        MessageBoxImage.Warning);
+
+                    if (result == MessageBoxResult.Cancel)
+                    {
+                        e.Cancel = true; // ABORTAR EL CIERRE DE LA APP
+                        return;
+                    }
+
+                    if (result == MessageBoxResult.Yes)
+                    {
+                        SaveProject(false);
+                        // Si después de intentar guardar sigue sucio (ej: canceló el SaveDialog), abortamos
+                        if (designer.IsDirty)
+                        {
+                            e.Cancel = true;
+                            return;
+                        }
+                    }
+                    // Si dijo No, seguimos al siguiente loop (o cerramos si era el último)
+                }
+            }
+        }
 
     }
 }
