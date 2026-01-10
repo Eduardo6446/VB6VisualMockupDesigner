@@ -43,6 +43,42 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+
+        <ContextMenu x:Key="ControlContextMenu" Opened="ContextMenu_Opened">
+            <MenuItem Header="Cortar" Click="MnuCut_Click" InputGestureText="Ctrl+X">
+                <MenuItem.Icon>
+                    <TextBlock Text="&#xE8C6;" FontFamily="Segoe MDL2 Assets"/>
+                </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Copiar" Click="MnuCopy_Click" InputGestureText="Ctrl+C">
+                <MenuItem.Icon>
+                    <TextBlock Text="&#xE8C8;" FontFamily="Segoe MDL2 Assets"/>
+                </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Pegar" Click="MnuPaste_Click" InputGestureText="Ctrl+V">
+                <MenuItem.Icon>
+                    <TextBlock Text="&#xE77F;" FontFamily="Segoe MDL2 Assets"/>
+                </MenuItem.Icon>
+            </MenuItem>
+            <Separator/>
+            <MenuItem Header="Eliminar" Click="MnuDelete_Click" InputGestureText="Supr">
+                <MenuItem.Icon>
+                    <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets"/>
+                </MenuItem.Icon>
+            </MenuItem>
+            <Separator/>
+            <MenuItem x:Name="MnuLockItem" Header="Bloquear Controles" Click="MnuLock_Click">
+                <MenuItem.Icon>
+                    <TextBlock Text="&#xE72E;" FontFamily="Segoe MDL2 Assets"/>
+                </MenuItem.Icon>
+            </MenuItem>
+            <Separator/>
+            <MenuItem Header="Traer al Frente" Click="MnuBringToFront_Click"/>
+            <MenuItem Header="Enviar al Fondo" Click="MnuSendToBack_Click"/>
+        </ContextMenu>
+
+
     </UserControl.Resources>
 
     <Grid Background="{DynamicResource AppBackground}">
@@ -131,7 +167,8 @@
                                         Drop="DesignSurface_Drop"
                                         MouseDown="DesignSurface_MouseDown"
                                         MouseMove="DesignSurface_MouseMove" 
-                                        MouseUp="DesignSurface_MouseUp">
+                                        MouseUp="DesignSurface_MouseUp"
+                                        ContextMenu="{StaticResource ControlContextMenu}">
 
                                     <Rectangle x:Name="SelectionRect"
                                                Stroke="{DynamicResource AccentColor}"

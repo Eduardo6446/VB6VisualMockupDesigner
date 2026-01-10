@@ -376,7 +376,15 @@ namespace VB6VisualMockupDesigner.Controls
 
                 if (!_selectionAdorners.ContainsKey(control))
                 {
-                    var border = new Border { BorderBrush = Brushes.Blue, BorderThickness = new Thickness(1), IsHitTestVisible = false };
+                    var border = new Border
+                    {
+                        BorderBrush = Brushes.Blue,
+                        BorderThickness = new Thickness(1), // Grosor de 1px
+                        IsHitTestVisible = false,
+                        // Estas dos propiedades son CLAVE para que el borde de 1px se vea nítido:
+                        SnapsToDevicePixels = true,
+                        UseLayoutRounding = true
+                    };
                     DesignSurface.Children.Add(border);
                     _selectionAdorners[control] = border;
                 }
@@ -640,6 +648,11 @@ namespace VB6VisualMockupDesigner.Controls
             control.PreviewMouseDown += Control_PreviewMouseDown;
             control.PreviewMouseMove += Control_PreviewMouseMove;
             control.PreviewMouseUp += Control_PreviewMouseUp;
+
+            if (control is FrameworkElement fe)
+            {
+                fe.ContextMenu = (ContextMenu)this.Resources["ControlContextMenu"];
+            }
 
             // Asegurar posición inicial válida
             Canvas.SetLeft(control, SnapToGrid(x));
@@ -1196,7 +1209,76 @@ namespace VB6VisualMockupDesigner.Controls
         }
 
 
+        // ==========================================
+        // LÓGICA DEL MENÚ CONTEXTUAL
+        // ==========================================
 
+        private void MnuCut_Click(object sender, RoutedEventArgs e) => CutSelected();
+        private void MnuCopy_Click(object sender, RoutedEventArgs e) => CopySelected();
+        private void MnuPaste_Click(object sender, RoutedEventArgs e) => Paste();
+        private void MnuDelete_Click(object sender, RoutedEventArgs e) => DeleteSelectedControl();
+        private void MnuBringToFront_Click(object sender, RoutedEventArgs e) => BringToFront();
+        private void MnuSendToBack_Click(object sender, RoutedEventArgs e) => SendToBack();
+
+        private void MnuLock_Click(object sender, RoutedEventArgs e)
+        {
+            // Verificamos el estado actual para alternar
+            if (IsSelectionLocked())
+                UnlockSelected();
+            else
+                LockSelected();
+        }
+
+        // Evento inteligente: Se ejecuta justo antes de mostrar el menú
+        private void ContextMenu_Opened(object sender, RoutedEventArgs e)
+        {
+            var menu = sender as ContextMenu;
+            if (menu == null) return;
+
+            // 1. Gestionar opción de Bloqueo/Desbloqueo
+            // Buscamos el item por nombre (definido en XAML como x:Name="MnuLockItem")
+            // Nota: En WPF a veces es difícil acceder por nombre dentro de templates, 
+            // así que lo buscamos en la colección de items.
+
+            foreach (var item in menu.Items)
+            {
+                if (item is MenuItem menuItem && menuItem.Name == "MnuLockItem")
+                {
+                    if (IsSelectionLocked())
+                    {
+                        menuItem.Header = "Desbloquear Controles";
+                        // Icono opcional: Candado abierto
+                        if (menuItem.Icon is TextBlock icon) icon.Text = "\xE785";
+                    }
+                    else
+                    {
+                        menuItem.Header = "Bloquear Controles";
+                        // Icono opcional: Candado cerrado
+                        if (menuItem.Icon is TextBlock icon) icon.Text = "\xE72E";
+                    }
+                    break;
+                }
+            }
+
+            // 2. Deshabilitar opciones si no hay selección
+            bool hasSelection = _selectedControls.Count > 0;
+
+            // Recorremos para habilitar/deshabilitar Cortar, Copiar, Borrar
+            foreach (var item in menu.Items)
+            {
+                if (item is MenuItem mi)
+                {
+                    if ((string)mi.Header == "Cortar" ||
+                        (string)mi.Header == "Copiar" ||
+                        (string)mi.Header == "Eliminar" ||
+                        (string)mi.Header == "Traer al Frente" ||
+                        (string)mi.Header == "Enviar al Fondo")
+                    {
+                        mi.IsEnabled = hasSelection;
+                    }
+                }
+            }
+        }
 
 
 
