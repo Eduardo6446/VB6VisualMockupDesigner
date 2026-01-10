@@ -53,5 +53,6 @@ namespace VB6VisualMockupDesigner.Models
         public string Tag { get; set; }
         public string Name { get; set; }
         public bool IsSelected { get; set; }
+        //public string ParentName { get; set; } // ¿Quién es mi padre?
     }
 }

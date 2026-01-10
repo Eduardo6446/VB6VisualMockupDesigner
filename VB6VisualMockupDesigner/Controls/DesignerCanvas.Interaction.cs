@@ -128,36 +128,55 @@ namespace VB6VisualMockupDesigner.Controls
 
         private void Control_PreviewMouseDown(object sender, MouseButtonEventArgs e)
         {
-
-            if (_isTabOrderMode)
-            {
-                if (sender is Control clickedControl)
-                {
-                    // Asignar el nuevo índice
-                    clickedControl.TabIndex = _nextTabIndex;
-                    _nextTabIndex++;
-
-                    // Refrescar visualmente TODOS los números para ver el cambio
-                    // (Poco eficiente pero seguro para actualizar duplicados)
-                    ShowTabIndices();
-                }
-                e.Handled = true; // Evitar selección/arrastre
-                return;
-            }
-
-
-            var control = sender as UIElement;
+            // 1. Convertir sender a FrameworkElement
+            var control = sender as FrameworkElement;
             if (control == null) return;
 
+            // ================================================================
+            // SOLUCIÓN DEFINITIVA: FILTRO INTELIGENTE DE PADRES/HIJOS
+            // ================================================================
+            if (control is GroupBox)
+            {
+                // El objeto exacto que recibió el clic (puede ser un borde, un texto, o el canvas interno)
+                DependencyObject clickedObject = e.OriginalSource as DependencyObject;
 
+                // Subimos desde lo que tocamos hasta llegar al Frame
+                while (clickedObject != null && clickedObject != control)
+                {
+                    // Si en el camino encontramos un control interactivo (Botón, TextBox, CheckBox...)
+                    // SIGNIFICA QUE EL CLIC ERA PARA EL HIJO, NO PARA EL FRAME.
+                    if (clickedObject is Control || clickedObject is TextBlock)
+                    {
+                        // Pero ojo: El ContentPresenter o el Canvas interno NO cuentan como controles interactivos
+                        if (!(clickedObject is ContentPresenter) && !(clickedObject is Panel))
+                        {
+                            return; // Dejamos pasar el evento para que lo maneje el hijo
+                        }
+                    }
+                    clickedObject = VisualTreeHelper.GetParent(clickedObject);
+                }
+                // Si llegamos aquí, es que tocamos el fondo del Frame o su borde, así que LO SELECCIONAMOS.
+            }
+            // ================================================================
+
+
+            // 2. DETECCIÓN DE DOBLE CLIC
             if (e.ClickCount == 2)
             {
-                StartQuickEdit(control as FrameworkElement); // Llamamos al método de edición
-                e.Handled = true;        // Importante: Detenemos el evento aquí
+                StartQuickEdit(control);
+                e.Handled = true;
                 return;
             }
 
+            // 3. LÓGICA DE TAB ORDER (Si aplica)
+            if (_isTabOrderMode)
+            {
+                if (sender is Control c) { c.TabIndex = _nextTabIndex++; ShowTabIndices(); }
+                e.Handled = true;
+                return;
+            }
 
+            // 4. SELECCIÓN MULTIPLE (Ctrl)
             bool isCtrlPressed = (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control;
 
             if (isCtrlPressed)
@@ -173,17 +192,19 @@ namespace VB6VisualMockupDesigner.Controls
                 }
             }
 
-            // Si está bloqueado, permitimos la selección (arriba), pero NO el arrastre.
+            // 5. SI ESTÁ BLOQUEADO, NO ARRASTRAMOS
             if (VB6Data.GetIsLocked(control))
             {
-                e.Handled = true; // Detenemos el evento aquí para que no propague arrastre
+                e.Handled = true;
                 NotifySelectionChanged();
                 return;
             }
 
+            // 6. INICIAR ARRASTRE (DRAGGING)
+            // Esto es lo que fallaba antes: al no llegar aquí, no se activaba el flag _isDragging
             _isDragging = true;
             _dragStartPoint = e.GetPosition(DesignSurface);
-            _hasSavedUndoForDrag = false; // <--- RESETEAR A FALSE AQUÍ
+            _hasSavedUndoForDrag = false;
 
             _initialPositions.Clear();
             foreach (var item in _selectedControls)
@@ -191,7 +212,9 @@ namespace VB6VisualMockupDesigner.Controls
                 _initialPositions[item] = new Point(Canvas.GetLeft(item), Canvas.GetTop(item));
             }
 
+            // Capturamos el mouse para que el arrastre sea fluido aunque salgamos del control rápido
             control.CaptureMouse();
+
             e.Handled = true;
             NotifySelectionChanged();
         }
@@ -236,12 +259,32 @@ namespace VB6VisualMockupDesigner.Controls
 
         private void Control_PreviewMouseUp(object sender, MouseButtonEventArgs e)
         {
+            var control = sender as FrameworkElement;
+
             if (_isDragging)
             {
-                _isDragging = false;
-                var control = sender as UIElement;
                 control?.ReleaseMouseCapture();
+                _isDragging = false;                
             }
+
+            // Guardar Snapshot para Undo (esto ya lo tenías, asegúrate de mantenerlo)
+            if (!_hasSavedUndoForDrag) SaveUndoSnapshot();
+
+            // === AGREGAR ESTO: INTENTAR CAMBIAR DE PADRE ===
+            // Solo si estamos moviendo un solo control (para evitar caos en selección múltiple por ahora)
+            if (_selectedControls.Count == 1)
+            {
+                HandleReparenting(control);
+
+                // Re-seleccionar para actualizar visuales (los bordes azules pueden perderse al cambiar de padre)
+                this.Dispatcher.Invoke(() => {
+                    UpdateSelectionVisuals();
+                }, System.Windows.Threading.DispatcherPriority.Render);
+            }
+            // ===============================================
+
+            NotifySelectionChanged();
+
         }
 
         private void DesignSurface_MouseDown(object sender, MouseButtonEventArgs e)
@@ -387,40 +430,41 @@ namespace VB6VisualMockupDesigner.Controls
                     var border = new Border
                     {
                         BorderBrush = Brushes.Blue,
-                        BorderThickness = new Thickness(1), // Grosor de 1px
+                        BorderThickness = new Thickness(1),
                         IsHitTestVisible = false,
-                        // Estas dos propiedades son CLAVE para que el borde de 1px se vea nítido:
                         SnapsToDevicePixels = true,
                         UseLayoutRounding = true
                     };
                     DesignSurface.Children.Add(border);
+                    // Aseguramos que el borde azul esté SIEMPRE encima de todo (Z-Index alto)
+                    Panel.SetZIndex(border, int.MaxValue - 10);
                     _selectionAdorners[control] = border;
                 }
 
                 var visualBorder = _selectionAdorners[control];
 
-                // Cambiar color visualmente si está bloqueado (Feedback visual)
+                // Feedback visual de bloqueo
                 bool isLocked = VB6Data.GetIsLocked(control);
                 visualBorder.BorderBrush = isLocked ? Brushes.Gray : Brushes.Blue;
-                visualBorder.BorderThickness = isLocked ? new Thickness(1) : new Thickness(1);
 
+                // === CAMBIO CRÍTICO: COORDENADAS GLOBALES ===
+                // En lugar de GetSafeLeft (que da 10 si está dentro de un frame),
+                // usamos TranslatePoint para obtener la posición real en pantalla (ej: 160).
+                Point globalPos = item.TranslatePoint(new Point(0, 0), DesignSurface);
 
-                // USAMOS LOS HELPERS:
-                double l = GetSafeLeft(item);
-                double t = GetSafeTop(item);
-
-                double realW = item.Width;
-                double realH = item.Height;
+                double globalLeft = globalPos.X;
+                double globalTop = globalPos.Y;
+                // ============================================
 
                 visualBorder.Width = item.ActualWidth + 4;
                 visualBorder.Height = item.ActualHeight + 4;
-                Canvas.SetLeft(visualBorder, l - 2);
-                Canvas.SetTop(visualBorder, t - 2);
+
+                // Usamos las coordenadas globales calculadas
+                Canvas.SetLeft(visualBorder, globalLeft - 2);
+                Canvas.SetTop(visualBorder, globalTop - 2);
             }
 
             // B) Actualizar Handles (Cuadraditos blancos)
-
-
             bool primaryLocked = _primarySelection != null && VB6Data.GetIsLocked(_primarySelection);
 
             if (_selectedControls.Count == 1 && !primaryLocked)
@@ -428,6 +472,8 @@ namespace VB6VisualMockupDesigner.Controls
                 var item = _primarySelection as FrameworkElement;
                 if (_resizeHandles.Count == 0) CreateResizeHandles();
                 foreach (var h in _resizeHandles) h.Visibility = Visibility.Visible;
+
+                // NOTA: También debemos actualizar la lógica interna de UpdateHandlePositions
                 UpdateHandlePositions(item);
             }
             else
@@ -471,34 +517,47 @@ namespace VB6VisualMockupDesigner.Controls
 
         private void UpdateHandlePositions(FrameworkElement item)
         {
-            if (item == null || _resizeHandles.Count < 8) return;
+            if (item == null) return;
 
-            // --- CORRECCIÓN CRÍTICA 2: Handles Blancos ---
-            double l = Canvas.GetLeft(item);
-            double t = Canvas.GetTop(item);
-
-            // Si es NaN, usamos 0 para que la matemática funcione
-            if (double.IsNaN(l)) l = 0;
-            if (double.IsNaN(t)) t = 0;
-
+            // === USAR LA MISMA LÓGICA GLOBAL ===
+            Point globalPos = item.TranslatePoint(new Point(0, 0), DesignSurface);
+            double l = globalPos.X;
+            double t = globalPos.Y;
             double w = item.ActualWidth;
             double h = item.ActualHeight;
+            // ===================================
 
-            void MoveHandle(int index, double x, double y)
-            {
-                var rect = _resizeHandles[index];
-                Canvas.SetLeft(rect, x);
-                Canvas.SetTop(rect, y);
-            }
+            // El resto es pura matemática de posicionamiento (TopLeft, TopRight, etc.)
+            // Asumiendo que tus handles están en una lista _resizeHandles en orden:
+            // 0:TL, 1:TM, 2:TR, 3:RM, 4:BR, 5:BM, 6:BL, 7:LM
 
-            MoveHandle(0, l - 4, t - 4);                // TopLeft
-            MoveHandle(1, l + w / 2 - 4, t - 4);        // Top
-            MoveHandle(2, l + w - 4, t - 4);            // TopRight
-            MoveHandle(3, l + w - 4, t + h / 2 - 4);    // Right
-            MoveHandle(4, l + w - 4, t + h - 4);        // BottomRight
-            MoveHandle(5, l + w / 2 - 4, t + h - 4);    // Bottom
-            MoveHandle(6, l - 4, t + h - 4);            // BottomLeft
-            MoveHandle(7, l - 4, t + h / 2 - 4);        // Left
+            double offset = 6; // Mitad del tamaño del handle (suponiendo 12x12 o similar)
+
+            // Top-Left
+            MoveHandleTo(_resizeHandles[0], l - offset, t - offset);
+            // Top-Middle
+            MoveHandleTo(_resizeHandles[1], l + w / 2 - offset, t - offset);
+            // Top-Right
+            MoveHandleTo(_resizeHandles[2], l + w - offset, t - offset);
+
+            // Right-Middle
+            MoveHandleTo(_resizeHandles[3], l + w - offset, t + h / 2 - offset);
+
+            // Bottom-Right
+            MoveHandleTo(_resizeHandles[4], l + w - offset, t + h - offset);
+            // Bottom-Middle
+            MoveHandleTo(_resizeHandles[5], l + w / 2 - offset, t + h - offset);
+            // Bottom-Left
+            MoveHandleTo(_resizeHandles[6], l - offset, t + h - offset);
+
+            // Left-Middle
+            MoveHandleTo(_resizeHandles[7], l - offset, t + h / 2 - offset);
+        }
+
+        private void MoveHandleTo(UIElement handle, double x, double y)
+        {
+            Canvas.SetLeft(handle, x);
+            Canvas.SetTop(handle, y);
         }
 
         // ==========================================
@@ -1402,6 +1461,131 @@ namespace VB6VisualMockupDesigner.Controls
         {
             QuickEditBox.Visibility = Visibility.Collapsed;
             _controlBeingEdited = null;
+        }
+
+        // ==========================================
+        // LÓGICA DE CONTENEDORES (PADRE-HIJO)
+        // ==========================================
+
+        private FrameworkElement GetContainerAtPoint(Point point, UIElement excludeControl)
+        {
+            FrameworkElement foundContainer = null;
+
+            // Usamos HitTest con un Callback para poder "perforar" capas
+            VisualTreeHelper.HitTest(
+                DesignSurface,
+
+                // 1. FILTRO: ¿Qué objetos ignoramos inmediatamente?
+                (dependencyObject) =>
+                {
+                    // Ignorar el control que estamos arrastrando
+                    if (dependencyObject == excludeControl) return HitTestFilterBehavior.ContinueSkipSelfAndChildren;
+
+                    // Ignorar el Rectángulo de Selección y la Caja de Edición (Culpables habituales)
+                    if (dependencyObject is Rectangle && (dependencyObject as FrameworkElement).Name == "SelectionRect")
+                        return HitTestFilterBehavior.ContinueSkipSelf;
+
+                    if (dependencyObject is TextBox && (dependencyObject as FrameworkElement).Name == "QuickEditBox")
+                        return HitTestFilterBehavior.ContinueSkipSelf;
+
+                    return HitTestFilterBehavior.Continue;
+                },
+
+                // 2. RESULTADO: ¿Qué hacemos cuando tocamos algo?
+                (result) =>
+                {
+                    DependencyObject hit = result.VisualHit;
+
+                    // Subimos por el árbol desde lo que tocamos
+                    while (hit != null && hit != DesignSurface)
+                    {
+                        // ¿Es un GroupBox (Frame)?
+                        if (hit is GroupBox)
+                        {
+                            foundContainer = hit as FrameworkElement;
+                            return HitTestResultBehavior.Stop; // ¡ENCONTRADO! Detener búsqueda.
+                        }
+
+                        // ¿Es un Border que parece PictureBox? (Para el futuro)
+                        if (hit is Border && (hit as FrameworkElement).Name.StartsWith("Picture"))
+                        {
+                            foundContainer = hit as FrameworkElement;
+                            return HitTestResultBehavior.Stop;
+                        }
+
+                        hit = VisualTreeHelper.GetParent(hit);
+                    }
+
+                    // Si no era un contenedor, sigue buscando más abajo (Perforar)
+                    return HitTestResultBehavior.Continue;
+                },
+
+                // Parámetros del punto
+                new PointHitTestParameters(point)
+            );
+
+            return foundContainer;
+        }
+
+        private void HandleReparenting(FrameworkElement control)
+        {
+
+            Point mousePos = Mouse.GetPosition(DesignSurface);
+
+            // (Ya no es estrictamente necesario apagar IsHitTestVisible con el nuevo método, 
+            // pero es buena práctica mantenerlo por seguridad)
+            bool wasHitVisible = control.IsHitTestVisible;
+            control.IsHitTestVisible = false;
+
+            // LLAMADA AL NUEVO RADAR
+            FrameworkElement newParentContainer = GetContainerAtPoint(mousePos, control);
+
+            control.IsHitTestVisible = wasHitVisible;
+
+            // Identificar padre actual
+            Panel oldParentPanel = VisualTreeHelper.GetParent(control) as Panel;
+
+            // === CASO A: ENTRAR A UN FRAME ===
+            if (newParentContainer != null && oldParentPanel != null)
+            {
+                // Verificar que no sea el mismo padre (evitar parpadeo)
+                // Ojo: newParentContainer es el GroupBox, oldParentPanel es el Canvas interno
+                // Hay que comparar con cuidado.
+
+                Panel targetPanel = null;
+                if (newParentContainer is GroupBox gb) targetPanel = gb.Content as Panel;
+
+                // Si encontramos un destino válido y NO estamos ya ahí
+                if (targetPanel != null && oldParentPanel != targetPanel)
+                {
+                    // Calculamos posición GLOBAL actual del control
+                    Point globalPos = control.TranslatePoint(new Point(0, 0), DesignSurface);
+
+                    // Calculamos posición RELATIVA al nuevo padre
+                    Point relativePos = DesignSurface.TranslatePoint(globalPos, targetPanel);
+
+                    // Mover
+                    oldParentPanel.Children.Remove(control);
+                    targetPanel.Children.Add(control);
+
+                    control.Margin = new Thickness(0);
+                    Canvas.SetLeft(control, relativePos.X);
+                    Canvas.SetTop(control, relativePos.Y);
+                }
+            }
+            // === CASO B: SALIR AL CANVAS PRINCIPAL ===
+            else if (newParentContainer == null && oldParentPanel != DesignSurface)
+            {
+                // Posición GLOBAL
+                Point globalPos = control.TranslatePoint(new Point(0, 0), DesignSurface);
+
+                oldParentPanel.Children.Remove(control);
+                DesignSurface.Children.Add(control);
+
+                control.Margin = new Thickness(0);
+                Canvas.SetLeft(control, globalPos.X);
+                Canvas.SetTop(control, globalPos.Y);
+            }
         }
 
 

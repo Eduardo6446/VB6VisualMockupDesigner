@@ -45,8 +45,34 @@ namespace VB6VisualMockupDesigner.Controls
                     break;
 
                 case "Frame":
-                    var grp = new GroupBox { Header = "Frame1", Width = 150, Height = 100, FontFamily = fontParams.Family, FontSize = fontParams.Size, Background = vbGray, BorderBrush = Brushes.Gray };
-                    grp.Content = new Canvas(); // Contenedor interno
+                    var grp = new GroupBox
+                    {
+                        Header = "Frame1",
+                        Width = 200, // Un poco más grande para probar bien
+                        Height = 150,
+                        FontFamily = fontParams.Family,
+                        FontSize = fontParams.Size,
+                        Background = vbGray,
+                        BorderBrush = Brushes.Gray
+                    };
+
+                    // === SOLUCIÓN CRÍTICA ===
+                    var innerCanvas = new Canvas();
+
+                    // 1. OBLIGAR a llenar el espacio
+                    innerCanvas.HorizontalAlignment = HorizontalAlignment.Stretch;
+                    innerCanvas.VerticalAlignment = VerticalAlignment.Stretch;
+
+                    // 2. OBLIGAR a ser detectable (El 'null' no detecta clicks, 'Transparent' sí)
+                    innerCanvas.Background = Brushes.Transparent;
+
+                    // 3. OBLIGAR a tener tamaño mínimo (WPF a veces colapsa Canvas vacíos)
+                    innerCanvas.MinHeight = 100;
+                    innerCanvas.MinWidth = 100;
+
+                    grp.Content = innerCanvas;
+                    // ========================
+
                     element = grp;
                     break;
 
