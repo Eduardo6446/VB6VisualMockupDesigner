@@ -45,7 +45,7 @@
         </Style>
 
 
-        <ContextMenu x:Key="ControlContextMenu" Opened="ContextMenu_Opened">
+        <ContextMenu x:Key="ControlContextMenu" Opened="ContextMenu_Opened" BorderThickness="0">
             <MenuItem Header="Cortar" Click="MnuCut_Click" InputGestureText="Ctrl+X">
                 <MenuItem.Icon>
                     <TextBlock Text="&#xE8C6;" FontFamily="Segoe MDL2 Assets"/>
