@@ -177,6 +177,19 @@
                                                Visibility="Collapsed"
                                                IsHitTestVisible="False"
                                                Panel.ZIndex="9999"/>
+
+                                    <TextBox x:Name="QuickEditBox"
+                                                 Visibility="Collapsed"
+                                                 Panel.ZIndex="999999"
+                                                 Background="White"
+                                                 Foreground="Black"
+                                                 BorderBrush="#0078D7"
+                                                 BorderThickness="1"
+                                                 Padding="2"
+                                                 AcceptsReturn="True" 
+                                                 LostFocus="QuickEditBox_LostFocus"
+                                                 PreviewKeyDown="QuickEditBox_PreviewKeyDown"/>
+                                    
                                 </Canvas>
                             </Grid>
                         </Grid>

@@ -150,6 +150,14 @@ namespace VB6VisualMockupDesigner.Controls
             if (control == null) return;
 
 
+            if (e.ClickCount == 2)
+            {
+                StartQuickEdit(control as FrameworkElement); // Llamamos al método de edición
+                e.Handled = true;        // Importante: Detenemos el evento aquí
+                return;
+            }
+
+
             bool isCtrlPressed = (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control;
 
             if (isCtrlPressed)
@@ -1278,6 +1286,122 @@ namespace VB6VisualMockupDesigner.Controls
                     }
                 }
             }
+        }
+
+
+        // ==========================================
+        // 14. EDICIÓN RÁPIDA (QUICK EDIT)
+        // ==========================================
+
+        private FrameworkElement _controlBeingEdited;
+
+        // 1. Detectar el Doble Clic
+        private void StartQuickEdit(FrameworkElement control)
+        {
+            if (control == null) return;
+
+            // Solo permitimos editar si no está bloqueado
+            if (VB6Data.GetIsLocked(control)) return;
+
+            // Determinamos qué propiedad vamos a editar
+            string currentText = "";
+
+            if (control is ContentControl cc) currentText = cc.Content?.ToString();
+            else if (control is TextBox tb) currentText = tb.Text;
+            else if (control is TextBlock txt) currentText = txt.Text;
+            else return; // No es editable
+
+            // Guardamos referencia
+            _controlBeingEdited = control;
+
+            // Configurar y Mostrar la Caja Flotante
+            QuickEditBox.Text = currentText;
+            QuickEditBox.Width = control.ActualWidth;
+            QuickEditBox.Height = Math.Max(control.ActualHeight, 24);
+
+            double l = Canvas.GetLeft(control);
+            double t = Canvas.GetTop(control);
+            Canvas.SetLeft(QuickEditBox, l);
+            Canvas.SetTop(QuickEditBox, t);
+
+            QuickEditBox.Visibility = Visibility.Visible;
+            QuickEditBox.Focus();
+            QuickEditBox.SelectAll();
+
+            // Nota: Ya no necesitamos e.Handled aquí porque lo manejamos en el MouseDown
+        }
+
+        // 2. Confirmar con Enter (o Shift+Enter para nueva línea)
+        private void QuickEditBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            // CASO 1: Presionó ENTER
+            // 1. CASO ENTER
+            if (e.Key == Key.Enter)
+            {
+                // Si presionan Shift + Enter, dejamos pasar el evento para que haga salto de línea
+                if ((Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift)
+                {
+                    return;
+                }
+
+                // Si es solo Enter -> GUARDAR
+                e.Handled = true; // ¡IMPORTANTE! Esto mata el evento antes de que el TextBox cree una nueva línea
+                CommitQuickEdit();
+            }
+            // 2. CASO ESCAPE
+            else if (e.Key == Key.Escape)
+            {
+                e.Handled = true;
+                CancelQuickEdit();
+            }
+        }
+
+        // 3. Confirmar al perder el foco (clic afuera)
+        private void QuickEditBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+            // Solo guardamos si sigue visible (para evitar doble commit)
+            if (QuickEditBox.Visibility == Visibility.Visible)
+            {
+                CommitQuickEdit();
+            }
+        }
+
+        // 4. Lógica de Guardado
+        private void CommitQuickEdit()
+        {
+            if (_controlBeingEdited == null) return;
+
+            string newText = QuickEditBox.Text;
+            string oldText = "";
+
+            // Obtener valor anterior para ver si cambió
+            if (_controlBeingEdited is ContentControl cc) oldText = cc.Content?.ToString();
+            else if (_controlBeingEdited is TextBox tb) oldText = tb.Text;
+            else if (_controlBeingEdited is TextBlock txt) oldText = txt.Text;
+
+            if (newText != oldText)
+            {
+                // ¡GUARDAR SNAPSHOT PARA UNDO!
+                SaveUndoSnapshot();
+
+                // Aplicar cambio
+                if (_controlBeingEdited is ContentControl cc2) cc2.Content = newText;
+                else if (_controlBeingEdited is TextBox tb2) tb2.Text = newText;
+                else if (_controlBeingEdited is TextBlock txt2) txt2.Text = newText;
+
+                // Avisar que cambió la selección (para actualizar el Panel de Propiedades si está abierto)
+                NotifySelectionChanged();
+            }
+
+            // Ocultar y limpiar
+            QuickEditBox.Visibility = Visibility.Collapsed;
+            _controlBeingEdited = null;
+        }
+
+        private void CancelQuickEdit()
+        {
+            QuickEditBox.Visibility = Visibility.Collapsed;
+            _controlBeingEdited = null;
         }
 
 

@@ -155,7 +155,12 @@ namespace VB6VisualMockupDesigner.Controls
                 // (Opcional) Aseguramos que se dibuje por encima de todo lo demás
                 Panel.SetZIndex(SelectionRect, int.MaxValue);
             }
-
+            if (QuickEditBox != null)
+            {
+                DesignSurface.Children.Add(QuickEditBox);
+                Panel.SetZIndex(QuickEditBox, int.MaxValue); // Máximo nivel (siempre arriba)
+                QuickEditBox.Visibility = Visibility.Collapsed; // Aseguramos que empiece oculta
+            }
         }
 
         // ============================
