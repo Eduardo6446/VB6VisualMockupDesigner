@@ -470,6 +470,7 @@ namespace VB6VisualMockupDesigner.Views
             // 8. Actualizar visibilidad y habilitar herramientas
             UpdateTabVisibility();
             _toolboxView.EnableTools(true);
+            designer.MarkAsClean(); // Marcamos como limpio al inicio
         }
 
         // 2. MENÚ ARCHIVO > ABRIR
