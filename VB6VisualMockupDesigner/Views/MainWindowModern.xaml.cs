@@ -437,6 +437,8 @@ namespace VB6VisualMockupDesigner.Views
             var designer = new DesignerCanvas();
             designer.FormTitle = defaultName;
 
+            designer.SetFormDimensions(600, 450);
+
             // 4. Configurar eventos (Igual que en OpenFileTab)
             // Esto es vital para que el panel de propiedades funcione con el nuevo form
             designer.ControlSelected += (s, control) =>

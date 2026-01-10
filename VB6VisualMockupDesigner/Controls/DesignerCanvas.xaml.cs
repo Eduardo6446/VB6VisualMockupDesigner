@@ -46,6 +46,48 @@ namespace VB6VisualMockupDesigner.Controls
             MainScrollViewer.ScrollToVerticalOffset(vOff);
         }
 
+        // ============================
+        // LÓGICA DE CENTRADO (NUEVO)
+        // ============================
+        public void CenterFormOnCanvas()
+        {
+            // Validamos que los controles existan (vienen del XAML)
+            if (MainScrollViewer == null || DesignGrid == null || WindowResizerGrid == null) return;
+
+            // 1. Obtener dimensiones
+            double canvasW = DesignGrid.Width;  // 2000
+            double canvasH = DesignGrid.Height; // 2000
+
+            // Usamos ActualWidth si está disponible, sino Width
+            double formW = WindowResizerGrid.ActualWidth > 0 ? WindowResizerGrid.ActualWidth : WindowResizerGrid.Width;
+            double formH = WindowResizerGrid.ActualHeight > 0 ? WindowResizerGrid.ActualHeight : WindowResizerGrid.Height;
+
+            // Si por alguna razón siguen siendo NaN (no renderizado), forzamos valores default
+            if (double.IsNaN(formW)) formW = 600;
+            if (double.IsNaN(formH)) formH = 450;
+
+            // 2. Calcular Márgenes para empujar el formulario al centro del lienzo
+            double left = (canvasW - formW) / 2;
+            double top = (canvasH - formH) / 2;
+
+            // Aplicar la posición física al Grid del Formulario
+            WindowResizerGrid.Margin = new Thickness(Math.Max(0, left), Math.Max(0, top), 0, 0);
+
+            // 3. Mover la Cámara (ScrollViewer) para enfocar ese punto
+            // Forzamos update para que el ScrollViewer sepa el tamaño real antes de moverse
+            this.UpdateLayout();
+
+            if (MainScrollViewer.ViewportWidth > 0 && MainScrollViewer.ViewportHeight > 0)
+            {
+                // El centro del formulario + el margen izquierdo - la mitad de la vista
+                double scrollH = (left + (formW / 2)) - (MainScrollViewer.ViewportWidth / 2);
+                double scrollV = (top + (formH / 2)) - (MainScrollViewer.ViewportHeight / 2);
+
+                MainScrollViewer.ScrollToHorizontalOffset(scrollH);
+                MainScrollViewer.ScrollToVerticalOffset(scrollV);
+            }
+        }
+
         public void ClearCanvas()
         {
             // 1. Limpiar hijos visuales
@@ -94,6 +136,8 @@ namespace VB6VisualMockupDesigner.Controls
             if (rootModel.Properties.ContainsKey("Caption")) FormTitle = rootModel.Properties["Caption"];
 
             RenderChildren(rootModel, DesignSurface);
+
+            CenterFormOnCanvas();
         }
 
         private void RenderChildren(VbControlModel model, FrameworkElement container)
