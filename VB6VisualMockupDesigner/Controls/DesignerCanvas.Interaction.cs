@@ -52,6 +52,7 @@ namespace VB6VisualMockupDesigner.Controls
 
         private bool _isDragging = false;
         private Point _dragStartPoint;
+        private bool _hasSavedUndoForDrag = false; // <--- AGREGAR ESTA VARIABLE
 
         // Variables de Redimensión
         private List<Rectangle> _resizeHandles = new List<Rectangle>();
@@ -175,6 +176,7 @@ namespace VB6VisualMockupDesigner.Controls
 
             _isDragging = true;
             _dragStartPoint = e.GetPosition(DesignSurface);
+            _hasSavedUndoForDrag = false; // <--- RESETEAR A FALSE AQUÍ
 
             _initialPositions.Clear();
             foreach (var item in _selectedControls)
@@ -199,6 +201,15 @@ namespace VB6VisualMockupDesigner.Controls
                 double snapDeltaY = SnapToGrid(rawDeltaY);
 
                 if (Math.Abs(snapDeltaX) < 1 && Math.Abs(snapDeltaY) < 1) return;
+
+                // --- INICIO DEL CAMBIO ---
+                // Si nos estamos moviendo realmente y NO hemos guardado el estado previo todavía:
+                if (!_hasSavedUndoForDrag)
+                {
+                    SaveUndoSnapshot();      // 1. Guardamos CÓMO ESTABAN antes de mover
+                    _hasSavedUndoForDrag = true; // 2. Marcamos para no guardar 100 veces mientras arrastra
+                }
+                // --- FIN DEL CAMBIO ---
 
                 foreach (var control in _selectedControls)
                 {

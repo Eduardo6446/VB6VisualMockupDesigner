@@ -16,6 +16,7 @@ namespace VB6VisualMockupDesigner.Controls
         private Stack<CanvasState> _undoStack = new Stack<CanvasState>();
         private Stack<CanvasState> _redoStack = new Stack<CanvasState>();
 
+
         // Offset para que al pegar varias veces no queden uno encima de otro
         private double _pasteOffset = 10;
 
