@@ -8,6 +8,83 @@
              FontFamily="Segoe UI">
 
     <UserControl.Resources>
+
+        <!-- Colores clásicos Threed32 -->
+        <Color x:Key="BtnFace">#FFE0E0E0</Color>
+        <Color x:Key="BtnHighlight">#FFFFFFFF</Color>
+        <Color x:Key="BtnShadow">#FFA0A0A0</Color>
+        <Color x:Key="BtnDarkShadow">#FF696969</Color>
+
+        <SolidColorBrush x:Key="BtnFaceBrush" Color="{StaticResource BtnFace}" />
+        <SolidColorBrush x:Key="BtnHighlightBrush" Color="{StaticResource BtnHighlight}" />
+        <SolidColorBrush x:Key="BtnShadowBrush" Color="{StaticResource BtnShadow}" />
+        <SolidColorBrush x:Key="BtnDarkShadowBrush" Color="{StaticResource BtnDarkShadow}" />
+
+        <!-- Estilo Threed32 -->
+        <Style x:Key="Threed32Button" TargetType="Button">
+            <Setter Property="Background" Value="{StaticResource BtnFaceBrush}" />
+            <Setter Property="Foreground" Value="Black" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="8,3" />
+            <Setter Property="FontFamily" Value="MS Sans Serif" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid>
+                            <!-- Borde exterior -->
+                            <Border
+                            Background="{TemplateBinding Background}"
+                            BorderThickness="1">
+                                <Border.BorderBrush>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                        <GradientStop Color="{StaticResource BtnHighlight}" Offset="0"/>
+                                        <GradientStop Color="{StaticResource BtnDarkShadow}" Offset="1"/>
+                                    </LinearGradientBrush>
+                                </Border.BorderBrush>
+
+                                <!-- Borde interior -->
+                                <Border Margin="1"
+                                    BorderThickness="1">
+                                    <Border.BorderBrush>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                            <GradientStop Color="{StaticResource BtnFace}" Offset="0"/>
+                                            <GradientStop Color="{StaticResource BtnShadow}" Offset="1"/>
+                                        </LinearGradientBrush>
+                                    </Border.BorderBrush>
+
+                                    <!-- Contenido -->
+                                    <ContentPresenter
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    RecognizesAccessKey="True"/>
+                                </Border>
+                            </Border>
+                        </Grid>
+
+                        <!-- Estados -->
+                        <ControlTemplate.Triggers>
+
+                            <!-- Presionado -->
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="RenderTransform">
+                                    <Setter.Value>
+                                        <TranslateTransform X="1" Y="1"/>
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+
+                            <!-- Deshabilitado -->
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Foreground" Value="#FF808080"/>
+                            </Trigger>
+
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <Style x:Key="ToolboxBtnStyle" TargetType="Button">
             <EventSetter Event="PreviewMouseLeftButtonDown" Handler="ToolboxButton_PreviewMouseDown"/>
             <Setter Property="Background" Value="Transparent"/>
@@ -304,6 +381,14 @@
                         </Border>
                     </Button>
                 </UniformGrid>
+
+
+
+                <Button
+    Style="{StaticResource Threed32Button}"
+    Width="120"
+    Height="30"
+    Content="Aceptar"/>
 
             </StackPanel>
         </ScrollViewer>
