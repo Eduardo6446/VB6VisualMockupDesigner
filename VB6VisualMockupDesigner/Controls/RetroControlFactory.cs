@@ -110,11 +110,27 @@ namespace VB6VisualMockupDesigner.Controls
                     break;
 
                 case "HScrollBar":
-                    element = new ScrollBar { Orientation = Orientation.Horizontal, Width = 100, Height = 17, Value = 50, Maximum = 100 };
+                    element = new ScrollBar
+                    {
+                        Orientation = Orientation.Horizontal,
+                        Width = 100,
+                        Height = 17, // Altura clásica
+                        Value = 50,
+                        Maximum = 100,
+                        Style = GetVB6ScrollBarStyle(Orientation.Horizontal)
+                    };
                     break;
 
                 case "VScrollBar":
-                    element = new ScrollBar { Orientation = Orientation.Vertical, Width = 17, Height = 100, Value = 50, Maximum = 100 };
+                    element = new ScrollBar
+                    {
+                        Orientation = Orientation.Vertical,
+                        Width = 17, // Ancho clásico
+                        Height = 100,
+                        Value = 50,
+                        Maximum = 100,
+                        Style = GetVB6ScrollBarStyle(Orientation.Vertical)
+                    };
                     break;
 
                 case "Timer":
@@ -355,90 +371,148 @@ namespace VB6VisualMockupDesigner.Controls
                 // =========================================================
 
                 case "Grid":
-                    // El Grid32 clásico tiene un borde hundido
+                    // --- CONFIGURACIÓN ---
+                    double cellWidth = 70;
+                    double cellHeight = 20;
+                    double scrollSize = 17;
+
+                    // 1. Contenedor Principal (Borde Hundido)
                     var gridBorder = new Border
                     {
-                        Width = 200,
+                        Width = 300,
                         Height = 150,
-                        Background = vbGray,
+                        Background = Brushes.Gray,
                         BorderBrush = Brushes.Gray,
                         BorderThickness = new Thickness(1),
-                        SnapsToDevicePixels = true,
-                        Effect = new System.Windows.Media.Effects.DropShadowEffect { ShadowDepth = 0, BlurRadius = 0 } // Borde simple
+                        SnapsToDevicePixels = true
                     };
 
-                    // Estructura interna: Cabeceras y celdas
-                    var mainGrid = new Grid();
-                    mainGrid.Background = Brushes.White; // El área de datos es blanca
+                    // 2. Estructura de Layout (Grid de 2x2 para separar contenido de scrollbars)
+                    var layoutGrid = new Grid();
+                    layoutGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                    layoutGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(scrollSize) });
+                    layoutGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+                    layoutGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(scrollSize) });
 
-                    // Definimos filas simuladas
-                    mainGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(20) }); // Fixed Row (Header)
-                    mainGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(20) }); // Row 1
-                    mainGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(20) }); // Row 2
-                    mainGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) }); // Resto
+                    // 3. Contenedor de la Tabla (Cabecera + Cuerpo)
+                    // Usamos un Canvas grande que contendrá todo
+                    var tableArea = new Grid();
+                    tableArea.RowDefinitions.Add(new RowDefinition { Height = new GridLength(cellHeight) }); // Fila Cabecera
+                    tableArea.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) }); // Fila Datos
 
-                    // Definimos columnas simuladas
-                    mainGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(30) }); // Fixed Col
-                    mainGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(60) }); // Col A
-                    mainGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(60) }); // Col B
-                    mainGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) }); // Resto
+                    // --- CABECERA ---
+                    var headerCanvas = new Canvas { Background = vbGray, ClipToBounds = true };
+                    Grid.SetRow(headerCanvas, 0);
+                    tableArea.Children.Add(headerCanvas);
 
-                    // --- 1. CABECERA SUPERIOR (Fixed Row) ---
-                    var topHeader = new Border
+                    // --- CUERPO ---
+                    var bodyCanvas = new Canvas { Background = Brushes.White, ClipToBounds = true };
+                    Grid.SetRow(bodyCanvas, 1);
+                    tableArea.Children.Add(bodyCanvas);
+
+                    // Añadir tabla al layout
+                    Grid.SetColumn(tableArea, 0);
+                    Grid.SetRow(tableArea, 0);
+                    layoutGrid.Children.Add(tableArea);
+
+                    // --- SCROLLBARS (Decorativos) ---
+                    var vScroll = new ScrollBar { Orientation = Orientation.Vertical, Width = scrollSize, Value = 0, Maximum = 100 };
+                    Grid.SetColumn(vScroll, 1);
+                    Grid.SetRow(vScroll, 0);
+                    layoutGrid.Children.Add(vScroll);
+
+                    var hScroll = new ScrollBar { Orientation = Orientation.Horizontal, Height = scrollSize, Value = 0, Maximum = 100 };
+                    Grid.SetColumn(hScroll, 0);
+                    Grid.SetRow(hScroll, 1);
+                    layoutGrid.Children.Add(hScroll);
+
+                    // Cuadrito de la esquina
+                    var corner = new Border { Background = vbGray };
+                    Grid.SetColumn(corner, 1);
+                    Grid.SetRow(corner, 1);
+                    layoutGrid.Children.Add(corner);
+
+                    gridBorder.Child = layoutGrid;
+
+                    // =============================================================
+                    // LÓGICA DINÁMICA: REDIBUJAR AL CAMBIAR TAMAÑO
+                    // =============================================================
+                    gridBorder.SizeChanged += (s, e) =>
                     {
-                        Background = vbGray,
-                        BorderBrush = Brushes.Gray,
-                        BorderThickness = new Thickness(0, 0, 0, 1)
+                        // Limpiamos lo anterior
+                        headerCanvas.Children.Clear();
+                        bodyCanvas.Children.Clear();
+
+                        double w = tableArea.ActualWidth;
+                        double h = tableArea.ActualHeight; // Altura total (header + body)
+                        double bodyH = bodyCanvas.ActualHeight;
+
+                        // Evitar dibujar si es muy pequeño
+                        if (w <= 0 || bodyH <= 0) return;
+
+                        // 1. DIBUJAR COLUMNAS (Cabeceras + Líneas Verticales)
+                        int colIndex = 0;
+                        for (double x = 0; x < w; x += cellWidth)
+                        {
+                            colIndex++;
+
+                            // -- Cabecera --
+                            // Borde de la celda header
+                            var headerCell = new Border
+                            {
+                                Width = cellWidth,
+                                Height = cellHeight,
+                                BorderBrush = Brushes.Gray,
+                                BorderThickness = new Thickness(0, 0, 1, 1), // Línea derecha y abajo
+                                Background = vbGray
+                            };
+
+                            // Texto de la cabecera (Col 1, Col 2...)
+                            var headerText = new TextBlock
+                            {
+                                Text = (colIndex == 1) ? "" : $"Col {colIndex - 1}", // La primera suele ser selectora vacía
+                                FontSize = fontParams.Size,
+                                FontFamily = fontParams.Family,
+                                Foreground = Brushes.Black,
+                                HorizontalAlignment = HorizontalAlignment.Center,
+                                VerticalAlignment = VerticalAlignment.Center
+                            };
+                            if (colIndex == 1) headerCell.Background = Brushes.DarkGray; // La esquina superior izq fija más oscura
+
+                            headerCell.Child = headerText;
+                            Canvas.SetLeft(headerCell, x);
+                            headerCanvas.Children.Add(headerCell);
+
+                            // -- Línea Vertical en el Cuerpo --
+                            var vLine = new Line
+                            {
+                                X1 = x + cellWidth,
+                                Y1 = 0,
+                                X2 = x + cellWidth,
+                                Y2 = bodyH,
+                                Stroke = Brushes.LightGray,
+                                StrokeThickness = 1
+                            };
+                            bodyCanvas.Children.Add(vLine);
+                        }
+
+                        // 2. DIBUJAR FILAS (Líneas Horizontales)
+                        // Empezamos en 0
+                        for (double y = 0; y < bodyH; y += cellHeight)
+                        {
+                            var hLine = new Line
+                            {
+                                X1 = 0,
+                                Y1 = y,
+                                X2 = w,
+                                Y2 = y,
+                                Stroke = Brushes.LightGray,
+                                StrokeThickness = 1
+                            };
+                            bodyCanvas.Children.Add(hLine);
+                        }
                     };
-                    Grid.SetRow(topHeader, 0);
-                    Grid.SetColumnSpan(topHeader, 4);
-                    mainGrid.Children.Add(topHeader);
 
-                    // --- 2. CABECERA LATERAL (Fixed Col) ---
-                    var leftHeader = new Border
-                    {
-                        Background = vbGray,
-                        BorderBrush = Brushes.Gray,
-                        BorderThickness = new Thickness(0, 0, 1, 0)
-                    };
-                    Grid.SetRow(leftHeader, 0);
-                    Grid.SetRowSpan(leftHeader, 4);
-                    mainGrid.Children.Add(leftHeader);
-
-                    // --- 3. INTERSECCIÓN (Esquina superior izquierda) ---
-                    // Un pequeño bloque gris levantado
-                    var cornerBtn = new Border
-                    {
-                        Background = vbGray,
-                        BorderBrush = Brushes.White, // Simula efecto 3D simple
-                        BorderThickness = new Thickness(1, 1, 0, 0)
-                    };
-                    Grid.SetRow(cornerBtn, 0);
-                    Grid.SetColumn(cornerBtn, 0);
-                    mainGrid.Children.Add(cornerBtn);
-
-                    // --- 4. LÍNEAS DE REJILLA (GridLines visuales) ---
-                    // Dibujamos algunas líneas verticales grises para simular columnas
-                    for (int i = 1; i <= 2; i++)
-                    {
-                        var vLine = new Border { BorderBrush = Brushes.LightGray, BorderThickness = new Thickness(0, 0, 1, 0) };
-                        Grid.SetRow(vLine, 1);
-                        Grid.SetRowSpan(vLine, 3);
-                        Grid.SetColumn(vLine, i);
-                        mainGrid.Children.Add(vLine);
-                    }
-
-                    // Dibujamos algunas líneas horizontales
-                    for (int i = 1; i <= 2; i++)
-                    {
-                        var hLine = new Border { BorderBrush = Brushes.LightGray, BorderThickness = new Thickness(0, 0, 0, 1) };
-                        Grid.SetRow(hLine, i);
-                        Grid.SetColumn(hLine, 1);
-                        Grid.SetColumnSpan(hLine, 3);
-                        mainGrid.Children.Add(hLine);
-                    }
-
-                    gridBorder.Child = mainGrid;
                     element = gridBorder;
                     break;
 
@@ -1072,6 +1146,177 @@ namespace VB6VisualMockupDesigner.Controls
             }
 
             return _vb6TextBoxStyle;
+        }
+
+
+        // =========================================================
+        // SCROLLBARS (HScrollBar / VScrollBar)
+        // =========================================================
+
+        private static Style _vb6ScrollStyleH;
+        private static Style _vb6ScrollStyleV;
+
+        private static Style GetVB6ScrollBarStyle(Orientation orientation)
+        {
+            if (orientation == Orientation.Horizontal && _vb6ScrollStyleH != null) return _vb6ScrollStyleH;
+            if (orientation == Orientation.Vertical && _vb6ScrollStyleV != null) return _vb6ScrollStyleV;
+
+            string targetType = orientation == Orientation.Horizontal ? "VB6HScrollBar" : "VB6VScrollBar";
+
+            // Definimos las flechas según la orientación
+            string arrow1 = orientation == Orientation.Horizontal ? "M 4,0 L 4,7 L 0,3.5 Z" : "M 0,4 L 7,4 L 3.5,0 Z"; // Izq o Arriba
+            string arrow2 = orientation == Orientation.Horizontal ? "M 0,0 L 0,7 L 4,3.5 Z" : "M 0,0 L 7,0 L 3.5,4 Z"; // Der o Abajo
+
+            // Márgenes para centrar las flechas
+            string arrowMargin1 = orientation == Orientation.Horizontal ? "5,4,0,0" : "4,5,0,0";
+            string arrowMargin2 = orientation == Orientation.Horizontal ? "6,4,0,0" : "4,6,0,0";
+
+            string xaml = $@"
+            <ResourceDictionary 
+                xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'
+                xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml'>
+
+                <SolidColorBrush x:Key='Face' Color='#D4D0C8'/>
+                <SolidColorBrush x:Key='Shadow' Color='#808080'/>
+                <SolidColorBrush x:Key='Light' Color='White'/>
+                <SolidColorBrush x:Key='Dark' Color='Black'/>
+
+                <Style x:Key='ScrollButton' TargetType='RepeatButton'>
+                    <Setter Property='Background' Value='{{StaticResource Face}}'/>
+                    <Setter Property='Focusable' Value='False'/>
+                    <Setter Property='Template'>
+                        <Setter.Value>
+                            <ControlTemplate TargetType='RepeatButton'>
+                                <Grid>
+                                    <Border BorderThickness='1'>
+                                        <Border.BorderBrush>
+                                            <LinearGradientBrush StartPoint='0,0' EndPoint='1,1'>
+                                                <GradientStop Color='White' Offset='0.5'/>
+                                                <GradientStop Color='Black' Offset='0.51'/>
+                                            </LinearGradientBrush>
+                                        </Border.BorderBrush>
+                                        <Border BorderThickness='1'>
+                                            <Border.BorderBrush>
+                                                <LinearGradientBrush StartPoint='0,0' EndPoint='1,1'>
+                                                    <GradientStop Color='#D4D0C8' Offset='0.5'/>
+                                                    <GradientStop Color='#808080' Offset='0.51'/>
+                                                </LinearGradientBrush>
+                                            </Border.BorderBrush>
+                                            <Border Background='{{TemplateBinding Background}}'>
+                                                <ContentPresenter HorizontalAlignment='Center' VerticalAlignment='Center'/>
+                                            </Border>
+                                        </Border>
+                                    </Border>
+                                </Grid>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property='IsPressed' Value='True'>
+                                        <Setter Property='RenderTransform'>
+                                            <Setter.Value>
+                                                <TranslateTransform X='1' Y='1'/>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+
+                <Style x:Key='ScrollThumb' TargetType='Thumb'>
+                    <Setter Property='Background' Value='{{StaticResource Face}}'/>
+                    <Setter Property='Template'>
+                        <Setter.Value>
+                            <ControlTemplate TargetType='Thumb'>
+                                <Border BorderThickness='1'>
+                                    <Border.BorderBrush>
+                                        <LinearGradientBrush StartPoint='0,0' EndPoint='1,1'>
+                                            <GradientStop Color='White' Offset='0.5'/>
+                                            <GradientStop Color='Black' Offset='0.51'/>
+                                        </LinearGradientBrush>
+                                    </Border.BorderBrush>
+                                    <Border BorderThickness='1'>
+                                        <Border.BorderBrush>
+                                            <LinearGradientBrush StartPoint='0,0' EndPoint='1,1'>
+                                                <GradientStop Color='#D4D0C8' Offset='0.5'/>
+                                                <GradientStop Color='#808080' Offset='0.51'/>
+                                            </LinearGradientBrush>
+                                        </Border.BorderBrush>
+                                        <Border Background='{{TemplateBinding Background}}'/>
+                                    </Border>
+                                </Border>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+
+                <Style x:Key='{targetType}' TargetType='ScrollBar'>
+                    <Setter Property='Background' Value='{{StaticResource Face}}'/> <Setter Property='Template'>
+                        <Setter.Value>
+                            <ControlTemplate TargetType='ScrollBar'>
+                                <Grid SnapsToDevicePixels='True'>
+                                    <Grid.ColumnDefinitions>
+                                        {(orientation == Orientation.Horizontal ?
+                                            "<ColumnDefinition Width='17'/><ColumnDefinition Width='*'/><ColumnDefinition Width='17'/>" :
+                                            "<ColumnDefinition Width='*'/>")}
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        {(orientation == Orientation.Vertical ?
+                                            "<RowDefinition Height='17'/><RowDefinition Height='*'/><RowDefinition Height='17'/>" :
+                                            "<RowDefinition Height='*'/>")}
+                                    </Grid.RowDefinitions>
+
+                                    <RepeatButton Style='{{StaticResource ScrollButton}}'
+                                                  Grid.Column='0' Grid.Row='0'
+                                                  Command='ScrollBar.LineUpCommand'>
+                                        <Path Data='{arrow1}' Fill='Black' Margin='{arrowMargin1}'/>
+                                    </RepeatButton>
+
+                                    <Track x:Name='PART_Track' 
+                                           Grid.Column='{(orientation == Orientation.Horizontal ? "1" : "0")}'
+                                           Grid.Row='{(orientation == Orientation.Vertical ? "1" : "0")}'
+                                           IsDirectionReversed='true'>
+                                        <Track.Thumb>
+                                            <Thumb Style='{{StaticResource ScrollThumb}}'/>
+                                        </Track.Thumb>
+                                        <Track.DecreaseRepeatButton>
+                                            <RepeatButton Command='ScrollBar.PageUpCommand' Opacity='0' Background='Transparent'/>
+                                        </Track.DecreaseRepeatButton>
+                                        <Track.IncreaseRepeatButton>
+                                            <RepeatButton Command='ScrollBar.PageDownCommand' Opacity='0' Background='Transparent'/>
+                                        </Track.IncreaseRepeatButton>
+                                    </Track>
+
+                                    <RepeatButton Style='{{StaticResource ScrollButton}}'
+                                                  Grid.Column='{(orientation == Orientation.Horizontal ? "2" : "0")}'
+                                                  Grid.Row='{(orientation == Orientation.Vertical ? "2" : "0")}'
+                                                  Command='ScrollBar.LineDownCommand'>
+                                        <Path Data='{arrow2}' Fill='Black' Margin='{arrowMargin2}'/>
+                                    </RepeatButton>
+                                </Grid>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </ResourceDictionary>";
+
+            try
+            {
+                using (var stream = new MemoryStream(Encoding.UTF8.GetBytes(xaml)))
+                {
+                    var resources = (ResourceDictionary)XamlReader.Load(stream);
+                    var style = (Style)resources[targetType];
+
+                    if (orientation == Orientation.Horizontal) _vb6ScrollStyleH = style;
+                    else _vb6ScrollStyleV = style;
+
+                    return style;
+                }
+            }
+            catch (System.Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error parsing ScrollStyle {orientation}: " + ex.Message);
+                return new Style(typeof(ScrollBar));
+            }
         }
 
     }
