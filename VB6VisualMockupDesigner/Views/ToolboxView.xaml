@@ -4,7 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              mc:Ignorable="d" 
-             d:DesignHeight="500" d:DesignWidth="250"
+             d:DesignHeight="800" d:DesignWidth="250"
              FontFamily="Segoe UI">
 
     <UserControl.Resources>
@@ -42,6 +42,13 @@
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="FontSize" Value="12"/>
         </Style>
+
+        <Style x:Key="LibHeaderStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="Gray"/>
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Margin" Value="4,5,0,2"/>
+        </Style>
     </UserControl.Resources>
 
     <Grid Background="{DynamicResource PanelBackground}">
@@ -51,132 +58,254 @@
         </Grid.RowDefinitions>
 
         <Border Grid.Row="0" Padding="10" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1">
-            <TextBlock Text="Controles Comunes" Style="{DynamicResource HeaderTextStyle}"/>
+            <TextBlock Text="Componentes" Style="{DynamicResource HeaderTextStyle}"/>
         </Border>
 
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="5">
-            <UniformGrid x:Name="ControlsGrid" Columns="4" VerticalAlignment="Top" IsEnabled="False">
+            <StackPanel x:Name="ToolsContainer" IsEnabled="False">
 
-                <Button Style="{StaticResource ToolboxBtnStyle}" ToolTip="Pointer">
-                    <Path Data="M2,2 L10,18 L13,13 L18,13 Z" Fill="{DynamicResource IconColor}" Stretch="Uniform" Margin="4"/>
-                </Button>
-
-                <Button Style="{StaticResource ToolboxBtnStyle}" ToolTip="PictureBox" Click="AddPictureBox_Click">
-                    <Canvas Width="20" Height="16">
-                        <Rectangle Width="20" Height="16" Stroke="{DynamicResource IconColor}" StrokeThickness="1"/>
-                        <Polyline Points="2,14 8,6 12,10 15,4 18,14" Stroke="{DynamicResource IconColor}" StrokeThickness="1"/>
-                    </Canvas>
-                </Button>
-
-                <Button Style="{StaticResource ToolboxBtnStyle}" ToolTip="Label" Click="AddLabel_Click">
-                    <TextBlock Text="A" FontSize="16" FontWeight="Bold" FontFamily="Serif" Foreground="{DynamicResource IconColor}" HorizontalAlignment="Center"/>
-                </Button>
-
-                <Button Style="{StaticResource ToolboxBtnStyle}" ToolTip="TextBox" Click="AddTextBox_Click">
-                    <Border BorderBrush="{DynamicResource IconColor}" BorderThickness="1" Width="20" Height="14">
-                        <TextBlock Text="ab" FontSize="8" Foreground="{DynamicResource IconColor}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                    </Border>
-                </Button>
-
-                <Button Style="{StaticResource ToolboxBtnStyle}" ToolTip="Frame" Click="AddFrame_Click">
-                    <Border BorderBrush="{DynamicResource IconColor}" BorderThickness="1" Width="22" Height="18" Padding="1">
-                        <TextBlock Text="xy" FontSize="6" Foreground="{DynamicResource IconColor}" VerticalAlignment="Top"/>
-                    </Border>
-                </Button>
-
-                <Button Style="{StaticResource ToolboxBtnStyle}" ToolTip="CommandButton" Click="AddButton_Click">
-                    <Border BorderBrush="{DynamicResource IconColor}" BorderThickness="1" Width="18" Height="12" Background="{DynamicResource HoverBrush}" CornerRadius="1"/>
-                </Button>
-
-                <Button Style="{StaticResource ToolboxBtnStyle}" ToolTip="CheckBox" Click="AddCheckBox_Click">
-                    <Grid Width="14" Height="14">
-                        <Border BorderBrush="{DynamicResource IconColor}" BorderThickness="1" Width="10" Height="10" HorizontalAlignment="Left" VerticalAlignment="Center"/>
-                        <Path Data="M2,5 L5,8 L10,1" Stroke="{DynamicResource IconColor}" StrokeThickness="1.5" Margin="1,2,0,0"/>
-                    </Grid>
-                </Button>
-
-                <Button Style="{StaticResource ToolboxBtnStyle}" ToolTip="OptionButton" Click="AddOptionButton_Click">
-                    <Grid Width="12" Height="12">
-                        <Ellipse Stroke="{DynamicResource IconColor}" StrokeThickness="1"/>
-                        <Ellipse Fill="{DynamicResource IconColor}" Width="4" Height="4"/>
-                    </Grid>
-                </Button>
-
-                <Button Style="{StaticResource ToolboxBtnStyle}" ToolTip="ComboBox" Click="AddComboBox_Click">
-                    <Border BorderBrush="{DynamicResource IconColor}" BorderThickness="1" Width="20" Height="12">
-                        <Path Data="M13,2 L13,10 M14,4 L17,4 L15.5,7 Z" Fill="{DynamicResource IconColor}" Margin="0"/>
-                    </Border>
-                </Button>
-
-                <Button Style="{StaticResource ToolboxBtnStyle}" ToolTip="ListBox" Click="AddListBox_Click">
-                    <Border BorderBrush="{DynamicResource IconColor}" BorderThickness="1" Width="18" Height="18">
-                        <StackPanel Margin="2">
-                            <Rectangle Height="1" Fill="{DynamicResource IconColor}" Margin="0,1"/>
-                            <Rectangle Height="1" Fill="{DynamicResource IconColor}" Margin="0,1"/>
-                            <Rectangle Height="1" Fill="{DynamicResource IconColor}" Margin="0,1"/>
-                        </StackPanel>
-                    </Border>
-                </Button>
-
-                <Button Style="{StaticResource ToolboxBtnStyle}" ToolTip="HScrollBar" Click="AddHScrollBar_Click">
-                    <Border BorderBrush="{DynamicResource IconColor}" BorderThickness="1" Width="22" Height="8">
-                        <Grid>
-                            <Rectangle Width="4" HorizontalAlignment="Left" Fill="{DynamicResource IconColor}"/>
-                            <Rectangle Width="4" HorizontalAlignment="Right" Fill="{DynamicResource IconColor}"/>
+                <TextBlock Text="VB.Runtime (Estándar)" Style="{StaticResource LibHeaderStyle}"/>
+                <UniformGrid Columns="4" VerticalAlignment="Top">
+                    <Button Style="{StaticResource ToolboxBtnStyle}" ToolTip="Pointer">
+                        <Path Data="M2,2 L10,18 L13,13 L18,13 Z" Fill="{DynamicResource IconColor}" Stretch="Uniform" Margin="4"/>
+                    </Button>
+                    <Button Style="{StaticResource ToolboxBtnStyle}" ToolTip="PictureBox" Click="AddPictureBox_Click">
+                        <Canvas Width="20" Height="16">
+                            <Rectangle Width="20" Height="16" Stroke="{DynamicResource IconColor}" StrokeThickness="1"/>
+                            <Polyline Points="2,14 8,6 12,10 15,4 18,14" Stroke="{DynamicResource IconColor}" StrokeThickness="1"/>
+                        </Canvas>
+                    </Button>
+                    <Button Style="{StaticResource ToolboxBtnStyle}" ToolTip="Label" Click="AddLabel_Click">
+                        <TextBlock Text="A" FontSize="16" FontWeight="Bold" FontFamily="Serif" Foreground="{DynamicResource IconColor}" HorizontalAlignment="Center"/>
+                    </Button>
+                    <Button Style="{StaticResource ToolboxBtnStyle}" ToolTip="TextBox" Click="AddTextBox_Click">
+                        <Border BorderBrush="{DynamicResource IconColor}" BorderThickness="1" Width="20" Height="14">
+                            <TextBlock Text="ab" FontSize="8" Foreground="{DynamicResource IconColor}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                        </Border>
+                    </Button>
+                    <Button Style="{StaticResource ToolboxBtnStyle}" ToolTip="Frame" Click="AddFrame_Click">
+                        <Border BorderBrush="{DynamicResource IconColor}" BorderThickness="1" Width="22" Height="18" Padding="1">
+                            <TextBlock Text="xy" FontSize="6" Foreground="{DynamicResource IconColor}" VerticalAlignment="Top"/>
+                        </Border>
+                    </Button>
+                    <Button Style="{StaticResource ToolboxBtnStyle}" ToolTip="CommandButton" Click="AddButton_Click">
+                        <Border BorderBrush="{DynamicResource IconColor}" BorderThickness="1" Width="18" Height="12" Background="{DynamicResource HoverBrush}" CornerRadius="1"/>
+                    </Button>
+                    <Button Style="{StaticResource ToolboxBtnStyle}" ToolTip="CheckBox" Click="AddCheckBox_Click">
+                        <Grid Width="14" Height="14">
+                            <Border BorderBrush="{DynamicResource IconColor}" BorderThickness="1" Width="10" Height="10" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                            <Path Data="M2,5 L5,8 L10,1" Stroke="{DynamicResource IconColor}" StrokeThickness="1.5" Margin="1,2,0,0"/>
                         </Grid>
-                    </Border>
-                </Button>
-
-                <Button Style="{StaticResource ToolboxBtnStyle}" ToolTip="VScrollBar" Click="AddVScrollBar_Click">
-                    <Border BorderBrush="{DynamicResource IconColor}" BorderThickness="1" Width="8" Height="22">
-                        <Grid>
-                            <Rectangle Height="4" VerticalAlignment="Top" Fill="{DynamicResource IconColor}"/>
-                            <Rectangle Height="4" VerticalAlignment="Bottom" Fill="{DynamicResource IconColor}"/>
+                    </Button>
+                    <Button Style="{StaticResource ToolboxBtnStyle}" ToolTip="OptionButton" Click="AddOptionButton_Click">
+                        <Grid Width="12" Height="12">
+                            <Ellipse Stroke="{DynamicResource IconColor}" StrokeThickness="1"/>
+                            <Ellipse Fill="{DynamicResource IconColor}" Width="4" Height="4"/>
                         </Grid>
-                    </Border>
-                </Button>
+                    </Button>
+                    <Button Style="{StaticResource ToolboxBtnStyle}" ToolTip="ComboBox" Click="AddComboBox_Click">
+                        <Border BorderBrush="{DynamicResource IconColor}" BorderThickness="1" Width="20" Height="12">
+                            <Path Data="M13,2 L13,10 M14,4 L17,4 L15.5,7 Z" Fill="{DynamicResource IconColor}" Margin="0"/>
+                        </Border>
+                    </Button>
+                    <Button Style="{StaticResource ToolboxBtnStyle}" ToolTip="ListBox" Click="AddListBox_Click">
+                        <Border BorderBrush="{DynamicResource IconColor}" BorderThickness="1" Width="18" Height="18">
+                            <StackPanel Margin="2">
+                                <Rectangle Height="1" Fill="{DynamicResource IconColor}" Margin="0,1"/>
+                                <Rectangle Height="1" Fill="{DynamicResource IconColor}" Margin="0,1"/>
+                                <Rectangle Height="1" Fill="{DynamicResource IconColor}" Margin="0,1"/>
+                            </StackPanel>
+                        </Border>
+                    </Button>
+                    <Button Style="{StaticResource ToolboxBtnStyle}" ToolTip="HScrollBar" Click="AddHScrollBar_Click">
+                        <Border BorderBrush="{DynamicResource IconColor}" BorderThickness="1" Width="22" Height="8">
+                            <Grid>
+                                <Rectangle Width="4" HorizontalAlignment="Left" Fill="{DynamicResource IconColor}"/>
+                                <Rectangle Width="4" HorizontalAlignment="Right" Fill="{DynamicResource IconColor}"/>
+                            </Grid>
+                        </Border>
+                    </Button>
+                    <Button Style="{StaticResource ToolboxBtnStyle}" ToolTip="VScrollBar" Click="AddVScrollBar_Click">
+                        <Border BorderBrush="{DynamicResource IconColor}" BorderThickness="1" Width="8" Height="22">
+                            <Grid>
+                                <Rectangle Height="4" VerticalAlignment="Top" Fill="{DynamicResource IconColor}"/>
+                                <Rectangle Height="4" VerticalAlignment="Bottom" Fill="{DynamicResource IconColor}"/>
+                            </Grid>
+                        </Border>
+                    </Button>
+                    <Button Style="{StaticResource ToolboxBtnStyle}" ToolTip="Timer" Click="AddTimer_Click">
+                        <Grid Width="16" Height="16">
+                            <Ellipse Stroke="{DynamicResource IconColor}" StrokeThickness="1"/>
+                            <Path Data="M8,4 L8,8 L10,10" Stroke="{DynamicResource IconColor}" StrokeThickness="1"/>
+                        </Grid>
+                    </Button>
+                    <Button Style="{StaticResource ToolboxBtnStyle}" ToolTip="DriveListBox" Click="AddDriveListBox_Click">
+                        <Path Data="M2,12 L16,12 L16,5 L9,5 L7,3 L2,3 Z" Stroke="{DynamicResource IconColor}" StrokeThickness="1" Margin="2"/>
+                    </Button>
+                    <Button Style="{StaticResource ToolboxBtnStyle}" ToolTip="DirListBox" Click="AddDirListBox_Click">
+                        <Path Data="M3,4 L15,4 L15,12 L3,12 Z" Stroke="{DynamicResource IconColor}" StrokeThickness="1" Margin="2"/>
+                    </Button>
+                    <Button Style="{StaticResource ToolboxBtnStyle}" ToolTip="FileListBox" Click="AddFileListBox_Click">
+                        <Path Data="M4,2 L11,2 L14,5 L14,16 L4,16 Z" Stroke="{DynamicResource IconColor}" StrokeThickness="1" Margin="3"/>
+                    </Button>
+                    <Button Style="{StaticResource ToolboxBtnStyle}" ToolTip="Shape" Click="AddShape_Click">
+                        <Rectangle Width="14" Height="14" Stroke="{DynamicResource IconColor}" StrokeThickness="1" StrokeDashArray="2,1"/>
+                    </Button>
+                    <Button Style="{StaticResource ToolboxBtnStyle}" ToolTip="Line" Click="AddLine_Click">
+                        <Line X1="4" Y1="16" X2="16" Y2="4" Stroke="{DynamicResource IconColor}" StrokeThickness="1.5"/>
+                    </Button>
+                    <Button Style="{StaticResource ToolboxBtnStyle}" ToolTip="Image" Click="AddImage_Click">
+                        <Path Data="M3,3 L15,15 M3,15 L15,3" Stroke="{DynamicResource IconColor}" StrokeThickness="1" Margin="3"/>
+                    </Button>
 
-                <Button Style="{StaticResource ToolboxBtnStyle}" ToolTip="Timer" Click="AddTimer_Click">
-                    <Grid Width="16" Height="16">
-                        <Ellipse Stroke="{DynamicResource IconColor}" StrokeThickness="1"/>
-                        <Path Data="M8,4 L8,8 L10,10" Stroke="{DynamicResource IconColor}" StrokeThickness="1"/>
-                    </Grid>
-                </Button>
+                    <Button Style="{StaticResource ToolboxBtnStyle}" ToolTip="Menu" Click="AddMenu_Click">
+                        <Border BorderBrush="{DynamicResource IconColor}" BorderThickness="0,0,0,1" Width="20" Height="16" VerticalAlignment="Top">
+                            <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                                <Rectangle Width="4" Height="1" Fill="{DynamicResource IconColor}" Margin="1"/>
+                                <Rectangle Width="4" Height="1" Fill="{DynamicResource IconColor}" Margin="1"/>
+                                <Rectangle Width="4" Height="1" Fill="{DynamicResource IconColor}" Margin="1"/>
+                            </StackPanel>
+                        </Border>
+                    </Button>
+                </UniformGrid>
 
-                <Button Style="{StaticResource ToolboxBtnStyle}" ToolTip="DriveListBox" Click="AddDriveListBox_Click">
-                    <Path Data="M2,12 L16,12 L16,5 L9,5 L7,3 L2,3 Z" Stroke="{DynamicResource IconColor}" StrokeThickness="1" Margin="2"/>
-                </Button>
+                <Separator Margin="0,10,0,2"/>
 
-                <Button Style="{StaticResource ToolboxBtnStyle}" ToolTip="DirListBox" Click="AddDirListBox_Click">
-                    <Path Data="M3,4 L15,4 L15,12 L3,12 Z" Stroke="{DynamicResource IconColor}" StrokeThickness="1" Margin="2"/>
-                </Button>
+                <TextBlock Text="Threed32.ocx" Style="{StaticResource LibHeaderStyle}"/>
+                <UniformGrid Columns="4" VerticalAlignment="Top">
+                    <Button Style="{StaticResource ToolboxBtnStyle}" ToolTip="SSPanel" Click="AddSSPanel_Click">
+                        <Border Width="20" Height="16" Background="LightGray" BorderBrush="Gray" BorderThickness="2,2,0,0">
+                            <Border BorderBrush="White" BorderThickness="0,0,2,2"/>
+                        </Border>
+                    </Button>
+                    <Button Style="{StaticResource ToolboxBtnStyle}" ToolTip="SSCommand" Click="AddSSCommand_Click">
+                        <Border Width="20" Height="14" Background="LightGray" BorderBrush="Black" BorderThickness="2" CornerRadius="1">
+                            <TextBlock Text="OK" FontSize="7" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </Button>
+                    <Button Style="{StaticResource ToolboxBtnStyle}" ToolTip="SSCheck" Click="AddSSCheck_Click">
+                        <Grid Width="18" Height="14">
+                            <Border Width="10" Height="10" Background="White" BorderBrush="Gray" BorderThickness="1" HorizontalAlignment="Left">
+                                <Border.Effect>
+                                    <DropShadowEffect ShadowDepth="1" BlurRadius="0" Color="Black" Opacity="0.5"/>
+                                </Border.Effect>
+                            </Border>
+                            <Path Data="M2,5 L4,7 L8,1" Stroke="Black" StrokeThickness="2" Margin="1,2,0,0"/>
+                        </Grid>
+                    </Button>
+                    <Button Style="{StaticResource ToolboxBtnStyle}" ToolTip="SSOption" Click="AddSSOption_Click">
+                        <Grid Width="16" Height="14">
+                            <Ellipse Width="10" Height="10" Stroke="Gray" StrokeThickness="1" HorizontalAlignment="Left">
+                                <Ellipse.Effect>
+                                    <DropShadowEffect ShadowDepth="1" BlurRadius="0" Color="White" Direction="-45" Opacity="1"/>
+                                </Ellipse.Effect>
+                            </Ellipse>
+                            <Ellipse Width="4" Height="4" Fill="Black" HorizontalAlignment="Left" Margin="3,0,0,0"/>
+                        </Grid>
+                    </Button>
+                    <Button Style="{StaticResource ToolboxBtnStyle}" ToolTip="SSFrame" Click="AddSSFrame_Click">
+                        <Border BorderBrush="Black" BorderThickness="2" Width="20" Height="16" Background="Transparent">
+                            <Border BorderBrush="Gray" BorderThickness="1" Margin="-1"/>
+                        </Border>
+                    </Button>
+                    <Button Style="{StaticResource ToolboxBtnStyle}" ToolTip="SSRibbon" Click="AddSSRibbon_Click">
+                        <Border Width="18" Height="18" Background="LightGray" BorderBrush="White" BorderThickness="1,1,0,0">
+                            <Border BorderBrush="Gray" BorderThickness="0,0,1,1">
+                                <Path Data="M4,4 L12,12 M4,12 L12,4" Stroke="Gray" StrokeThickness="1"/>
+                            </Border>
+                        </Border>
+                    </Button>
+                </UniformGrid>
 
-                <Button Style="{StaticResource ToolboxBtnStyle}" ToolTip="FileListBox" Click="AddFileListBox_Click">
-                    <Path Data="M4,2 L11,2 L14,5 L14,16 L4,16 Z" Stroke="{DynamicResource IconColor}" StrokeThickness="1" Margin="3"/>
-                </Button>
+                <Separator Margin="0,10,0,2"/>
 
-                <Button Style="{StaticResource ToolboxBtnStyle}" ToolTip="Shape" Click="AddShape_Click">
-                    <Rectangle Width="14" Height="14" Stroke="{DynamicResource IconColor}" StrokeThickness="1" StrokeDashArray="2,1"/>
-                </Button>
+                <TextBlock Text="Grid32.ocx" Style="{StaticResource LibHeaderStyle}"/>
+                <UniformGrid Columns="4" VerticalAlignment="Top">
+                    <Button Style="{StaticResource ToolboxBtnStyle}" ToolTip="Grid" Click="AddGrid_Click">
+                        <Border BorderBrush="{DynamicResource IconColor}" BorderThickness="1" Width="20" Height="18" Background="White">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="5"/>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="5"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Rectangle Fill="LightGray" Grid.Row="0" Grid.ColumnSpan="3"/>
+                                <Rectangle Fill="LightGray" Grid.Column="0" Grid.RowSpan="3"/>
+                                <Border Background="Gray" Grid.Row="0" Grid.Column="0"/>
+                                <Rectangle Stroke="{DynamicResource IconColor}" StrokeThickness="0.5" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" Fill="Transparent"/>
+                                <Rectangle Width="0.5" Fill="{DynamicResource IconColor}" Grid.Row="1" Grid.Column="1" Grid.RowSpan="2" HorizontalAlignment="Right"/>
+                                <Rectangle Height="0.5" Fill="{DynamicResource IconColor}" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" VerticalAlignment="Bottom"/>
+                            </Grid>
+                        </Border>
+                    </Button>
+                </UniformGrid>
 
-                <Button Style="{StaticResource ToolboxBtnStyle}" ToolTip="Line" Click="AddLine_Click">
-                    <Line X1="4" Y1="16" X2="16" Y2="4" Stroke="{DynamicResource IconColor}" StrokeThickness="1.5"/>
-                </Button>
+                <Separator Margin="0,10,0,2"/>
 
-                <Button Style="{StaticResource ToolboxBtnStyle}" ToolTip="Image" Click="AddImage_Click">
-                    <Path Data="M3,3 L15,15 M3,15 L15,3" Stroke="{DynamicResource IconColor}" StrokeThickness="1" Margin="3"/>
-                </Button>
+                <TextBlock Text="Graph32.ocx" Style="{StaticResource LibHeaderStyle}"/>
+                <UniformGrid Columns="4" VerticalAlignment="Top">
+                    <Button Style="{StaticResource ToolboxBtnStyle}" ToolTip="Graph" Click="AddGraph_Click">
+                        <Border BorderBrush="{DynamicResource IconColor}" BorderThickness="1" Width="20" Height="18" Background="White">
+                            <Canvas Width="18" Height="16">
+                                <Line X1="2" Y1="2" X2="2" Y2="14" Stroke="{DynamicResource IconColor}" StrokeThickness="1"/>
+                                <Line X1="2" Y1="14" X2="16" Y2="14" Stroke="{DynamicResource IconColor}" StrokeThickness="1"/>
+                                <Rectangle Canvas.Left="4" Canvas.Top="8" Width="3" Height="6" Fill="Red"/>
+                                <Rectangle Canvas.Left="8" Canvas.Top="4" Width="3" Height="10" Fill="Green"/>
+                                <Rectangle Canvas.Left="12" Canvas.Top="6" Width="3" Height="8" Fill="Blue"/>
+                            </Canvas>
+                        </Border>
+                    </Button>
+                </UniformGrid>
 
-                <Button Style="{StaticResource ToolboxBtnStyle}" ToolTip="Menu Bar" Click="AddMenu_Click">
-                    <Border BorderBrush="{DynamicResource IconColor}" BorderThickness="0,0,0,1" Width="20" Height="16" VerticalAlignment="Top">
-                        <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
-                            <Rectangle Width="4" Height="1" Fill="{DynamicResource IconColor}" Margin="1"/>
-                            <Rectangle Width="4" Height="1" Fill="{DynamicResource IconColor}" Margin="1"/>
-                        </StackPanel>
-                    </Border>
-                </Button>
+                <Separator Margin="0,10,0,2"/>
 
-            </UniformGrid>
+                <TextBlock Text="Msmask32.ocx" Style="{StaticResource LibHeaderStyle}"/>
+                <UniformGrid Columns="4" VerticalAlignment="Top">
+                    <Button Style="{StaticResource ToolboxBtnStyle}" ToolTip="MaskEdBox" Click="AddMaskEdBox_Click">
+                        <Border BorderBrush="{DynamicResource IconColor}" BorderThickness="1" Width="20" Height="14">
+                            <TextBlock Text="##" FontSize="8" FontWeight="Bold" Foreground="{DynamicResource IconColor}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                        </Border>
+                    </Button>
+                </UniformGrid>
+
+                <Separator Margin="0,10,0,2"/>
+
+                <TextBlock Text="Comdlg32.ocx" Style="{StaticResource LibHeaderStyle}"/>
+                <UniformGrid Columns="4" VerticalAlignment="Top">
+                    <Button Style="{StaticResource ToolboxBtnStyle}" ToolTip="CommonDialog" Click="AddCommonDialog_Click">
+                        <Canvas Width="20" Height="18">
+                            <Rectangle Width="14" Height="10" Stroke="{DynamicResource IconColor}" StrokeThickness="1" Canvas.Left="0" Canvas.Top="4" Fill="White"/>
+                            <Rectangle Width="14" Height="10" Stroke="{DynamicResource IconColor}" StrokeThickness="1" Canvas.Left="4" Canvas.Top="0" Fill="Transparent"/>
+                        </Canvas>
+                    </Button>
+                </UniformGrid>
+
+                <Separator Margin="0,10,0,2"/>
+
+                <TextBlock Text="Crystl32.ocx" Style="{StaticResource LibHeaderStyle}"/>
+                <UniformGrid Columns="4" VerticalAlignment="Top">
+                    <Button Style="{StaticResource ToolboxBtnStyle}" ToolTip="CrystalReport" Click="AddCrystalReport_Click">
+                        <Path Data="M 10,2 L 18,10 L 10,18 L 2,10 Z" Fill="{DynamicResource IconColor}" Stroke="{DynamicResource IconColor}" StrokeThickness="1"/>
+                    </Button>
+                </UniformGrid>
+
+                <Separator Margin="0,10,0,2"/>
+
+                <TextBlock Text="Map60.ocx" Style="{StaticResource LibHeaderStyle}"/>
+                <UniformGrid Columns="4" VerticalAlignment="Top">
+                    <Button Style="{StaticResource ToolboxBtnStyle}" ToolTip="Map" Click="AddMap_Click">
+                        <Border BorderBrush="{DynamicResource IconColor}" BorderThickness="1" Width="20" Height="20" Background="#E0F0FF">
+                            <Path Data="M 10,2 C 6,2 4,5 4,8 C 4,12 10,18 10,18 C 10,18 16,12 16,8 C 16,5 14,2 10,2 Z" Fill="Red" Stroke="DarkRed" StrokeThickness="0.5"/>
+                        </Border>
+                    </Button>
+                </UniformGrid>
+
+            </StackPanel>
         </ScrollViewer>
     </Grid>
 </UserControl>

@@ -25,7 +25,9 @@ namespace VB6VisualMockupDesigner.Views
         // Método público para controlar el estado
         public void EnableTools(bool isEnabled)
         {
-            ControlsGrid.IsEnabled = isEnabled;
+            // Referencia al x:Name="ToolsContainer" del StackPanel
+            if (ToolsContainer != null)
+                ToolsContainer.IsEnabled = isEnabled;
         }
 
         // Métodos de acción (simplificados para redirigir a un evento común)
@@ -72,5 +74,28 @@ namespace VB6VisualMockupDesigner.Views
         private void AddImage_Click(object sender, RoutedEventArgs e) => SendControl("Image");
         private void AddMenu_Click(object sender, RoutedEventArgs e) => SendControl("Menu");
         private void AddStatusBar_Click(object sender, RoutedEventArgs e) => SendControl("StatusBar");
+
+
+
+        // --- Sheridan 3D Controls (NUEVOS) ---
+        private void AddSSPanel_Click(object sender, RoutedEventArgs e) => SendControl("SSPanel");
+        private void AddSSCommand_Click(object sender, RoutedEventArgs e) => SendControl("SSCommand");
+        private void AddSSCheck_Click(object sender, RoutedEventArgs e) => SendControl("SSCheck");
+        private void AddSSOption_Click(object sender, RoutedEventArgs e) => SendControl("SSOption");
+        private void AddSSFrame_Click(object sender, RoutedEventArgs e) => SendControl("SSFrame");
+        private void AddSSRibbon_Click(object sender, RoutedEventArgs e) => SendControl("SSRibbon");
+
+
+        // --- ActiveX Controls ---
+        private void AddGrid_Click(object sender, RoutedEventArgs e) => SendControl("Grid");
+        private void AddGraph_Click(object sender, RoutedEventArgs e) => SendControl("Graph"); // <--- NUEVO
+
+
+
+        private void AddMaskEdBox_Click(object sender, RoutedEventArgs e) => SendControl("MaskEdBox");
+        private void AddCommonDialog_Click(object sender, RoutedEventArgs e) => SendControl("CommonDialog");
+        private void AddCrystalReport_Click(object sender, RoutedEventArgs e) => SendControl("CrystalReport");
+
+        private void AddMap_Click(object sender, RoutedEventArgs e) => SendControl("Map");
     }
 }
