@@ -155,6 +155,11 @@
                     <Button Style="{StaticResource ToolboxBtnStyle}" ToolTip="Label" Click="AddLabel_Click">
                         <TextBlock Text="A" FontSize="16" FontWeight="Bold" FontFamily="Serif" Foreground="{DynamicResource IconColor}" HorizontalAlignment="Center"/>
                     </Button>
+                    <Button Style="{StaticResource ToolboxBtnStyle}" ToolTip="LabelFixed" Click="AddLabelFixed_Click">
+                        <Border BorderBrush="{DynamicResource IconColor}" BorderThickness="1" Width="20" Height="14">
+                            <TextBlock Text="A" FontSize="10" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </Button>
                     <Button Style="{StaticResource ToolboxBtnStyle}" ToolTip="TextBox" Click="AddTextBox_Click">
                         <Border BorderBrush="{DynamicResource IconColor}" BorderThickness="1" Width="20" Height="14">
                             <TextBlock Text="ab" FontSize="8" Foreground="{DynamicResource IconColor}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
@@ -384,11 +389,7 @@
 
 
 
-                <Button
-    Style="{StaticResource Threed32Button}"
-    Width="120"
-    Height="30"
-    Content="Aceptar"/>
+                
 
             </StackPanel>
         </ScrollViewer>

@@ -56,6 +56,8 @@ namespace VB6VisualMockupDesigner.Views
 
         private void AddPictureBox_Click(object sender, RoutedEventArgs e) => SendControl("PictureBox");
         private void AddLabel_Click(object sender, RoutedEventArgs e) => SendControl("Label");
+        private void AddLabelFixed_Click(object sender, RoutedEventArgs e) => SendControl("LabelFixed");
+        
         private void AddTextBox_Click(object sender, RoutedEventArgs e) => SendControl("TextBox");
         private void AddFrame_Click(object sender, RoutedEventArgs e) => SendControl("Frame");
         private void AddButton_Click(object sender, RoutedEventArgs e) => SendControl("CommandButton");

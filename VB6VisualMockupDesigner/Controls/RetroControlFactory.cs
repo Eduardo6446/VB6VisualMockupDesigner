@@ -11,7 +11,7 @@ namespace VB6VisualMockupDesigner.Controls
 {
     public static class RetroControlFactory
     {
-        private static Style _threed32ButtonStyle;
+        
         public static UIElement Create(string type)
         {
 
@@ -44,6 +44,20 @@ namespace VB6VisualMockupDesigner.Controls
                 case "Label":
                     element = new Label { Content = "Label1", Width = 121, Height = 25, FontFamily = fontParams.Family, FontSize = fontParams.Size, Padding = new Thickness(2) };
                     break;
+                case "LabelFixed":
+                    // Es un Label, pero parece un TextBox
+                    var lblFixed = new Label
+                    {
+                        Content = "Información",
+                        Width = 121,
+                        Height = 25,
+                        // Usa el estilo de borde hundido
+                        Style = RetroStyles.GetVB6FixedLabelStyle(),
+                        // Opcional: Si quieres que sea blanco como un textbox (pero no editable)
+                        Background = Brushes.White
+                    };
+                    element = lblFixed;
+                    break;
 
                 case "TextBox":
                     element = new TextBox
@@ -51,7 +65,7 @@ namespace VB6VisualMockupDesigner.Controls
                         Text = "Text1",
                         Width = 121,
                         Height = 25,
-                        Style = GetVB6TextBoxStyle() // <--- AQUI
+                        Style = RetroStyles.GetVB6TextBoxStyle() // <--- AQUI
                     };
                     break;
 
@@ -117,7 +131,7 @@ namespace VB6VisualMockupDesigner.Controls
                         Height = 17, // Altura clásica
                         Value = 50,
                         Maximum = 100,
-                        Style = GetVB6ScrollBarStyle(Orientation.Horizontal)
+                        Style = RetroStyles.GetVB6ScrollBarStyle(Orientation.Horizontal)
                     };
                     break;
 
@@ -129,7 +143,7 @@ namespace VB6VisualMockupDesigner.Controls
                         Height = 100,
                         Value = 50,
                         Maximum = 100,
-                        Style = GetVB6ScrollBarStyle(Orientation.Vertical)
+                        Style = RetroStyles.GetVB6ScrollBarStyle(Orientation.Vertical)
                     };
                     break;
 
@@ -181,56 +195,47 @@ namespace VB6VisualMockupDesigner.Controls
                 // =========================================================
 
                 case "Menu":
-                    // 1. Crear la factoría del panel para que sea Horizontal
-                    var panelFactory = new FrameworkElementFactory(typeof(VirtualizingStackPanel));
-                    // Configurar la propiedad Orientation fuera del inicializador
-                    panelFactory.SetValue(VirtualizingStackPanel.OrientationProperty, Orientation.Horizontal);
-
-                    // 2. Crear el Template usando la factoría ya configurada
-                    var itemsPanelTemplate = new ItemsPanelTemplate(panelFactory);
-
-                    // 3. Crear el Menú
+                    // Creamos el Menu nativo de WPF
                     var menuBar = new Menu
                     {
-                        Height = 20,
-                        Background = vbGray,
-                        BorderBrush = Brushes.LightGray,
-                        BorderThickness = new Thickness(0, 0, 0, 1),
-                        SnapsToDevicePixels = true,
-                        ItemsPanel = itemsPanelTemplate // Asignamos el template aquí
+                        Height = 22,
+                        // Aplicamos TU estilo visual
+                        Style = RetroStyles.GetVB6MenuStyle()
                     };
 
-                    // --- LÓGICA DE EDICIÓN (Context Menu para la barra) ---
+                    // --- LÓGICA DE EDICIÓN (Context Menu para agregar items) ---
                     var barContextMenu = new ContextMenu();
                     var addTopLevel = new MenuItem { Header = "Agregar Menú Padre (Top Level)" };
 
-                    // Handler para agregar items principales
                     addTopLevel.Click += (s, e) =>
                     {
-                        // Nota: Asegúrate de tener el método CreateRetroMenuItem definido en la clase
-                        var newItem = CreateRetroMenuItem("Nuevo Menú", fontParams.Family, fontParams.Size);
-                        menuBar.Items.Add(newItem);
+                        var dialog = new SimpleInputDialog("Nombre del Menú Principal:", "Nuevo Menú");
+                        if (dialog.ShowDialog() == true)
+                        {
+                            var newItem = CreateRetroMenuItem(dialog.Answer, fontParams.Family, fontParams.Size);
+                            menuBar.Items.Add(newItem);
+                        }
                     };
 
                     barContextMenu.Items.Add(addTopLevel);
                     menuBar.ContextMenu = barContextMenu;
 
-                    // --- ITEMS POR DEFECTO ---
-                    // Item 1: Archivo
-                    var fileMenu = CreateRetroMenuItem("Archivo", fontParams.Family, fontParams.Size);
+                    // --- ITEMS POR DEFECTO (Para ver el diseño inmediatamente) ---
+                    // Archivo
+                    var fileMenu = CreateRetroMenuItem("_Archivo", fontParams.Family, fontParams.Size);
                     fileMenu.Items.Add(CreateRetroMenuItem("Nuevo", fontParams.Family, fontParams.Size));
                     fileMenu.Items.Add(CreateRetroMenuItem("Abrir...", fontParams.Family, fontParams.Size));
-                    fileMenu.Items.Add(new Separator());
+                    fileMenu.Items.Add(new Separator()); // Usará tu estilo de separador automáticamente
                     fileMenu.Items.Add(CreateRetroMenuItem("Salir", fontParams.Family, fontParams.Size));
 
-                    // Item 2: Edición
-                    var editMenu = CreateRetroMenuItem("Edición", fontParams.Family, fontParams.Size);
+                    // Edición
+                    var editMenu = CreateRetroMenuItem("_Edición", fontParams.Family, fontParams.Size);
                     editMenu.Items.Add(CreateRetroMenuItem("Copiar", fontParams.Family, fontParams.Size));
 
                     // Agregar al menú principal
                     menuBar.Items.Add(fileMenu);
                     menuBar.Items.Add(editMenu);
-                    menuBar.Items.Add(CreateRetroMenuItem("Ayuda", fontParams.Family, fontParams.Size));
+                    menuBar.Items.Add(CreateRetroMenuItem("_Ayuda", fontParams.Family, fontParams.Size));
 
                     element = menuBar;
                     break;
@@ -290,10 +295,8 @@ namespace VB6VisualMockupDesigner.Controls
                         Content = "SSCommand1",
                         Width = 100,
                         Height = 35,
+                        Style = RetroStyles.GetCustomThreed32Style()
                     };
-
-                    // Aplicamos TU estilo personalizado
-                    ssCmd.Style = GetCustomThreed32Style();
 
                     element = ssCmd;
                     break;
@@ -306,7 +309,7 @@ namespace VB6VisualMockupDesigner.Controls
                         Width = 121,
                         Height = 25,
                        
-                        Style = GetCustomThreed32CheckStyle()
+                        Style = RetroStyles.GetCustomThreed32CheckStyle()
                         
                     };
                     // Padding extra para simular el estilo 'Panel' del check
@@ -320,7 +323,7 @@ namespace VB6VisualMockupDesigner.Controls
                         Content = "SSOption1", // Texto por defecto
                         Width = 121,
                         Height = 25,
-                        Style = GetCustomThreed32OptionStyle()
+                        Style = RetroStyles.GetCustomThreed32OptionStyle()
                     };
                     element = ssOpt;
                     break;
@@ -797,527 +800,80 @@ namespace VB6VisualMockupDesigner.Controls
 
 
         // Método Helper para inyectar tu XAML
-        private static Style GetCustomThreed32Style()
+        
+
+
+       
+
+    }
+
+
+
+    // Coloca esto al final de tu archivo RetroControlFactory.cs
+    // Asegúrate de que esté FUERA de la clase "RetroControlFactory", 
+    // pero DENTRO del namespace "VB6VisualMockupDesigner.Controls"
+
+    public class SimpleInputDialog : Window
+    {
+        private TextBox _txtInput;
+
+        public string Answer { get { return _txtInput.Text; } }
+
+        public SimpleInputDialog(string question, string defaultAnswer = "")
         {
-            if (_threed32ButtonStyle != null) return _threed32ButtonStyle;
+            Width = 350;
+            Height = 160;
+            Title = "Propiedad";
+            WindowStartupLocation = WindowStartupLocation.CenterScreen;
+            ResizeMode = ResizeMode.NoResize;
+            WindowStyle = WindowStyle.ToolWindow;
+            Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#D4D0C8")); // Gris VB
 
-            // Aquí pegamos TU XAML. 
-            // Nota: Hemos añadido los xmlns necesarios al principio del string para que el parser funcione.
-            string xaml = @"
-            <ResourceDictionary 
-                xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'
-                xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml'>
+            var stack = new StackPanel { Margin = new Thickness(15) };
 
-                <Color x:Key='BtnFace'>#FFE0E0E0</Color>
-                <Color x:Key='BtnHighlight'>#FFFFFFFF</Color>
-                <Color x:Key='BtnShadow'>#FFA0A0A0</Color>
-                <Color x:Key='BtnDarkShadow'>#FF696969</Color>
-
-                <SolidColorBrush x:Key='BtnFaceBrush' Color='{StaticResource BtnFace}' />
-                <SolidColorBrush x:Key='BtnHighlightBrush' Color='{StaticResource BtnHighlight}' />
-                <SolidColorBrush x:Key='BtnShadowBrush' Color='{StaticResource BtnShadow}' />
-                <SolidColorBrush x:Key='BtnDarkShadowBrush' Color='{StaticResource BtnDarkShadow}' />
-
-                <Style x:Key='Threed32Button' TargetType='Button'>
-                    <Setter Property='Background' Value='{StaticResource BtnFaceBrush}' />
-                    <Setter Property='Foreground' Value='Black' />
-                    <Setter Property='BorderThickness' Value='1' />
-                    <Setter Property='Padding' Value='8,3' />
-                    <Setter Property='FontFamily' Value='Microsoft Sans Serif' />
-                    <Setter Property='FontSize' Value='12' />
-                    <Setter Property='Template'>
-                        <Setter.Value>
-                            <ControlTemplate TargetType='Button'>
-                                <Grid>
-                                    <Border Background='{TemplateBinding Background}' BorderThickness='1'>
-                                        <Border.BorderBrush>
-                                            <LinearGradientBrush StartPoint='0,0' EndPoint='1,1'>
-                                                <GradientStop Color='{StaticResource BtnHighlight}' Offset='0'/>
-                                                <GradientStop Color='{StaticResource BtnDarkShadow}' Offset='1'/>
-                                            </LinearGradientBrush>
-                                        </Border.BorderBrush>
-
-                                        <Border Margin='1' BorderThickness='1'>
-                                            <Border.BorderBrush>
-                                                <LinearGradientBrush StartPoint='0,0' EndPoint='1,1'>
-                                                    <GradientStop Color='{StaticResource BtnFace}' Offset='0'/>
-                                                    <GradientStop Color='{StaticResource BtnShadow}' Offset='1'/>
-                                                </LinearGradientBrush>
-                                            </Border.BorderBrush>
-
-                                            <ContentPresenter 
-                                                HorizontalAlignment='Center' 
-                                                VerticalAlignment='Center' 
-                                                RecognizesAccessKey='True'/>
-                                        </Border>
-                                    </Border>
-                                </Grid>
-                                <ControlTemplate.Triggers>
-                                    <Trigger Property='IsPressed' Value='True'>
-                                        <Setter Property='RenderTransform'>
-                                            <Setter.Value>
-                                                <TranslateTransform X='1' Y='1'/>
-                                            </Setter.Value>
-                                        </Setter>
-                                    </Trigger>
-                                    <Trigger Property='IsEnabled' Value='False'>
-                                        <Setter Property='Foreground' Value='#FF808080'/>
-                                    </Trigger>
-                                </ControlTemplate.Triggers>
-                            </ControlTemplate>
-                        </Setter.Value>
-                    </Setter>
-                </Style>
-            </ResourceDictionary>";
-
-            try
+            // Etiqueta
+            stack.Children.Add(new TextBlock
             {
-                // Parseamos el string a un ResourceDictionary real
-                using (var stream = new MemoryStream(Encoding.UTF8.GetBytes(xaml)))
-                {
-                    var resources = (ResourceDictionary)XamlReader.Load(stream);
-                    _threed32ButtonStyle = (Style)resources["Threed32Button"];
-                }
-            }
-            catch (System.Exception ex)
-            {
-                // Fallback por si acaso falla el parseo
-                System.Diagnostics.Debug.WriteLine("Error parsing Style: " + ex.Message);
-                _threed32ButtonStyle = new Style(typeof(Button));
-            }
+                Text = question,
+                Margin = new Thickness(0, 0, 0, 10),
+                FontFamily = new FontFamily("Microsoft Sans Serif"),
+                FontSize = 11
+            });
 
-            return _threed32ButtonStyle;
+            // TextBox
+            _txtInput = new TextBox
+            {
+                Text = defaultAnswer,
+                FontFamily = new FontFamily("Microsoft Sans Serif"),
+                FontSize = 11
+            };
+            _txtInput.SelectAll();
+            stack.Children.Add(_txtInput);
+
+            // Botón Aceptar
+            var btnOk = new Button
+            {
+                Content = "Aceptar",
+                IsDefault = true,
+                Width = 80,
+                Height = 25,
+                Margin = new Thickness(0, 15, 0, 0),
+                HorizontalAlignment = HorizontalAlignment.Right,
+                FontFamily = new FontFamily("Microsoft Sans Serif"),
+                FontSize = 11
+            };
+            btnOk.Click += (s, e) => { DialogResult = true; };
+            stack.Children.Add(btnOk);
+
+            Content = stack;
         }
 
-
-        private static Style _threed32CheckStyle;
-
-        private static Style GetCustomThreed32CheckStyle()
+        protected override void OnContentRendered(EventArgs e)
         {
-            if (_threed32CheckStyle != null) return _threed32CheckStyle;
-
-            string xaml = @"
-            <ResourceDictionary 
-                xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'
-                xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml'>
-
-                <Style x:Key='Threed32CheckBox' TargetType='CheckBox'>
-                    <Setter Property='FontFamily' Value='Microsoft Sans Serif'/>
-                    <Setter Property='FontSize' Value='11'/>
-                    <Setter Property='Foreground' Value='Black'/>
-                    <Setter Property='HorizontalContentAlignment' Value='Left'/> 
-                    <Setter Property='Template'>
-                        <Setter.Value>
-                            <ControlTemplate TargetType='CheckBox'>
-                                <DockPanel SnapsToDevicePixels='True' Background='Transparent' LastChildFill='True'>
-                                    
-                                    <Grid x:Name='CheckBoxContainer' Width='13' Height='13' VerticalAlignment='Center' DockPanel.Dock='Left'>
-                                        <Border BorderThickness='1'>
-                                            <Border.BorderBrush>
-                                                <LinearGradientBrush StartPoint='0,0' EndPoint='1,1'>
-                                                    <GradientStop Color='#808080' Offset='0.5'/> 
-                                                    <GradientStop Color='White' Offset='0.51'/>
-                                                </LinearGradientBrush>
-                                            </Border.BorderBrush>
-                                        </Border>
-                                        <Border Margin='1' Background='White' BorderThickness='1,1,0,0' BorderBrush='Black'>
-                                            <Path x:Name='CheckMark' 
-                                                  Data='M 2,4 L 4,6 L 8,1' 
-                                                  Stroke='Black'
-                                                  StrokeThickness='1.5'
-                                                  Visibility='Collapsed'
-                                                  HorizontalAlignment='Center'
-                                                  VerticalAlignment='Center'/>
-                                        </Border>
-                                    </Grid>
-
-                                    <ContentPresenter x:Name='ContentObj'
-                                                      Margin='5,0,0,0' 
-                                                      VerticalAlignment='Center' 
-                                                      HorizontalAlignment='{TemplateBinding HorizontalContentAlignment}'
-                                                      RecognizesAccessKey='True'/>
-                                </DockPanel>
-
-                                <ControlTemplate.Triggers>
-                                    <Trigger Property='IsChecked' Value='True'>
-                                        <Setter TargetName='CheckMark' Property='Visibility' Value='Visible'/>
-                                    </Trigger>
-
-                                    <Trigger Property='IsEnabled' Value='False'>
-                                        <Setter Property='Foreground' Value='#808080'/>
-                                        <Setter TargetName='CheckMark' Property='Stroke' Value='#808080'/>
-                                    </Trigger>
-
-                                    <DataTrigger Binding='{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}' Value='Right'>
-                                        <Setter TargetName='CheckBoxContainer' Property='DockPanel.Dock' Value='Right'/>
-                                        <Setter TargetName='ContentObj' Property='Margin' Value='0,0,5,0'/>
-                                        <Setter Property='HorizontalContentAlignment' Value='Right'/>
-                                    </DataTrigger>
-
-                                </ControlTemplate.Triggers>
-                            </ControlTemplate>
-                        </Setter.Value>
-                    </Setter>
-                </Style>
-            </ResourceDictionary>";
-
-            try
-            {
-                using (var stream = new MemoryStream(Encoding.UTF8.GetBytes(xaml)))
-                {
-                    var resources = (ResourceDictionary)XamlReader.Load(stream);
-                    _threed32CheckStyle = (Style)resources["Threed32CheckBox"];
-                }
-            }
-            catch (System.Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine("Error parsing CheckBox Style: " + ex.Message);
-                _threed32CheckStyle = new Style(typeof(CheckBox));
-            }
-
-            return _threed32CheckStyle;
+            base.OnContentRendered(e);
+            _txtInput.Focus();
         }
 
-        private static Style _threed32OptionStyle;
-
-        private static Style GetCustomThreed32OptionStyle()
-        {
-            if (_threed32OptionStyle != null) return _threed32OptionStyle;
-
-            string xaml = @"
-            <ResourceDictionary 
-                xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'
-                xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml'>
-
-                <Style x:Key='Threed32OptionButton' TargetType='RadioButton'>
-                    <Setter Property='FontFamily' Value='Microsoft Sans Serif'/>
-                    <Setter Property='FontSize' Value='11'/>
-                    <Setter Property='Foreground' Value='Black'/>
-                    <Setter Property='HorizontalContentAlignment' Value='Left'/>
-                    <Setter Property='Template'>
-                        <Setter.Value>
-                            <ControlTemplate TargetType='RadioButton'>
-                                <DockPanel SnapsToDevicePixels='True' Background='Transparent' LastChildFill='True'>
-                                    
-                                    <Grid x:Name='OptionContainer' Width='13' Height='13' VerticalAlignment='Center' DockPanel.Dock='Left'>
-                                        
-                                        <Ellipse StrokeThickness='1'>
-                                            <Ellipse.Stroke>
-                                                <LinearGradientBrush StartPoint='0,0' EndPoint='1,1'>
-                                                    <GradientStop Color='#808080' Offset='0.5'/> 
-                                                    <GradientStop Color='White' Offset='0.55'/>
-                                                </LinearGradientBrush>
-                                            </Ellipse.Stroke>
-                                        </Ellipse>
-
-                                        <Ellipse Margin='1' StrokeThickness='1' Fill='White'>
-                                            <Ellipse.Stroke>
-                                                <LinearGradientBrush StartPoint='0,0' EndPoint='1,1'>
-                                                    <GradientStop Color='Black' Offset='0.5'/> 
-                                                    <GradientStop Color='Transparent' Offset='0.55'/>
-                                                </LinearGradientBrush>
-                                            </Ellipse.Stroke>
-                                        </Ellipse>
-
-                                        <Ellipse x:Name='OptionMark' 
-                                                 Fill='Black' 
-                                                 Width='5' Height='5' 
-                                                 Visibility='Collapsed'/>
-                                    </Grid>
-
-                                    <ContentPresenter x:Name='ContentObj'
-                                                      Margin='5,0,0,0' 
-                                                      VerticalAlignment='Center'
-                                                      HorizontalAlignment='{TemplateBinding HorizontalContentAlignment}'
-                                                      RecognizesAccessKey='True'/>
-                                </DockPanel>
-
-                                <ControlTemplate.Triggers>
-                                    <Trigger Property='IsChecked' Value='True'>
-                                        <Setter TargetName='OptionMark' Property='Visibility' Value='Visible'/>
-                                    </Trigger>
-
-                                    <Trigger Property='IsEnabled' Value='False'>
-                                        <Setter Property='Foreground' Value='#808080'/>
-                                        <Setter TargetName='OptionMark' Property='Fill' Value='#808080'/>
-                                    </Trigger>
-
-                                    <DataTrigger Binding='{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}' Value='Right'>
-                                        <Setter TargetName='OptionContainer' Property='DockPanel.Dock' Value='Right'/>
-                                        <Setter TargetName='ContentObj' Property='Margin' Value='0,0,5,0'/>
-                                        <Setter Property='HorizontalContentAlignment' Value='Right'/>
-                                    </DataTrigger>
-                                </ControlTemplate.Triggers>
-                            </ControlTemplate>
-                        </Setter.Value>
-                    </Setter>
-                </Style>
-            </ResourceDictionary>";
-
-            try
-            {
-                using (var stream = new MemoryStream(Encoding.UTF8.GetBytes(xaml)))
-                {
-                    var resources = (ResourceDictionary)XamlReader.Load(stream);
-                    _threed32OptionStyle = (Style)resources["Threed32OptionButton"];
-                }
-            }
-            catch (System.Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine("Error parsing OptionButton Style: " + ex.Message);
-                _threed32OptionStyle = new Style(typeof(RadioButton));
-            }
-
-            return _threed32OptionStyle;
-        }
-
-        private static Style _vb6TextBoxStyle;
-
-        private static Style GetVB6TextBoxStyle()
-        {
-            if (_vb6TextBoxStyle != null) return _vb6TextBoxStyle;
-
-            string xaml = @"
-            <ResourceDictionary 
-                xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'
-                xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml'>
-
-                <Style x:Key='VB6TextBox' TargetType='TextBox'>
-                    <Setter Property='FontFamily' Value='Microsoft Sans Serif'/>
-                    <Setter Property='FontSize' Value='11'/>
-                    <Setter Property='Background' Value='White'/>
-                    <Setter Property='Foreground' Value='Black'/>
-                    <Setter Property='BorderThickness' Value='0'/>
-                    <Setter Property='Padding' Value='2,1'/>
-                    <Setter Property='Template'>
-                        <Setter.Value>
-                            <ControlTemplate TargetType='TextBox'>
-                                <Grid SnapsToDevicePixels='True'>
-                                    
-                                    <Border BorderThickness='1'>
-                                        <Border.BorderBrush>
-                                            <LinearGradientBrush StartPoint='0,0' EndPoint='1,1'>
-                                                <GradientStop Color='#808080' Offset='0.5'/> 
-                                                <GradientStop Color='#808080' Offset='0.51'/>
-                                            </LinearGradientBrush>
-                                        </Border.BorderBrush>
-                                        
-                                        <Border BorderThickness='1'>
-                                            <Border.BorderBrush>
-                                                <LinearGradientBrush StartPoint='0,0' EndPoint='1,1'>
-                                                    <GradientStop Color='#808080' Offset='0.5'/> 
-                                                    <GradientStop Color='#808080' Offset='0.51'/>
-                                                </LinearGradientBrush>
-                                            </Border.BorderBrush>
-
-                                            <Border Background='{TemplateBinding Background}'>
-                                                <ScrollViewer x:Name='PART_ContentHost' 
-                                                              Margin='{TemplateBinding Padding}'
-                                                              VerticalScrollBarVisibility='Auto'/>
-                                            </Border>
-                                        </Border>
-                                    </Border>
-                                </Grid>
-                                
-                                <ControlTemplate.Triggers>
-                                    <Trigger Property='IsEnabled' Value='False'>
-                                        <Setter Property='Background' Value='#D4D0C8'/>
-                                        <Setter Property='Foreground' Value='#808080'/>
-                                    </Trigger>
-                                </ControlTemplate.Triggers>
-                            </ControlTemplate>
-                        </Setter.Value>
-                    </Setter>
-                </Style>
-            </ResourceDictionary>";
-
-            try
-            {
-                using (var stream = new MemoryStream(Encoding.UTF8.GetBytes(xaml)))
-                {
-                    var resources = (ResourceDictionary)XamlReader.Load(stream);
-                    _vb6TextBoxStyle = (Style)resources["VB6TextBox"];
-                }
-            }
-            catch (System.Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine("Error parsing TextBox Style: " + ex.Message);
-                _vb6TextBoxStyle = new Style(typeof(TextBox));
-            }
-
-            return _vb6TextBoxStyle;
-        }
-
-
-        // =========================================================
-        // SCROLLBARS (HScrollBar / VScrollBar)
-        // =========================================================
-
-        private static Style _vb6ScrollStyleH;
-        private static Style _vb6ScrollStyleV;
-
-        private static Style GetVB6ScrollBarStyle(Orientation orientation)
-        {
-            if (orientation == Orientation.Horizontal && _vb6ScrollStyleH != null) return _vb6ScrollStyleH;
-            if (orientation == Orientation.Vertical && _vb6ScrollStyleV != null) return _vb6ScrollStyleV;
-
-            string targetType = orientation == Orientation.Horizontal ? "VB6HScrollBar" : "VB6VScrollBar";
-
-            // Definimos las flechas según la orientación
-            string arrow1 = orientation == Orientation.Horizontal ? "M 4,0 L 4,7 L 0,3.5 Z" : "M 0,4 L 7,4 L 3.5,0 Z"; // Izq o Arriba
-            string arrow2 = orientation == Orientation.Horizontal ? "M 0,0 L 0,7 L 4,3.5 Z" : "M 0,0 L 7,0 L 3.5,4 Z"; // Der o Abajo
-
-            // Márgenes para centrar las flechas
-            string arrowMargin1 = orientation == Orientation.Horizontal ? "5,4,0,0" : "4,5,0,0";
-            string arrowMargin2 = orientation == Orientation.Horizontal ? "6,4,0,0" : "4,6,0,0";
-
-            string xaml = $@"
-            <ResourceDictionary 
-                xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'
-                xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml'>
-
-                <SolidColorBrush x:Key='Face' Color='#D4D0C8'/>
-                <SolidColorBrush x:Key='Shadow' Color='#808080'/>
-                <SolidColorBrush x:Key='Light' Color='White'/>
-                <SolidColorBrush x:Key='Dark' Color='Black'/>
-
-                <Style x:Key='ScrollButton' TargetType='RepeatButton'>
-                    <Setter Property='Background' Value='{{StaticResource Face}}'/>
-                    <Setter Property='Focusable' Value='False'/>
-                    <Setter Property='Template'>
-                        <Setter.Value>
-                            <ControlTemplate TargetType='RepeatButton'>
-                                <Grid>
-                                    <Border BorderThickness='1'>
-                                        <Border.BorderBrush>
-                                            <LinearGradientBrush StartPoint='0,0' EndPoint='1,1'>
-                                                <GradientStop Color='White' Offset='0.5'/>
-                                                <GradientStop Color='Black' Offset='0.51'/>
-                                            </LinearGradientBrush>
-                                        </Border.BorderBrush>
-                                        <Border BorderThickness='1'>
-                                            <Border.BorderBrush>
-                                                <LinearGradientBrush StartPoint='0,0' EndPoint='1,1'>
-                                                    <GradientStop Color='#D4D0C8' Offset='0.5'/>
-                                                    <GradientStop Color='#808080' Offset='0.51'/>
-                                                </LinearGradientBrush>
-                                            </Border.BorderBrush>
-                                            <Border Background='{{TemplateBinding Background}}'>
-                                                <ContentPresenter HorizontalAlignment='Center' VerticalAlignment='Center'/>
-                                            </Border>
-                                        </Border>
-                                    </Border>
-                                </Grid>
-                                <ControlTemplate.Triggers>
-                                    <Trigger Property='IsPressed' Value='True'>
-                                        <Setter Property='RenderTransform'>
-                                            <Setter.Value>
-                                                <TranslateTransform X='1' Y='1'/>
-                                            </Setter.Value>
-                                        </Setter>
-                                    </Trigger>
-                                </ControlTemplate.Triggers>
-                            </ControlTemplate>
-                        </Setter.Value>
-                    </Setter>
-                </Style>
-
-                <Style x:Key='ScrollThumb' TargetType='Thumb'>
-                    <Setter Property='Background' Value='{{StaticResource Face}}'/>
-                    <Setter Property='Template'>
-                        <Setter.Value>
-                            <ControlTemplate TargetType='Thumb'>
-                                <Border BorderThickness='1'>
-                                    <Border.BorderBrush>
-                                        <LinearGradientBrush StartPoint='0,0' EndPoint='1,1'>
-                                            <GradientStop Color='White' Offset='0.5'/>
-                                            <GradientStop Color='Black' Offset='0.51'/>
-                                        </LinearGradientBrush>
-                                    </Border.BorderBrush>
-                                    <Border BorderThickness='1'>
-                                        <Border.BorderBrush>
-                                            <LinearGradientBrush StartPoint='0,0' EndPoint='1,1'>
-                                                <GradientStop Color='#D4D0C8' Offset='0.5'/>
-                                                <GradientStop Color='#808080' Offset='0.51'/>
-                                            </LinearGradientBrush>
-                                        </Border.BorderBrush>
-                                        <Border Background='{{TemplateBinding Background}}'/>
-                                    </Border>
-                                </Border>
-                            </ControlTemplate>
-                        </Setter.Value>
-                    </Setter>
-                </Style>
-
-                <Style x:Key='{targetType}' TargetType='ScrollBar'>
-                    <Setter Property='Background' Value='{{StaticResource Face}}'/> <Setter Property='Template'>
-                        <Setter.Value>
-                            <ControlTemplate TargetType='ScrollBar'>
-                                <Grid SnapsToDevicePixels='True'>
-                                    <Grid.ColumnDefinitions>
-                                        {(orientation == Orientation.Horizontal ?
-                                            "<ColumnDefinition Width='17'/><ColumnDefinition Width='*'/><ColumnDefinition Width='17'/>" :
-                                            "<ColumnDefinition Width='*'/>")}
-                                    </Grid.ColumnDefinitions>
-                                    <Grid.RowDefinitions>
-                                        {(orientation == Orientation.Vertical ?
-                                            "<RowDefinition Height='17'/><RowDefinition Height='*'/><RowDefinition Height='17'/>" :
-                                            "<RowDefinition Height='*'/>")}
-                                    </Grid.RowDefinitions>
-
-                                    <RepeatButton Style='{{StaticResource ScrollButton}}'
-                                                  Grid.Column='0' Grid.Row='0'
-                                                  Command='ScrollBar.LineUpCommand'>
-                                        <Path Data='{arrow1}' Fill='Black' Margin='{arrowMargin1}'/>
-                                    </RepeatButton>
-
-                                    <Track x:Name='PART_Track' 
-                                           Grid.Column='{(orientation == Orientation.Horizontal ? "1" : "0")}'
-                                           Grid.Row='{(orientation == Orientation.Vertical ? "1" : "0")}'
-                                           IsDirectionReversed='true'>
-                                        <Track.Thumb>
-                                            <Thumb Style='{{StaticResource ScrollThumb}}'/>
-                                        </Track.Thumb>
-                                        <Track.DecreaseRepeatButton>
-                                            <RepeatButton Command='ScrollBar.PageUpCommand' Opacity='0' Background='Transparent'/>
-                                        </Track.DecreaseRepeatButton>
-                                        <Track.IncreaseRepeatButton>
-                                            <RepeatButton Command='ScrollBar.PageDownCommand' Opacity='0' Background='Transparent'/>
-                                        </Track.IncreaseRepeatButton>
-                                    </Track>
-
-                                    <RepeatButton Style='{{StaticResource ScrollButton}}'
-                                                  Grid.Column='{(orientation == Orientation.Horizontal ? "2" : "0")}'
-                                                  Grid.Row='{(orientation == Orientation.Vertical ? "2" : "0")}'
-                                                  Command='ScrollBar.LineDownCommand'>
-                                        <Path Data='{arrow2}' Fill='Black' Margin='{arrowMargin2}'/>
-                                    </RepeatButton>
-                                </Grid>
-                            </ControlTemplate>
-                        </Setter.Value>
-                    </Setter>
-                </Style>
-            </ResourceDictionary>";
-
-            try
-            {
-                using (var stream = new MemoryStream(Encoding.UTF8.GetBytes(xaml)))
-                {
-                    var resources = (ResourceDictionary)XamlReader.Load(stream);
-                    var style = (Style)resources[targetType];
-
-                    if (orientation == Orientation.Horizontal) _vb6ScrollStyleH = style;
-                    else _vb6ScrollStyleV = style;
-
-                    return style;
-                }
-            }
-            catch (System.Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Error parsing ScrollStyle {orientation}: " + ex.Message);
-                return new Style(typeof(ScrollBar));
-            }
-        }
-
+        
     }
 }
