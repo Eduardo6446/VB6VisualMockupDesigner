@@ -48,7 +48,7 @@ namespace VB6VisualMockupDesigner.Controls
         private Dictionary<UIElement, Border> _selectionAdorners = new Dictionary<UIElement, Border>();
         private Dictionary<UIElement, Point> _initialPositions = new Dictionary<UIElement, Point>();
 
-        private List<string> _clipboardControls = new List<string>();
+        //private List<string> _clipboardControls = new List<string>();
 
         private bool _isDragging = false;
         private Point _dragStartPoint;
