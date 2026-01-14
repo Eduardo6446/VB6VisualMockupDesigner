@@ -1164,5 +1164,54 @@ namespace VB6VisualMockupDesigner.Views
             }
         }
 
+        private void Window_DragOver(object sender, DragEventArgs e)
+        {
+            bool isFile = e.Data.GetDataPresent(DataFormats.FileDrop);
+
+            if (isFile)
+            {
+                // Opcional: Podríamos validar la extensión aquí mismo para ser más estrictos
+                // pero con verificar que sea un archivo es suficiente para el feedback visual.
+                e.Effects = DragDropEffects.Copy;
+            }
+            else
+            {
+                e.Effects = DragDropEffects.None;
+            }
+
+            e.Handled = true; // Importante: Decimos que ya manejamos el evento
+        }
+
+        // Evento lógico: Procesa el archivo cuando el usuario lo suelta
+        private void Window_Drop(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                // Obtener lista de archivos arrastrados (pueden ser varios)
+                string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
+
+                if (files != null && files.Length > 0)
+                {
+                    // Por simplicidad, tomamos el primero. 
+                    // Si quisieras soportar abrir múltiples, podrías iterar.
+                    string fileToOpen = files[0];
+                    string ext = System.IO.Path.GetExtension(fileToOpen).ToLower();
+
+                    // Validamos que sea un archivo que entendemos
+                    if (ext == ".frm" || ext == ".vbp")
+                    {
+                        // ¡Reutilizamos tu lógica existente!
+                        LoadProject(fileToOpen);
+                    }
+                    else
+                    {
+                        MessageBox.Show("Solo se admiten archivos de proyecto (.vbp) o formularios (.frm).",
+                                        "Formato no soportado",
+                                        MessageBoxButton.OK, MessageBoxImage.Warning);
+                    }
+                }
+            }
+        }
+
     }
 }

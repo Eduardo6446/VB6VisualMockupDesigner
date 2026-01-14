@@ -6,7 +6,11 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="250"
-             FontFamily="Segoe UI">
+             FontFamily="Segoe UI"
+             AllowDrop="True"
+          DragOver="ProjectTree_DragOver"
+          Drop="ProjectTree_Drop"
+             >
 
     <UserControl.Resources>
         <Style x:Key="ExplorerBtnStyle" TargetType="Button">

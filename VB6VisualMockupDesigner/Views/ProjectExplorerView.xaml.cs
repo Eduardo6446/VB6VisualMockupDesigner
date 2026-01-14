@@ -535,6 +535,165 @@ Attribute VB_Exposed = False
             }
         }
 
+        private void ProjectTree_DragOver(object sender, DragEventArgs e)
+        {
+            // 1. Validar que sea un archivo
+            if (!e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                e.Effects = DragDropEffects.None;
+                e.Handled = true;
+                return;
+            }
+
+            // 2. Detectar sobre qué item estamos "flotando"
+            TreeViewItem item = GetTreeViewItemUnderMouse(e.GetPosition(ProjectTree));
+
+            // 3. Feedback visual: Seleccionar el item temporalmente para que el usuario sepa dónde caerá
+            if (item != null)
+            {
+                // --- CORRECCIÓN AQUÍ ---
+                // Activamos la bandera para que el evento SelectedItemChanged NO abra el archivo
+                _isNavigatingFromCode = true;
+
+                item.IsSelected = true;
+
+                // Desactivamos la bandera inmediatamente
+                _isNavigatingFromCode = false;
+                // -----------------------
+
+                e.Effects = DragDropEffects.Copy;
+            }
+            else
+            {
+                e.Effects = DragDropEffects.None; // Si no está sobre ningún nodo, no permitir (o permitir en raíz)
+            }
+
+            e.Handled = true;
+        }
+
+        private void ProjectTree_Drop(object sender, DragEventArgs e)
+        {
+            if (!e.Data.GetDataPresent(DataFormats.FileDrop)) return;
+
+            // 1. Obtener archivos arrastrados
+            string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
+
+            // 2. Obtener el destino
+            // Buscamos el item bajo el mouse. Si no hay ninguno, asumimos la raíz del proyecto.
+            TreeViewItem targetItem = GetTreeViewItemUnderMouse(e.GetPosition(ProjectTree));
+            ExplorerItem targetData = null;
+            string targetPath = "";
+
+            if (targetItem != null)
+            {
+                targetData = targetItem.DataContext as ExplorerItem;
+            }
+            else
+            {
+                // Si soltó en el espacio vacío, usar la raíz (si existe)
+                var roots = ProjectTree.ItemsSource as ObservableCollection<ExplorerItem>;
+                if (roots != null && roots.Count > 0) targetData = roots[0];
+            }
+
+            if (targetData == null) return;
+
+            // 3. Determinar la carpeta física destino
+            if (targetData.Type == ExplorerItemType.File)
+            {
+                // Si soltó sobre un archivo, guardamos en la carpeta que contiene ese archivo
+                targetPath = Path.GetDirectoryName(targetData.FullPath);
+                // Para actualizar la UI, necesitamos el PADRE de este archivo.
+                // (El truco rápido visual que usaremos abajo dependerá de si encontramos al padre)
+            }
+            else
+            {
+                // Si es carpeta o proyecto, esa es la ruta
+                targetPath = targetData.FullPath;
+                if (targetData.Type == ExplorerItemType.Project)
+                    targetPath = Path.GetDirectoryName(targetData.FullPath); // Si es el .vbp, usar su carpeta
+            }
+
+            // 4. Copiar archivos
+            foreach (string fileSource in files)
+            {
+                try
+                {
+                    string fileName = Path.GetFileName(fileSource);
+                    string destFile = Path.Combine(targetPath, fileName);
+
+                    // Evitar sobrescribir si es el mismo archivo
+                    if (fileSource.Equals(destFile, StringComparison.OrdinalIgnoreCase)) continue;
+
+                    // Si ya existe, preguntar o renombrar. Aquí preguntamos.
+                    if (File.Exists(destFile))
+                    {
+                        var res = MessageBox.Show($"El archivo '{fileName}' ya existe en la carpeta destino.\n¿Deseas sobrescribirlo?",
+                            "Confirmar reemplazo", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                        if (res == MessageBoxResult.No) continue;
+                    }
+
+                    File.Copy(fileSource, destFile, true);
+
+                    // 5. Actualizar la UI (Árbol)
+                    // La forma más fácil y segura es refrescar el nodo destino si es una carpeta
+                    if (targetData.Type == ExplorerItemType.Folder || targetData.Type == ExplorerItemType.Project)
+                    {
+                        // Opción A: Añadir manualmente a la colección Children
+                        var newItem = new ExplorerItem
+                        {
+                            Name = fileName,
+                            FullPath = destFile,
+                            Type = IsDirectory(destFile) ? ExplorerItemType.Folder : ExplorerItemType.File,
+                            Children = new ObservableCollection<ExplorerItem>()
+                        };
+
+                        // Si es carpeta, habría que escanearla, pero asumamos archivo simple por ahora
+                        targetData.Children.Add(newItem);
+                        targetData.IsExpanded = true;
+                    }
+                    else
+                    {
+                        // Si soltamos sobre un archivo, visualmente es difícil encontrar al padre para añadirlo a su colección.
+                        // Una solución rápida es recargar todo el árbol (seguro pero menos eficiente)
+                        // O implementar la búsqueda del padre que mencionamos antes.
+
+                        // Por ahora, recarguemos para asegurar consistencia si soltamos sobre archivo
+                        if (ProjectTree.ItemsSource is ObservableCollection<ExplorerItem> roots)
+                            LoadProjectStructure(roots[0].FullPath);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Error al copiar '{Path.GetFileName(fileSource)}': {ex.Message}");
+                }
+            }
+        }
+
+        // Helper auxiliar para saber si es carpeta
+        private bool IsDirectory(string path)
+        {
+            try
+            {
+                return (File.GetAttributes(path) & FileAttributes.Directory) == FileAttributes.Directory;
+            }
+            catch { return false; }
+        }
+
+        // --- MAGIA VISUAL: ENCONTRAR EL NODO BAJO EL MOUSE ---
+        private TreeViewItem GetTreeViewItemUnderMouse(Point position)
+        {
+            HitTestResult result = VisualTreeHelper.HitTest(ProjectTree, position);
+            if (result == null) return null;
+
+            DependencyObject dependencyObject = result.VisualHit;
+            while (dependencyObject != null && !(dependencyObject is TreeViewItem))
+            {
+                dependencyObject = VisualTreeHelper.GetParent(dependencyObject);
+            }
+
+            return dependencyObject as TreeViewItem;
+        }
+
     }
 
     public static class SimpleInputBox

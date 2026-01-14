@@ -10,7 +10,12 @@
         WindowStyle="SingleBorderWindow"
         ResizeMode="CanResize"
         Background="{DynamicResource AppBackground}"
-        FontFamily="Segoe UI">
+        FontFamily="Segoe UI"
+        AllowDrop="True"
+        Drop="Window_Drop"
+        DragOver="Window_DragOver"
+        
+        >
 
     <WindowChrome.WindowChrome>
         <WindowChrome 
