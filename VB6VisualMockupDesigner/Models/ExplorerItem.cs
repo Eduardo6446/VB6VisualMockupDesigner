@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace VB6VisualMockupDesigner.Models
@@ -11,9 +12,26 @@ namespace VB6VisualMockupDesigner.Models
     public class ExplorerItem : INotifyPropertyChanged
     {
         public string Name { get; set; }
-        public string FullPath { get; set; }
+        private string _fullPath;
+        public string FullPath
+        {
+            get => _fullPath;
+            set
+            {
+                if (_fullPath != value)
+                {
+                    _fullPath = value;
+                    OnPropertyChanged(); // Avisa que FullPath cambió
+
+                    // ¡EL TRUCO! Avisamos que IconCode también cambió (porque depende de la extensión)
+                    OnPropertyChanged(nameof(IconCode));
+                }
+            }
+        }
         public ExplorerItemType Type { get; set; }
         public ObservableCollection<ExplorerItem> Children { get; set; } = new ObservableCollection<ExplorerItem>();
+
+        // En VB6VisualMockupDesigner.Models.ExplorerItem.cs
 
         public string IconCode
         {
@@ -21,7 +39,20 @@ namespace VB6VisualMockupDesigner.Models
             {
                 if (Type == ExplorerItemType.Project) return "\xE82D";
                 if (Type == ExplorerItemType.Folder) return "\xE8B7";
-                return "\xE8A5";
+
+                // Lógica automática basada en la extensión del FullPath
+                string ext = System.IO.Path.GetExtension(FullPath)?.ToLower();
+                switch (ext)
+                {
+                    case ".frm": return "\xE7C3"; // Form
+                    case ".bas": return "\xE943"; // Module
+                    case ".cls": return "\xE99A"; // Class
+                    case ".ctl": return "\xE74C"; // UserControl
+                    case ".res": return "\xEA86"; // Resource
+                    case ".ico":
+                    case ".bmp": return "\xEB9F"; // Image
+                    default: return "\xE7C3";     // File genérico
+                }
             }
         }
 
@@ -55,7 +86,9 @@ namespace VB6VisualMockupDesigner.Models
 
         // --- IMPLEMENTACIÓN DE LA INTERFAZ ---
         public event PropertyChangedEventHandler PropertyChanged;
-        protected void OnPropertyChanged(string name) =>
+        protected void OnPropertyChanged([CallerMemberName] string name = null)
+        {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+        }
     }
 }

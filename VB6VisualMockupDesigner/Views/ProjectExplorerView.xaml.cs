@@ -296,10 +296,10 @@ Attribute VB_Exposed = False
             if (_isNavigatingFromCode) return;
 
 
-            if (ProjectTree.SelectedItem is ExplorerItem item && item.Type == ExplorerItemType.File)
-            {
-                OnFileOpened?.Invoke(this, item.FullPath);
-            }
+            //if (ProjectTree.SelectedItem is ExplorerItem item && item.Type == ExplorerItemType.File)
+            //{
+            //    OnFileOpened?.Invoke(this, item.FullPath);
+            //}
         }
 
         // Método SelectFile actualizado para trabajar con TreeView (Búsqueda recursiva simple)
@@ -694,6 +694,56 @@ Attribute VB_Exposed = False
             return dependencyObject as TreeViewItem;
         }
 
+
+
+        // -----------------------------------------------------------
+        // MEJORAS DE UX: TECLADO Y RATÓN
+        // -----------------------------------------------------------
+
+        private void ProjectTree_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            // Verificar que el doble clic fue sobre un item y no en el espacio vacío
+            var item = GetTreeViewItemUnderMouse(e.GetPosition(ProjectTree));
+            if (item != null && item.DataContext is ExplorerItem explorerItem)
+            {
+                // Solo abrimos si es archivo. Las carpetas ya se expanden/colapsan nativamente.
+                if (explorerItem.Type == ExplorerItemType.File)
+                {
+                    OnFileOpened?.Invoke(this, explorerItem.FullPath);
+                    e.Handled = true;
+                }
+            }
+        }
+
+        private void ProjectTree_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (!(ProjectTree.SelectedItem is ExplorerItem selectedItem)) return;
+
+            // ENTER: Abrir archivo
+            if (e.Key == Key.Enter)
+            {
+                if (selectedItem.Type == ExplorerItemType.File)
+                {
+                    OnFileOpened?.Invoke(this, selectedItem.FullPath);
+                    e.Handled = true;
+                }
+            }
+            // F2: Renombrar
+            else if (e.Key == Key.F2)
+            {
+                // Reutilizamos la lógica del menú contextual
+                MnuRename_Click(sender, e);
+                e.Handled = true;
+            }
+            // DELETE: Eliminar
+            else if (e.Key == Key.Delete)
+            {
+                // Reutilizamos la lógica del menú contextual
+                MnuDelete_Click(sender, e);
+                e.Handled = true;
+            }
+        }
+
     }
 
     public static class SimpleInputBox
@@ -738,7 +788,12 @@ Attribute VB_Exposed = False
 
 
 
+
+
+
     }
+
+
 
 
 }

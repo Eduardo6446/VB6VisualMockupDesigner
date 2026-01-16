@@ -13,6 +13,7 @@
              >
 
     <UserControl.Resources>
+
         <Style x:Key="ExplorerBtnStyle" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="0"/>
@@ -40,35 +41,27 @@
             </Setter>
         </Style>
 
-
         <ContextMenu x:Key="ItemContextMenu">
             <MenuItem Header="Abrir Diseñador" Click="MnuOpen_Click">
                 <MenuItem.Icon>
                     <TextBlock Text="&#xE7C3;" FontFamily="Segoe MDL2 Assets"/>
                 </MenuItem.Icon>
             </MenuItem>
-
             <Separator/>
-
             <MenuItem Header="Nuevo Archivo..." Click="MnuNewFileContext_Click"/>
             <MenuItem Header="Nueva Carpeta..." Click="MnuNewFolderContext_Click"/>
-
             <Separator/>
-
             <MenuItem Header="Renombrar" InputGestureText="F2" Click="MnuRename_Click">
                 <MenuItem.Icon>
                     <TextBlock Text="&#xE8AC;" FontFamily="Segoe MDL2 Assets"/>
                 </MenuItem.Icon>
             </MenuItem>
-
             <MenuItem Header="Eliminar" InputGestureText="Supr" Click="MnuDelete_Click">
                 <MenuItem.Icon>
                     <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets" Foreground="Red"/>
                 </MenuItem.Icon>
             </MenuItem>
-
             <Separator/>
-
             <MenuItem Header="Revelar en el Explorador" Click="MnuReveal_Click">
                 <MenuItem.Icon>
                     <TextBlock Text="&#xEC50;" FontFamily="Segoe MDL2 Assets"/>
@@ -76,30 +69,31 @@
             </MenuItem>
         </ContextMenu>
 
-
         <HierarchicalDataTemplate x:Key="ExplorerItemTemplate" ItemsSource="{Binding Children}" DataType="{x:Type models:ExplorerItem}">
             <StackPanel Orientation="Horizontal" Margin="0,1">
                 <TextBlock Text="{Binding IconCode}" 
-                           FontFamily="Segoe MDL2 Assets" 
-                           Foreground="{DynamicResource BrandColor}" 
-                           Margin="0,0,6,0" 
-                           VerticalAlignment="Center"/>
-
+                       FontFamily="Segoe MDL2 Assets" 
+                       Foreground="{DynamicResource BrandColor}" 
+                       Margin="0,0,6,0" 
+                       VerticalAlignment="Center"/>
                 <TextBlock Text="{Binding Name}" 
-                           Foreground="{DynamicResource PrimaryText}" 
-                           FontSize="13"
-                           VerticalAlignment="Center"/>
+                       Foreground="{DynamicResource PrimaryText}" 
+                       FontSize="13"
+                       VerticalAlignment="Center"/>
             </StackPanel>
         </HierarchicalDataTemplate>
 
         <Style TargetType="TreeViewItem">
-            <Setter Property="ContextMenu" Value="{StaticResource ItemContextMenu}"/>
             <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}"/>
             <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}"/>
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Padding" Value="3,2"/>
-            <EventSetter Event="PreviewMouseRightButtonDown" Handler="TreeViewItem_PreviewMouseRightButtonDown"/>
             <Setter Property="Foreground" Value="{DynamicResource PrimaryText}"/>
+
+            <Setter Property="ContextMenu" Value="{StaticResource ItemContextMenu}"/>
+
+            <EventSetter Event="PreviewMouseRightButtonDown" Handler="TreeViewItem_PreviewMouseRightButtonDown"/>
+
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="TreeViewItem">
@@ -115,7 +109,7 @@
                             </Grid.RowDefinitions>
 
                             <ToggleButton x:Name="Expander" ClickMode="Press" 
-                                          IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}}">
+                                      IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}}">
                                 <ToggleButton.Style>
                                     <Style TargetType="ToggleButton">
                                         <Setter Property="Focusable" Value="False"/>
@@ -123,7 +117,7 @@
                                             <Setter.Value>
                                                 <ControlTemplate TargetType="ToggleButton">
                                                     <TextBlock x:Name="Arrow" Text="&#xE76C;" FontFamily="Segoe MDL2 Assets" 
-                                                               Foreground="{DynamicResource SecondaryText}" FontSize="10" VerticalAlignment="Center" Margin="4,0"/>
+                                                           Foreground="#888888" FontSize="10" VerticalAlignment="Center" Margin="4,0"/>
                                                     <ControlTemplate.Triggers>
                                                         <Trigger Property="IsChecked" Value="True">
                                                             <Setter TargetName="Arrow" Property="Text" Value="&#xE70D;"/>
@@ -140,8 +134,9 @@
                             </ToggleButton>
 
                             <Border x:Name="Bd" Grid.Column="1" Grid.ColumnSpan="2" 
-                                    Background="{TemplateBinding Background}" 
-                                    Padding="{TemplateBinding Padding}">
+                                Background="{TemplateBinding Background}" 
+                                Padding="{TemplateBinding Padding}"
+                                CornerRadius="2">
                                 <ContentPresenter x:Name="PART_Header" ContentSource="Header" HorizontalAlignment="Left"/>
                             </Border>
 
@@ -155,17 +150,30 @@
                             <Trigger Property="HasItems" Value="False">
                                 <Setter TargetName="Expander" Property="Visibility" Value="Hidden"/>
                             </Trigger>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource HoverBrush}"/>
-                            </Trigger>
+
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource HoverBrush}"/>
+                                <Setter TargetName="Bd" Property="Background" Value="#2A2D2E"/>
                             </Trigger>
+
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#37373D"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding IsSelected, RelativeSource={RelativeSource Self}}" Value="True"/>
+                                    <Condition Binding="{Binding IsKeyboardFocusWithin, RelativeSource={RelativeSource AncestorType=TreeView}}" Value="False"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter TargetName="Bd" Property="Background" Value="#2D2D2D"/>
+                                <Setter Property="Foreground" Value="#CCCCCC"/>
+                            </MultiDataTrigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
         </Style>
+
     </UserControl.Resources>
 
     <Grid Background="{DynamicResource PanelBackground}">
@@ -205,7 +213,10 @@
                   BorderThickness="0" 
                   ItemTemplate="{StaticResource ExplorerItemTemplate}"
                   SelectedItemChanged="ProjectTree_SelectedItemChanged"
-                  ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                  MouseDoubleClick="ProjectTree_MouseDoubleClick"
+          PreviewKeyDown="ProjectTree_PreviewKeyDown"
+                  >
         </TreeView>
     </Grid>
 </UserControl>
