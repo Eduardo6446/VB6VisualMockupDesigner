@@ -132,6 +132,8 @@ namespace VB6VisualMockupDesigner.Controls
             var control = sender as FrameworkElement;
             if (control == null) return;
 
+            control.Focus();
+
             // ================================================================
             // SOLUCIÓN DEFINITIVA: FILTRO INTELIGENTE DE PADRES/HIJOS
             // ================================================================
@@ -254,6 +256,7 @@ namespace VB6VisualMockupDesigner.Controls
                 }
 
                 UpdateSelectionVisuals();
+                this.Focus();
             }
         }
 
@@ -1614,6 +1617,8 @@ namespace VB6VisualMockupDesigner.Controls
                 Canvas.SetTop(control, globalPos.Y);
             }
         }
+
+        
 
 
 

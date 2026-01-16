@@ -664,13 +664,34 @@ namespace VB6VisualMockupDesigner.Views
         }
 
 
+        
 
         private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
         {
 
-            if (e.OriginalSource is TextBox || e.OriginalSource is PasswordBox)
+            var tb = e.OriginalSource as TextBox;
+
+            if (tb != null || e.OriginalSource is PasswordBox)
             {
-                return;
+                // CASO A: ¿Es el Panel de Propiedades?
+                // Usamos (DependencyObject)e.OriginalSource para que funcione con TextBox y PasswordBox
+                if (IsDescendant((DependencyObject)e.OriginalSource, PropertiesPanel))
+                {
+                    return; // Bloquear atajo global, dejar que el control maneje su Ctrl+Z/C/V
+                }
+
+                // CASO B: ¿Es el Editor de Código?
+                // Verificamos si la pestaña actual contiene DIRECTAMENTE este TextBox
+                if (tb != null && MainTabControl.SelectedContent == tb)
+                {
+                    return; // Bloquear atajo global, es código fuente.
+                }
+
+                // CASO C: Toolbox o Buscador Global
+                // Si llegamos aquí, es un TextBox (probablemente el buscador), pero NO es 
+                // ni de propiedades ni de código. 
+                // EN ESTE CASO DEJAMOS PASAR EL EVENTO (no hacemos return).
+                // Así, si pulsas Ctrl+Z en el buscador, el Designer lo capturará.
             }
 
 
@@ -747,6 +768,29 @@ namespace VB6VisualMockupDesigner.Views
 
         }
 
+
+        // Helper para verificar si un control está dentro de otro contenedor
+        private bool IsDescendant(DependencyObject node, DependencyObject container)
+        {
+            if (node == null || container == null) return false;
+
+            try
+            {
+                DependencyObject current = node;
+                while (current != null)
+                {
+                    if (current == container) return true;
+
+                    // Subir un nivel en el árbol visual
+                    current = VisualTreeHelper.GetParent(current);
+                }
+            }
+            catch
+            {
+                // Ignorar errores de threading o visual tree desconectado 
+            }
+            return false;
+        }
 
         private void SaveProject(bool forceSaveAs)
         {

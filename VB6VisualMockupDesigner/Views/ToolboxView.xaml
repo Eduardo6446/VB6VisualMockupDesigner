@@ -24,7 +24,7 @@
         </Style>
     </UserControl.Resources>
 
-    <Grid Background="{DynamicResource PanelBackground}">
+    <Grid Background="{DynamicResource PanelBackground}" MouseDown="RootGrid_MouseDown">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>

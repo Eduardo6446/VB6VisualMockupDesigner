@@ -347,11 +347,30 @@ namespace VB6VisualMockupDesigner.Views
         // Navegación con teclado desde el buscador
         private void TxtSearchTool_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Key == Key.Down && ToolsList.Items.Count > 0)
+            // Flecha Abajo: Ir a la lista
+            if (e.Key == Key.Down)
             {
-                ToolsList.SelectedIndex = 0;
-                var item = ToolsList.ItemContainerGenerator.ContainerFromIndex(0) as ListBoxItem;
-                item?.Focus();
+                if (ToolsList.Items.Count > 0)
+                {
+                    ToolsList.SelectedIndex = 0;
+                    var item = ToolsList.ItemContainerGenerator.ContainerFromIndex(0) as ListBoxItem;
+                    item?.Focus();
+                }
+                e.Handled = true;
+            }
+            // Tecla Escape: Limpiar búsqueda y QUITAR FOCO
+            else if (e.Key == Key.Escape)
+            {
+                if (string.IsNullOrEmpty(TxtSearchTool.Text))
+                {
+                    // Si ya está vacío, solo quitamos el foco
+                    ToolsList.Focus();
+                }
+                else
+                {
+                    // Si tiene texto, lo borramos primero
+                    TxtSearchTool.Text = string.Empty;
+                }
                 e.Handled = true;
             }
         }
@@ -406,5 +425,19 @@ namespace VB6VisualMockupDesigner.Views
                 ToolsList.SelectedIndex = -1;
             }
         }
+
+
+        private void RootGrid_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            // Si el buscador tiene el foco, pero el mouse NO está sobre él...
+            if (TxtSearchTool.IsFocused && !TxtSearchTool.IsMouseOver)
+            {
+                // Pasamos el foco a la lista (que no captura letras) o limpiamos el foco
+                // Esto devuelve el control de atajos (Ctrl+C, etc) a la ventana principal
+                ToolsList.Focus();
+            }
+        }
+
+
     }
 }
