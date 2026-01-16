@@ -156,6 +156,37 @@ namespace VB6VisualMockupDesigner.Views
                 }
 
                 ZoomSlider.Value = 100;
+
+                // LÓGICA DE ACTIVACIÓN CORREGIDA
+                // Solo habilitamos el botón si es un DesignerCanvas
+                if (selectedTab.Content is DesignerCanvas)
+                {
+                    UpdateToolboxState(true);
+                }
+                else
+                {
+                    UpdateToolboxState(false);
+                }
+            }
+        }
+
+        // Helper para gestionar el estado de la Toolbox
+        private void UpdateToolboxState(bool isVisible)
+        {
+            if (BtnToolboxToggle == null) return;
+
+            // 1. Habilitar o deshabilitar el botón
+            BtnToolboxToggle.IsEnabled = isVisible;
+
+            // 2. Controlar el contenido interno (por si acaso)
+            _toolboxView.EnableTools(isVisible);
+
+            // 3. SI DESHABILITAMOS: Cerrar el panel si estaba abierto
+            if (!isVisible && BtnToolboxToggle.IsChecked == true)
+            {
+                BtnToolboxToggle.IsChecked = false;
+                CloseSideBar();
+                _activeSideBarButton = null; // Resetear referencia
             }
         }
 
@@ -201,10 +232,9 @@ namespace VB6VisualMockupDesigner.Views
 
         private void OpenFileTab(string fullPath)
         {
-            // 1. Verificar si ya está abierta
+            // 1. Verificar si ya está abierta la pestaña
             foreach (TabItem tab in MainTabControl.Items)
             {
-                // Comparamos el ToolTip o guardamos el path en el Tag para ser más precisos
                 if (tab.Tag?.ToString() == fullPath)
                 {
                     MainTabControl.SelectedItem = tab;
@@ -212,72 +242,79 @@ namespace VB6VisualMockupDesigner.Views
                 }
             }
 
-
+            string fileName = System.IO.Path.GetFileName(fullPath);
+            string ext = System.IO.Path.GetExtension(fullPath).ToLower();
 
             // 2. Crear nueva pestaña
             var newTab = new TabItem
             {
-                Header = System.IO.Path.GetFileName(fullPath), // Solo nombre en la pestaña
-                Tag = fullPath // Guardamos ruta completa en el Tag
+                Header = fileName,
+                Tag = fullPath
             };
 
-            // 3. Instanciar el Diseñador
-            var designer = new DesignerCanvas();
-
-
-
-
-
-            // === CORRECCIÓN AQUÍ ===
-            // En lugar de FrmParser.Parse, leemos el archivo y usamos el método interno del designer
-            if (System.IO.File.Exists(fullPath))
+            // 3. DECIDIR CONTENIDO SEGÚN EXTENSIÓN
+            if (ext == ".frm")
             {
-                try
+                // === MODO DISEÑO (.FRM) ===
+                // Aquí SÍ cargamos el DesignerCanvas, lo que habilitará la Toolbox
+                var designer = new DesignerCanvas();
+
+                if (System.IO.File.Exists(fullPath))
                 {
-                    string fileContent = System.IO.File.ReadAllText(fullPath);
-                    designer.LoadForm(fileContent); // <--- ESTA ES LA CLAVE
+                    try
+                    {
+                        string fileContent = System.IO.File.ReadAllText(fullPath);
+                        designer.LoadForm(fileContent);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("Error al leer el formulario: " + ex.Message);
+                    }
                 }
-                catch (System.Exception ex)
+
+                designer.FormTitle = System.IO.Path.GetFileNameWithoutExtension(fullPath);
+                designer.IsDirtyChanged += Designer_IsDirtyChanged;
+
+                // Conectar eventos del panel de propiedades
+                designer.ControlSelected += (s, control) =>
                 {
-                    MessageBox.Show("Error al leer el formulario: " + ex.Message);
-                }
+                    this.PropertiesPanel.InspectObject(control);
+                    if (BtnLockToggle != null) BtnLockToggle.IsChecked = designer.IsSelectionLocked();
+                };
+
+                newTab.Content = designer;
             }
-            // =======================
-
-            // Configurar título interno (Overlay del form)
-            designer.FormTitle = System.IO.Path.GetFileNameWithoutExtension(fullPath);
-
-            designer.IsDirtyChanged += Designer_IsDirtyChanged;
-
-            // Evento de selección para propiedades
-            designer.ControlSelected += (s, control) =>
+            else
             {
-                // A) Actualizar el Panel de Propiedades
-                this.PropertiesPanel.InspectObject(control);
-
-                // B) Actualizar el estado visual del botón de Bloqueo
-                if (BtnLockToggle != null)
+                // === MODO CÓDIGO (.BAS, .CLS, .VBP, etc.) ===
+                // Aquí cargamos un TextBox simple. La Toolbox se mantendrá DESACTIVADA.
+                TextBox codeView = new TextBox
                 {
-                    // Preguntamos al designer si la selección actual está bloqueada
-                    // y actualizamos el botón para que coincida (Candado abierto/cerrado)
-                    BtnLockToggle.IsChecked = designer.IsSelectionLocked();
-                }
-            };
+                    AcceptsReturn = true,
+                    AcceptsTab = true,
+                    FontFamily = new System.Windows.Media.FontFamily("Consolas"),
+                    FontSize = 13,
+                    VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                    HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
+                    // Usamos tus recursos de color para que se vea integrado
+                    Background = (Brush)Application.Current.Resources["AppBackground"],
+                    Foreground = (Brush)Application.Current.Resources["PrimaryText"],
+                    BorderThickness = new Thickness(0),
+                    Padding = new Thickness(10),
+                    Text = System.IO.File.Exists(fullPath) ? System.IO.File.ReadAllText(fullPath) : "",
+                    IsReadOnly = false // Puedes poner true si solo quieres visualizar
+                };
 
+                newTab.Content = codeView;
+            }
 
-
-
-            newTab.Content = designer;
-
-            // 4. Agregar y seleccionar
+            // 4. Configurar botón de cerrar y agregar
+            newTab.Loaded += NewTab_Loaded;
             MainTabControl.Items.Add(newTab);
             MainTabControl.SelectedItem = newTab;
 
-            // 5. Configurar botón de cerrar
-            newTab.Loaded += NewTab_Loaded;
-
+            // Esto llamará a UpdateToolboxState automáticamente gracias al evento SelectionChanged
             UpdateTabVisibility();
-            _toolboxView.EnableTools(true);
         }
 
         private void NewTab_Loaded(object sender, RoutedEventArgs e)
@@ -328,14 +365,20 @@ namespace VB6VisualMockupDesigner.Views
             {
                 MainTabControl.Visibility = Visibility.Visible;
                 EmptyStateOverlay.Visibility = Visibility.Collapsed;
+
+                // Validamos la pestaña actual por si acaso
+                if (MainTabControl.SelectedItem is TabItem tab && tab.Content is DesignerCanvas)
+                {
+                    UpdateToolboxState(true);
+                }
             }
             else
             {
                 MainTabControl.Visibility = Visibility.Hidden;
                 EmptyStateOverlay.Visibility = Visibility.Visible;
 
-                // Deshabilitar Toolbox si no hay pestañas
-                _toolboxView.EnableTools(false);
+                // NO HAY PESTAÑAS -> DESHABILITAR TOTALMENTE
+                UpdateToolboxState(false);
             }
         }
 
@@ -423,16 +466,17 @@ namespace VB6VisualMockupDesigner.Views
             switch (panelType)
             {
                 case "Explorer":
-                    SideBarTitle.Text = "EXPLORADOR DE PROYECTOS";
-                    // Aquí cargarías tu UserControl del Explorador
-                    SideBarContent.Content = new System.Windows.Controls.TextBlock();
-                    SideBarContent.Content = _explorerView; // Usamos la instancia real
+                    // SideBarTitle.Text = "EXPLORADOR DE PROYECTOS"; // <-- LÍNEA ELIMINADA
+
+                    // Asignamos la vista directamente
+                    SideBarContent.Content = _explorerView;
                     break;
 
                 case "Toolbox":
-                    SideBarTitle.Text = "CAJA DE HERRAMIENTAS";
-                    // Aquí cargarías tu UserControl del Toolbox existente
-                    SideBarContent.Content = _toolboxView; // Cargamos la vista
+                    // SideBarTitle.Text = "CAJA DE HERRAMIENTAS"; // <-- LÍNEA ELIMINADA
+
+                    // Asignamos la vista directamente
+                    SideBarContent.Content = _toolboxView;
                     break;
             }
         }

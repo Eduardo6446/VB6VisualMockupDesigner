@@ -673,7 +673,15 @@ namespace VB6VisualMockupDesigner.Controls
 
         private void DesignSurface_DragOver(object sender, DragEventArgs e)
         {
-            e.Effects = e.Data.GetDataPresent("ControlToolboxItem") ? DragDropEffects.Copy : DragDropEffects.None;
+            // Validar si el dato es válido
+            if (e.Data.GetDataPresent("ControlToolboxItem"))
+            {
+                e.Effects = DragDropEffects.Copy;
+            }
+            else
+            {
+                e.Effects = DragDropEffects.None;
+            }
             e.Handled = true;
         }
 
@@ -682,24 +690,42 @@ namespace VB6VisualMockupDesigner.Controls
             if (e.Data.GetDataPresent("ControlToolboxItem"))
             {
                 SaveUndoSnapshot();
+
                 string controlType = e.Data.GetData("ControlToolboxItem") as string;
                 Point dropPos = e.GetPosition(DesignSurface);
 
-                UIElement newControl = RetroControlFactory.Create(controlType);
-                if (newControl != null)
+                // Llamamos al nuevo método centralizado
+                CreateControlAt(controlType, dropPos);
+            }
+            e.Handled = true;
+        }
+
+
+        public void CreateControlAt(string type, Point position)
+        {
+            UIElement newControl = RetroControlFactory.Create(type);
+
+            if (newControl != null)
+            {
+                // Asignar tamaño por defecto si viene sin medidas
+                if (newControl is FrameworkElement fe)
                 {
-                    double x = SnapToGrid(dropPos.X);
-                    double y = SnapToGrid(dropPos.Y);
-
-                    Canvas.SetLeft(newControl, x);
-                    Canvas.SetTop(newControl, y);
-                    AddControlToCanvas(newControl, x, y);
-
-                    ClearSelection();
-                    AddToSelection(newControl);
-                    NotifySelectionChanged();
+                    if (double.IsNaN(fe.Width) || fe.Width == 0) fe.Width = 100;
+                    if (double.IsNaN(fe.Height) || fe.Height == 0) fe.Height = 35;
                 }
-                e.Handled = true;
+
+                // AddControlToCanvas ya se encarga de:
+                // 1. Snap to Grid
+                // 2. Children.Add
+                // 3. Conectar eventos (MouseDown, etc)
+                AddControlToCanvas(newControl, position.X, position.Y);
+
+                // Seleccionar automáticamente el nuevo control
+                ClearSelection();
+                AddToSelection(newControl);
+                NotifySelectionChanged();
+
+                GenerateNewVersion();
             }
         }
 
@@ -707,7 +733,6 @@ namespace VB6VisualMockupDesigner.Controls
         {
             if (control == null) return;
 
-            // SANITIZACIÓN: Si por error matemático llega un NaN, lo convertimos a 0
             if (double.IsNaN(x)) x = 0;
             if (double.IsNaN(y)) y = 0;
 
@@ -718,13 +743,15 @@ namespace VB6VisualMockupDesigner.Controls
 
             if (control is FrameworkElement fe)
             {
+                // Asumiendo que tienes el recurso ControlContextMenu definido en XAML
                 fe.ContextMenu = (ContextMenu)this.Resources["ControlContextMenu"];
             }
 
-            // Asegurar posición inicial válida
+            // Aplicar Grid Snapping y Posición
             Canvas.SetLeft(control, SnapToGrid(x));
             Canvas.SetTop(control, SnapToGrid(y));
 
+            // Evitar duplicados
             if (!DesignSurface.Children.Contains(control))
                 DesignSurface.Children.Add(control);
         }
