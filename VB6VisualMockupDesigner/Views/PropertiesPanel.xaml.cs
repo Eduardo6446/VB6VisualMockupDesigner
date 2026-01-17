@@ -15,6 +15,7 @@ namespace VB6VisualMockupDesigner.Views
     {
         private FrameworkElement _currentControl;
         private bool _isUpdating = false;
+        private System.ComponentModel.ICollectionView _view; // <--- NUEVO
 
         public event EventHandler PropertyChanging;
         public event EventHandler PropertyChanged;
@@ -56,6 +57,10 @@ namespace VB6VisualMockupDesigner.Views
 
             // Asignar al Grid
             ListCollectionView view = new ListCollectionView(props);
+
+            _view = new ListCollectionView(props);
+
+            _view.Filter = FilterProperties;
 
             // Agrupar por Categoría si el botón está activado
             if (BtnCategorized.IsChecked == true)
@@ -237,5 +242,78 @@ namespace VB6VisualMockupDesigner.Views
             item.Value = "Courier New; 12pt; Bold"; // Formato simulado
             ApplyChange(item);
         }
+
+        // Evento cuando escribes en la caja de texto
+        private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            // Pedimos a la vista que se refresque (ejecute el filtro de nuevo)
+            _view?.Refresh();
+        }
+
+        // Predicado de Filtrado (Devuelve true si se debe mostrar)
+        private bool FilterProperties(object obj)
+        {
+            // Si no hay texto, mostrar todo
+            if (string.IsNullOrWhiteSpace(SearchBox.Text)) return true;
+
+            var prop = obj as PropertyItem;
+            if (prop == null) return false;
+
+            // Buscar si el nombre contiene el texto (Ignorando mayúsculas/minúsculas)
+            return prop.Name.IndexOf(SearchBox.Text, StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+
+        // 1. Agregar este evento para avisar al mundo exterior
+        public event Action<FrameworkElement> ObjectSelectedFromList;
+
+        private bool _ignoreComboEvents = false; // Evita bucles infinitos
+
+        // 2. Modificar InspectObject para recibir la lista de controles (Opcional)
+        // Pero mejor creamos un método dedicado para actualizar la lista:
+
+        public void UpdateObjectList(IEnumerable<FrameworkElement> controls, FrameworkElement selected)
+        {
+            _ignoreComboEvents = true;
+
+            ObjectSelector.ItemsSource = null;
+
+            // Usamos la clase ControlItem en lugar de anónimos
+            var comboItems = controls.Select(c => new ControlItem
+            {
+                Name = string.IsNullOrEmpty(c.Name) ? "[Sin Nombre]" : c.Name,
+                Type = c.GetType().Name.Replace("Box", "").Replace("Button", "Btn"),
+                Control = c
+            }).OrderBy(x => x.Name).ToList();
+
+            ObjectSelector.ItemsSource = comboItems;
+
+            // Decirle al combo qué propiedad mostrar
+            ObjectSelector.DisplayMemberPath = "Name";
+            // Opcional: Si borras esta línea, usará el ToString() que definimos arriba: "Command1 (CommandBtn)"
+
+            // Seleccionar el actual
+            if (selected != null)
+            {
+                var itemToSelect = comboItems.FirstOrDefault(x => x.Control == selected);
+                ObjectSelector.SelectedItem = itemToSelect;
+            }
+
+            _ignoreComboEvents = false;
+        }
+
+        // 3. Evento cuando el usuario cambia el combo manualmente
+        private void ObjectSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_ignoreComboEvents) return;
+
+            // AHORA SÍ: Cast seguro a nuestra clase
+            if (ObjectSelector.SelectedItem is ControlItem item)
+            {
+                // Avisar al MainWindow
+                ObjectSelectedFromList?.Invoke(item.Control);
+            }
+        }
+
     }
 }

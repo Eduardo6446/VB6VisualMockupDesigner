@@ -140,6 +140,15 @@ namespace VB6VisualMockupDesigner.Views
                 return false;
             };
 
+            // Conectar el evento del Combo del Panel hacia el Diseñador activo
+            PropertiesPanel.ObjectSelectedFromList += (controlToSelect) =>
+            {
+                if (MainTabControl.SelectedItem is TabItem tab && tab.Content is DesignerCanvas designer)
+                {
+                    designer.SelectControl(controlToSelect);
+                }
+            };
+
             this.Closing += MainWindowModern_Closing; // <--- AGREGAR ESTO
 
         }
@@ -521,12 +530,24 @@ namespace VB6VisualMockupDesigner.Views
             // Esto es vital para que el panel de propiedades funcione con el nuevo form
             designer.ControlSelected += (s, control) =>
             {
+                // 1. Inspeccionar propiedades
                 this.PropertiesPanel.InspectObject(control);
 
+                // 2. Actualizar estado del botón de bloqueo
                 if (BtnLockToggle != null)
                 {
                     BtnLockToggle.IsChecked = designer.IsSelectionLocked();
                 }
+
+                // 3. NUEVO: Actualizar la lista del ComboBox "Object Selector"
+                // Obtenemos todos los hijos visuales y filtramos basura (Handles, Bordes azules, etc.)
+                var allControls = designer.GetDesignSurface().Children.OfType<FrameworkElement>()
+                    .Where(c => c.Name != "SelectionRect"
+                             && c.Name != "QuickEditBox"
+                             && !(c is System.Windows.Shapes.Rectangle) // Ignorar handles de redimensión
+                             && !(c is Border)); // Ignorar bordes de selección
+
+                this.PropertiesPanel.UpdateObjectList(allControls, control as FrameworkElement);
             };
 
             // 5. Asignar el diseñador a la pestaña

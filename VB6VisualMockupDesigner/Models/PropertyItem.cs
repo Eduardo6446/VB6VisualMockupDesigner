@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Windows;
 
 namespace VB6VisualMockupDesigner.Models
 {
@@ -38,5 +39,16 @@ namespace VB6VisualMockupDesigner.Models
         public event PropertyChangedEventHandler PropertyChanged;
         protected void OnPropertyChanged([CallerMemberName] string name = null)
             => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+    }
+
+    // Clase auxiliar para guardar los datos del ComboBox
+    class ControlItem
+    {
+        public string Name { get; set; }
+        public string Type { get; set; }
+        public FrameworkElement Control { get; set; }
+
+        // Esto es lo que mostrará el ComboBox si no usas DisplayMemberPath
+        public override string ToString() => $"{Name} ({Type})";
     }
 }

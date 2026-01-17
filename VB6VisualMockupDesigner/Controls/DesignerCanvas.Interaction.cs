@@ -1618,8 +1618,24 @@ namespace VB6VisualMockupDesigner.Controls
             }
         }
 
-        
 
+        // Permite seleccionar un control programáticamente desde fuera (ej: desde el Panel de Propiedades)
+        public void SelectControl(UIElement control)
+        {
+            // Si es nulo o ya está seleccionado y es el único, no hacemos nada
+            if (control == null)
+            {
+                ClearSelection();
+                NotifySelectionChanged();
+                return;
+            }
+
+            if (_selectedControls.Count == 1 && _selectedControls.Contains(control)) return;
+
+            ClearSelection();
+            AddToSelection(control);
+            NotifySelectionChanged();
+        }
 
 
     }
