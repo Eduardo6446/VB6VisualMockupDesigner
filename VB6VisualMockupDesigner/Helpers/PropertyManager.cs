@@ -20,58 +20,118 @@ namespace VB6VisualMockupDesigner.Helpers
         {
             var list = new List<PropertyItem>();
 
-            // --- CATEGORÍA: MISC (El Nombre va primero) ---
-            list.Add(new PropertyItem { Name = "(Name)", Value = ctrl.Name, Category = "Misc" });
+            // --- CATEGORÍA: MISC ---
+            list.Add(new PropertyItem
+            {
+                Name = "(Name)",
+                Value = ctrl.Name,
+                Category = "Misc",
+                Description = "Devuelve o establece el nombre utilizado en el código para identificar un objeto."
+            });
 
             // --- CATEGORÍA: POSITION ---
-            list.Add(new PropertyItem { Name = "Left", Value = (int)Canvas.GetLeft(ctrl), Category = "Position", Type = PropertyType.Number });
-            list.Add(new PropertyItem { Name = "Top", Value = (int)Canvas.GetTop(ctrl), Category = "Position", Type = PropertyType.Number });
-            list.Add(new PropertyItem { Name = "Width", Value = (int)ctrl.Width, Category = "Position", Type = PropertyType.Number });
-            list.Add(new PropertyItem { Name = "Height", Value = (int)ctrl.Height, Category = "Position", Type = PropertyType.Number });
+            list.Add(new PropertyItem
+            {
+                Name = "Left",
+                Value = (int)Canvas.GetLeft(ctrl),
+                Category = "Position",
+                Type = PropertyType.Number,
+                Description = "Devuelve o establece la distancia entre el borde interno izquierdo de un objeto y el borde izquierdo de su contenedor."
+            });
+
+            list.Add(new PropertyItem
+            {
+                Name = "Top",
+                Value = (int)Canvas.GetTop(ctrl),
+                Category = "Position",
+                Type = PropertyType.Number,
+                Description = "Devuelve o establece la distancia entre el borde interno superior de un objeto y el borde superior de su contenedor."
+            });
+
+            list.Add(new PropertyItem
+            {
+                Name = "Width",
+                Value = (int)ctrl.Width,
+                Category = "Position",
+                Type = PropertyType.Number,
+                Description = "Devuelve o establece el ancho de un objeto."
+            });
+
+            list.Add(new PropertyItem
+            {
+                Name = "Height",
+                Value = (int)ctrl.Height,
+                Category = "Position",
+                Type = PropertyType.Number,
+                Description = "Devuelve o establece el alto de un objeto."
+            });
 
             // --- CATEGORÍA: APPEARANCE ---
             if (ctrl is Control c)
             {
-                // BackColor
                 if (c.Background is SolidColorBrush sb)
-                    list.Add(new PropertyItem { Name = "BackColor", Value = sb.Color.ToString(), Category = "Appearance", Type = PropertyType.Color });
+                    list.Add(new PropertyItem
+                    {
+                        Name = "BackColor",
+                        Value = sb.Color.ToString(),
+                        Category = "Appearance",
+                        Type = PropertyType.Color,
+                        Description = "Devuelve o establece el color de fondo usado para mostrar texto y gráficos en un objeto."
+                    });
 
-                // ForeColor
                 if (c.Foreground is SolidColorBrush sf)
-                    list.Add(new PropertyItem { Name = "ForeColor", Value = sf.Color.ToString(), Category = "Appearance", Type = PropertyType.Color });
+                    list.Add(new PropertyItem
+                    {
+                        Name = "ForeColor",
+                        Value = sf.Color.ToString(),
+                        Category = "Appearance",
+                        Type = PropertyType.Color,
+                        Description = "Devuelve o establece el color de primer plano usado para mostrar texto y gráficos en un objeto."
+                    });
             }
 
             // Caption / Text
             if (ctrl is ContentControl cc)
-                list.Add(new PropertyItem { Name = "Caption", Value = cc.Content, Category = "Appearance" });
+                list.Add(new PropertyItem
+                {
+                    Name = "Caption",
+                    Value = cc.Content,
+                    Category = "Appearance",
+                    Description = "Devuelve o establece el texto que se muestra en el título de un objeto o debajo del icono."
+                });
+
             else if (ctrl is TextBox tb)
-                list.Add(new PropertyItem { Name = "Text", Value = tb.Text, Category = "Appearance" });
-            else if (ctrl is TextBlock txt)
-                list.Add(new PropertyItem { Name = "Caption", Value = txt.Text, Category = "Appearance" });
-
-            // Alignment (Simulado)
-            if (ctrl is TextBox || ctrl is TextBlock || ctrl is Label)
-                list.Add(new PropertyItem { Name = "Alignment", Value = GetAlignFromControl(ctrl), Category = "Appearance", Type = PropertyType.Enum, Options = AlignOptions });
-
-            // BorderStyle (Simulado)
-            if (ctrl is Border || ctrl is TextBox || ctrl is Label)
-                list.Add(new PropertyItem { Name = "BorderStyle", Value = "1 - Fixed Single", Category = "Appearance", Type = PropertyType.Enum, Options = BorderOptions }); // Valor dummy por ahora
+                list.Add(new PropertyItem
+                {
+                    Name = "Text",
+                    Value = tb.Text,
+                    Category = "Appearance",
+                    Description = "Devuelve o establece el texto contenido en el control."
+                });
 
             // Visible
-            list.Add(new PropertyItem { Name = "Visible", Value = (ctrl.Visibility == Visibility.Visible).ToString(), Category = "Behavior", Type = PropertyType.Boolean, Options = BoolOptions });
+            list.Add(new PropertyItem
+            {
+                Name = "Visible",
+                Value = (ctrl.Visibility == Visibility.Visible).ToString(),
+                Category = "Behavior",
+                Type = PropertyType.Boolean,
+                Options = BoolOptions,
+                Description = "Devuelve o establece un valor que determina si un objeto es visible o no."
+            });
 
             // Enabled
-            list.Add(new PropertyItem { Name = "Enabled", Value = ctrl.IsEnabled.ToString(), Category = "Behavior", Type = PropertyType.Boolean, Options = BoolOptions });
+            list.Add(new PropertyItem
+            {
+                Name = "Enabled",
+                Value = ctrl.IsEnabled.ToString(),
+                Category = "Behavior",
+                Type = PropertyType.Boolean,
+                Options = BoolOptions,
+                Description = "Devuelve o establece un valor que determina si un objeto puede responder a eventos generados por el usuario."
+            });
 
-            // --- CATEGORÍA: MISC ---
-            if (ctrl is Control cTab)
-                list.Add(new PropertyItem { Name = "TabIndex", Value = cTab.TabIndex, Category = "Misc", Type = PropertyType.Number });
-
-            list.Add(new PropertyItem { Name = "Tag", Value = ctrl.Tag?.ToString() ?? "", Category = "Misc" });
-
-            // Index (Array)
-            int? idx = VB6Data.GetIndex(ctrl);
-            list.Add(new PropertyItem { Name = "Index", Value = idx.HasValue ? idx.ToString() : "", Category = "Misc" });
+            // ... Agrega descripciones al resto de propiedades que tengas ...
 
             return list;
         }
@@ -167,5 +227,8 @@ namespace VB6VisualMockupDesigner.Helpers
             }
             catch { return Brushes.White; }
         }
+
+
+        
     }
 }

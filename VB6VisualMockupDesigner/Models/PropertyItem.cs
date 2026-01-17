@@ -22,6 +22,8 @@ namespace VB6VisualMockupDesigner.Models
         public string Category { get; set; } = "Misc";
         public PropertyType Type { get; set; } = PropertyType.Text;
 
+        public string Description { get; set; } // <--- NUEVO CAMPO
+
         // Para Enums (ej: ["0 - Left", "1 - Right"])
         public List<string> Options { get; set; }
 

@@ -153,6 +153,23 @@ namespace VB6VisualMockupDesigner.Views
             return Regex.IsMatch(name, @"^[a-zA-Z][a-zA-Z0-9_]*$");
         }
 
+        // Evento cuando seleccionas una fila en la grilla
+        private void PropGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (PropGrid.SelectedItem is PropertyItem item)
+            {
+                DescTitle.Text = item.Name;
+                DescText.Text = string.IsNullOrEmpty(item.Description)
+                    ? "Sin descripción disponible."
+                    : item.Description;
+            }
+            else
+            {
+                DescTitle.Text = "";
+                DescText.Text = "";
+            }
+        }
+
 
         // Método que recibe el color desde el UserControl ColorPicker
         private void OnColorPickedFromPopup(string hexColor)
