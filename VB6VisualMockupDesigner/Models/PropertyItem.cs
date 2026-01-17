@@ -11,7 +11,9 @@ namespace VB6VisualMockupDesigner.Models
         Boolean,    // Dropdown True/False
         Enum,       // Dropdown con opciones personalizadas (ej: Alignment)
         Color,      // Texto hexadecimal + Previsualización de color
-        ReadOnly    // Solo lectura (ej: (Name) en ciertos casos)
+        ReadOnly,    // Solo lectura (ej: (Name) en ciertos casos)
+        File,       // <--- NUEVO: Para imágenes (Picture, Icon)
+        Font        // <--- NUEVO: Para fuentes (Font)
     }
 
     public class PropertyItem : INotifyPropertyChanged

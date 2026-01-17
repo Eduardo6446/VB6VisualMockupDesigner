@@ -60,6 +60,7 @@
             <Setter Property="VerticalAlignment" Value="Center"/>
         </Style>
 
+
         <DataTemplate x:Key="ColorEditorTemplate">
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -92,6 +93,33 @@
                 <TextBox Grid.Column="1" Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource PropEditStyle}"/>
             </Grid>
         </DataTemplate>
+
+        <DataTemplate x:Key="DialogEditorTemplate">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="25"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBox Grid.Column="0" 
+                         Text="{Binding Value}" 
+                         Style="{StaticResource PropEditStyle}" 
+                         IsReadOnly="True" 
+                         Foreground="{DynamicResource SecondaryText}"/>
+
+                <Button Grid.Column="1" 
+                        Content="..." 
+                        FontWeight="Bold"
+                        Padding="0,-2,0,0"
+                        Margin="0,1,1,1"
+                        Background="{DynamicResource HeaderBackground}"
+                        Foreground="{DynamicResource PrimaryText}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1"
+                        Click="OnDialogButtonClick"/>
+            </Grid>
+        </DataTemplate>
+
 
         <DataTemplate x:Key="ValueCellTemplate" DataType="{x:Type models:PropertyItem}">
             <ContentControl Content="{Binding}">
@@ -130,6 +158,14 @@
 
                             <DataTrigger Binding="{Binding Type}" Value="Color">
                                 <Setter Property="ContentTemplate" Value="{StaticResource ColorEditorTemplate}"/>
+                            </DataTrigger>
+
+                            <DataTrigger Binding="{Binding Type}" Value="File">
+                                <Setter Property="ContentTemplate" Value="{StaticResource DialogEditorTemplate}"/>
+                            </DataTrigger>
+
+                            <DataTrigger Binding="{Binding Type}" Value="Font">
+                                <Setter Property="ContentTemplate" Value="{StaticResource DialogEditorTemplate}"/>
                             </DataTrigger>
 
                             <DataTrigger Binding="{Binding Type}" Value="ReadOnly">

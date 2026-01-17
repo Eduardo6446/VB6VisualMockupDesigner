@@ -193,5 +193,49 @@ namespace VB6VisualMockupDesigner.Views
                 // pero al cambiar el foco suele cerrarse solo por StaysOpen="False".
             }
         }
+
+        private void OnDialogButtonClick(object sender, RoutedEventArgs e)
+        {
+            // Recuperar el ítem de la fila donde se hizo clic
+            if ((sender as FrameworkElement)?.DataContext is PropertyItem item)
+            {
+                if (item.Type == PropertyType.File)
+                {
+                    HandleFilePicker(item);
+                }
+                else if (item.Type == PropertyType.Font)
+                {
+                    HandleFontPicker(item);
+                }
+            }
+        }
+
+        private void HandleFilePicker(PropertyItem item)
+        {
+            var openFileDialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Title = "Seleccionar imagen",
+                Filter = "Imágenes (*.bmp;*.jpg;*.png;*.ico)|*.bmp;*.jpg;*.png;*.ico|Todos los archivos (*.*)|*.*"
+            };
+
+            if (openFileDialog.ShowDialog() == true)
+            {
+                // Guardamos la ruta completa (o relativa si prefieres)
+                item.Value = openFileDialog.FileName;
+                ApplyChange(item);
+            }
+        }
+
+        private void HandleFontPicker(PropertyItem item)
+        {
+            // TODO: Lo ideal aquí es usar System.Windows.Forms.FontDialog
+            // Como estamos en WPF puro por ahora, haremos un mock simple.
+
+            // Ejemplo de cambio rápido para probar:
+            MessageBox.Show("Aquí se abriría el selector de fuentes.\nPor ahora, cambiaremos a 'Courier New, 12pt' como prueba.", "Font Picker Mockup");
+
+            item.Value = "Courier New; 12pt; Bold"; // Formato simulado
+            ApplyChange(item);
+        }
     }
 }

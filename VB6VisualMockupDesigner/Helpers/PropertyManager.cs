@@ -67,8 +67,41 @@ namespace VB6VisualMockupDesigner.Helpers
             });
 
             // --- CATEGORÍA: APPEARANCE ---
+
+
+            if (ctrl is Image || ctrl is Window) // Window tiene Icon
+            {
+                // Nota: En WPF Image usa 'Source', en VB6 es 'Picture'
+                string currentPath = "";
+                // Aquí podrías intentar leer el path si lo guardaste en el Tag o en un Helper, 
+                // porque WPF convierte la imagen a memoria y pierde la ruta original.
+                // Por ahora lo dejaremos vacío o leeremos del Tag si existe.
+
+                list.Add(new PropertyItem
+                {
+                    Name = "Picture",
+                    Value = currentPath,
+                    Category = "Appearance",
+                    Type = PropertyType.File,
+                    Description = "Devuelve o establece un gráfico para ser mostrado en el control."
+                });
+            }
+
+
             if (ctrl is Control c)
             {
+                string fontInfo = $"{c.FontFamily}; {c.FontSize}pt";
+                if (c.FontWeight == FontWeights.Bold) fontInfo += "; Bold";
+
+                list.Add(new PropertyItem
+                {
+                    Name = "Font",
+                    Value = fontInfo,
+                    Category = "Appearance",
+                    Type = PropertyType.Font,
+                    Description = "Devuelve un objeto Font."
+                });
+
                 if (c.Background is SolidColorBrush sb)
                     list.Add(new PropertyItem
                     {
@@ -186,6 +219,31 @@ namespace VB6VisualMockupDesigner.Helpers
                 case "Index":
                     if (string.IsNullOrWhiteSpace(val)) VB6Data.SetIndex(ctrl, null);
                     else if (int.TryParse(val, out int i)) VB6Data.SetIndex(ctrl, i);
+                    break;
+                case "Picture":
+                    try
+                    {
+                        if (ctrl is Image img)
+                        {
+                            // Cargar imagen desde archivo
+                            var bitmap = new System.Windows.Media.Imaging.BitmapImage(new Uri(val));
+                            img.Source = bitmap;
+                        }
+                        // TODO: Si es un Form (Window), cambiar el Icon o Background
+                    }
+                    catch { /* Ignorar errores de imagen inválida */ }
+                    break;
+
+                case "Font":
+                    if (ctrl is Control f)
+                    {
+                        // Parsear nuestro formato simple: "Familia; Tamaño; Estilo"
+                        var parts = val.Split(';');
+                        if (parts.Length > 0) f.FontFamily = new FontFamily(parts[0].Trim());
+                        if (parts.Length > 1 && double.TryParse(parts[1].Replace("pt", ""), out double size)) f.FontSize = size;
+                        if (val.Contains("Bold")) f.FontWeight = FontWeights.Bold;
+                        else f.FontWeight = FontWeights.Normal;
+                    }
                     break;
             }
         }
