@@ -556,6 +556,12 @@
                     <TextBlock Text="&#xE80A;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
                 </ToggleButton>
 
+                <Button Style="{StaticResource ToolbarBtnStyle}" 
+                        ToolTip="Editor de Menús (Ctrl+E)" 
+                        Click="BtnMenuEditor_Click">
+                    <TextBlock Text="&#xE712;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
+                </Button>
+
                 <Border Style="{StaticResource ToolbarSeparator}"/>
 
                 <Button Style="{StaticResource ToolbarBtnStyle}" ToolTip="Alinear a la Izquierda" Click="BtnAlignLeft_Click">

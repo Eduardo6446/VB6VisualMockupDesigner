@@ -1301,5 +1301,33 @@ namespace VB6VisualMockupDesigner.Views
             }
         }
 
+        private void BtnMenuEditor_Click(object sender, RoutedEventArgs e)
+        {
+            // Solo abrir si hay un diseñador activo
+            if (MainTabControl.SelectedItem is TabItem tab && tab.Content is DesignerCanvas designer)
+            {
+                // 1. Crear la ventana
+                var editor = new MenuEditorWindow();
+
+                // (Opcional) Aquí podrías pasarle los menús existentes si ya hubiera creados
+                // editor.LoadMenus(designer.CurrentMenus); 
+
+                editor.Owner = this; // Para que se centre sobre la ventana principal
+
+                // 2. Mostrar como Modal (bloquea la ventana de atrás)
+                if (editor.ShowDialog() == true)
+                {
+                    // 3. Si el usuario dio "Aceptar", obtenemos la lista creada
+                    var newMenus = editor.MenuItems;
+
+                    // 4. Mandar a construir el menú en el Designer (Próximo paso en el roadmap)
+                    // designer.RenderMenus(newMenus); 
+
+                    MessageBox.Show($"Se crearon {newMenus.Count} ítems de menú. (Renderizado pendiente)");
+                }
+            }
+        }
+
+
     }
 }
