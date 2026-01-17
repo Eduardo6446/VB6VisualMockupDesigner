@@ -1,0 +1,73 @@
+﻿<UserControl x:Class="VB6VisualMockupDesigner.Views.ColorPicker"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Width="160" Height="Auto" 
+             Background="{DynamicResource PanelBackground}" 
+             BorderBrush="{DynamicResource BorderBrush}" 
+             BorderThickness="1">
+
+    <UserControl.Resources>
+        <Style TargetType="Button">
+            <Setter Property="Width" Value="20"/>
+            <Setter Property="Height" Value="20"/>
+            <Setter Property="Margin" Value="2"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="#555"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" 
+                                BorderBrush="{TemplateBinding BorderBrush}" 
+                                BorderThickness="{TemplateBinding BorderThickness}">
+                            <Border x:Name="Highlight" Background="Transparent" BorderBrush="White" BorderThickness="2" Opacity="0"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Highlight" Property="Opacity" Value="1"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Margin="5">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Text="Paleta" FontSize="10" Foreground="{DynamicResource SecondaryText}" Margin="2,0,0,5"/>
+
+        <WrapPanel Grid.Row="1">
+            <Button Background="Transparent" ToolTip="Transparente" Click="Color_Click"/>
+            <Button Background="White" Click="Color_Click"/>
+            <Button Background="Black" Click="Color_Click"/>
+            <Button Background="#D4D0C8" ToolTip="Control (VB6 Gray)" Click="Color_Click"/>
+            <Button Background="Gray" Click="Color_Click"/>
+            <Button Background="Red" Click="Color_Click"/>
+            <Button Background="Green" Click="Color_Click"/>
+            <Button Background="Blue" Click="Color_Click"/>
+
+            <Button Background="Yellow" Click="Color_Click"/>
+            <Button Background="Cyan" Click="Color_Click"/>
+            <Button Background="Magenta" Click="Color_Click"/>
+            <Button Background="Orange" Click="Color_Click"/>
+            <Button Background="Purple" Click="Color_Click"/>
+            <Button Background="Brown" Click="Color_Click"/>
+            <Button Background="Pink" Click="Color_Click"/>
+            <Button Background="LightGray" Click="Color_Click"/>
+
+            <Button Background="DarkRed" Click="Color_Click"/>
+            <Button Background="DarkGreen" Click="Color_Click"/>
+            <Button Background="DarkBlue" Click="Color_Click"/>
+            <Button Background="Navy" Click="Color_Click"/>
+            <Button Background="Maroon" Click="Color_Click"/>
+            <Button Background="Teal" Click="Color_Click"/>
+            <Button Background="Olive" Click="Color_Click"/>
+            <Button Background="#2D2D30" ToolTip="VS Dark" Click="Color_Click"/>
+        </WrapPanel>
+    </Grid>
+</UserControl>

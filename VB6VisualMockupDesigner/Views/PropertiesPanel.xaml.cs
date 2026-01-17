@@ -1,15 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Globalization;
-using System.Text.RegularExpressions; // Necesario para Regex
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Threading;
-using static VB6VisualMockupDesigner.Controls.DesignerCanvas;
-using VB6VisualMockupDesigner.Models; // Requiere .NET Core 3.1 o superior (o NuGet en .NET Framework)
-using VB6VisualMockupDesigner.Helpers;
-using VB6VisualMockupDesigner.Controls;
-using VB6VisualMockupDesigner.Services;
+using System.Windows.Data;
+using System.Windows.Media;
+using System.Text.RegularExpressions;
+using VB6VisualMockupDesigner.Models;
+using VB6VisualMockupDesigner.Helpers; // Para VB6Data
 
 namespace VB6VisualMockupDesigner.Views
 {
@@ -21,8 +19,6 @@ namespace VB6VisualMockupDesigner.Views
         public event EventHandler PropertyChanging;
         public event EventHandler PropertyChanged;
         public event EventHandler CloseRequested;
-
-        // Delegado para preguntar afuera si el nombre está libre
         public Predicate<string> CheckNameAvailability;
 
         public PropertiesPanel()
@@ -30,8 +26,12 @@ namespace VB6VisualMockupDesigner.Views
             InitializeComponent();
         }
 
+        // ==========================================
+        // CARGA DE PROPIEDADES
+        // ==========================================
         public void InspectObject(FrameworkElement control)
         {
+            // Evitar recargas innecesarias
             if (_currentControl == control && control != null && !_isUpdating) return;
 
             _currentControl = control;
@@ -45,198 +45,136 @@ namespace VB6VisualMockupDesigner.Views
                 return;
             }
 
-            // Mostrar Info en el Combo Superior
+            // Título del Combo
             string typeName = control.Tag as string ?? control.GetType().Name;
-            // Si el nombre está vacío (recién creado), sugerimos uno o mostramos vacío
+            typeName = typeName.Replace("Box", "").Replace("Button", "Btn"); // Alias cortos tipo VB6
             string name = string.IsNullOrEmpty(control.Name) ? "" : control.Name;
-            ObjectSelector.Text = string.IsNullOrEmpty(name) ? $"[{typeName}]" : $"{name} ({typeName})";
+            ObjectSelector.Text = $"{name} ({typeName})";
 
-            LoadProperties();
+            // GENERAR LA LISTA DE PROPIEDADES
+            var props = PropertyManager.GetPropertiesFor(control);
+
+            // Asignar al Grid
+            ListCollectionView view = new ListCollectionView(props);
+
+            // Agrupar por Categoría si el botón está activado
+            if (BtnCategorized.IsChecked == true)
+            {
+                view.GroupDescriptions.Add(new PropertyGroupDescription("Category"));
+                view.SortDescriptions.Add(new System.ComponentModel.SortDescription("Category", System.ComponentModel.ListSortDirection.Ascending));
+            }
+            view.SortDescriptions.Add(new System.ComponentModel.SortDescription("Name", System.ComponentModel.ListSortDirection.Ascending));
+
+            PropGrid.ItemsSource = view;
             _isUpdating = false;
         }
 
-        private void LoadProperties()
-        {
-            if (_currentControl == null) return;
-
-            var props = new List<PropertyItem>();
-
-            // 0. PROPIEDAD ESPECIAL: (Name) - Va primero como en VB6
-            // Usamos paréntesis para que salga arriba visualmente
-            string currentName = string.IsNullOrEmpty(_currentControl.Name) ? "" : _currentControl.Name;
-            props.Add(new PropertyItem { Name = "(Name)", Value = currentName });
-
-            // 1. Diseño
-            props.Add(new PropertyItem { Name = "Left", Value = GetSafeValue(Canvas.GetLeft(_currentControl)) });
-            props.Add(new PropertyItem { Name = "Top", Value = GetSafeValue(Canvas.GetTop(_currentControl)) });
-            props.Add(new PropertyItem { Name = "Width", Value = GetSafeValue(_currentControl.Width, _currentControl.ActualWidth) });
-            props.Add(new PropertyItem { Name = "Height", Value = GetSafeValue(_currentControl.Height, _currentControl.ActualHeight) });
-
-            // Usamos "tabCtrl" en lugar de "c" para evitar conflictos de nombres
-            props.Add(new PropertyItem { Name = "TabIndex", Value = (_currentControl is Control tabCtrl) ? tabCtrl.TabIndex : 0 });
-
-            // Leemos la propiedad adjunta. Si es null, mostramos vacío.
-            props.Add(new PropertyItem { Name = "Index", Value = VB6Data.GetIndex(_currentControl) });
-
-            // 2. Específicas
-            if (_currentControl is ContentControl cc)
-                props.Add(new PropertyItem { Name = "Caption", Value = cc.Content });
-            else if (_currentControl is TextBox tb)
-                props.Add(new PropertyItem { Name = "Text", Value = tb.Text });
-            else if (_currentControl is TextBlock txt)
-                props.Add(new PropertyItem { Name = "Caption", Value = txt.Text });
-
-            if (_currentControl is Control c && c.Background != null)
-                props.Add(new PropertyItem { Name = "BackColor", Value = c.Background.ToString() });
-
-            PropGrid.ItemsSource = props;
-        }
-
-        private double GetSafeValue(double val, double fallback = 0)
-        {
-            return double.IsNaN(val) ? Math.Round(fallback) : Math.Round(val);
-        }
-
+        // ==========================================
+        // GUARDADO DE CAMBIOS
+        // ==========================================
         private void PropGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
         {
+            // Nota: Este evento dispara antes de que el binding actualice el source en algunos casos.
+            // Usamos un pequeño delay para leer el valor actualizado del PropertyItem
+
             if (_isUpdating || _currentControl == null) return;
 
-            if (e.EditingElement is TextBox tb && e.Row.Item is PropertyItem item)
+            if (e.Row.Item is PropertyItem item)
             {
-                string newValue = tb.Text;
-                string propName = item.Name;
-
+                // Esperamos a que el binding termine
                 Dispatcher.BeginInvoke(new Action(() =>
                 {
-                    bool success = ApplyPropertyChange(propName, newValue);
-                    if (success)
-                    {
-                        PropertyChanged?.Invoke(this, EventArgs.Empty);
-                        // Si cambiamos el nombre, actualizamos el título del combo superior
-                        if (propName == "(Name)") InspectObject(_currentControl);
-                    }
-                    else
-                    {
-                        // Si falló, recargamos para revertir el texto visualmente
-                        _isUpdating = true;
-                        LoadProperties();
-                        _isUpdating = false;
-                    }
-                }), DispatcherPriority.Input);
+                    ApplyChange(item);
+                }), System.Windows.Threading.DispatcherPriority.Input);
             }
         }
 
-        private bool ApplyPropertyChange(string propName, string value)
+        private void ApplyChange(PropertyItem item)
         {
             try
             {
-                // Validación especial para NOMBRES
-                if (propName == "(Name)")
-                {
-
-
-                    if (!IsValidVb6Name(value))
-                    {
-                        MessageBox.Show("Nombre inválido. Debe comenzar con una letra, no tener espacios y solo contener letras, números o guiones bajos.", "Error de Sintaxis", MessageBoxButton.OK, MessageBoxImage.Warning);
-                        return false;
-                    }
-
-                    if (value != _currentControl.Name)
-                    {
-                        // Preguntamos al padre si el nombre es válido.
-                        // NOTA: Quitamos el MessageBox de aquí. La lógica de preguntar "Ya existe, ¿quieres array?"
-                        // ahora será responsabilidad del MainWindow.
-                        if (CheckNameAvailability != null && !CheckNameAvailability(value))
-                        {
-                            // Si devuelve false, es que el usuario canceló o el nombre es inválido.
-                            // Simplemente revertimos y salimos.
-                            return false;
-                        }
-                    }
-
-                    // Si pasa, asignamos (esto también actualiza el x:Name interno de WPF)
-                    PropertyChanging?.Invoke(this, EventArgs.Empty);
-                    _currentControl.Name = value;
-                    return true;
-                }
-
-                // Resto de propiedades normales
+                // 1. Notificar inicio de cambio (Undo/Redo)
                 PropertyChanging?.Invoke(this, EventArgs.Empty);
-                double valNum = ParseDouble(value);
 
-                switch (propName)
+                // 2. Validar Nombre Especialmente
+                if (item.Name == "(Name)")
                 {
-                    case "Left": if (!double.IsNaN(valNum)) Canvas.SetLeft(_currentControl, valNum); break;
-                    case "Top": if (!double.IsNaN(valNum)) Canvas.SetTop(_currentControl, valNum); break;
-                    case "Width": if (!double.IsNaN(valNum)) _currentControl.Width = Math.Max(10, valNum); break;
-                    case "Height": if (!double.IsNaN(valNum)) _currentControl.Height = Math.Max(10, valNum); break;
-
-                    case "Caption":
-                        if (_currentControl is ContentControl cc) cc.Content = value;
-                        if (_currentControl is TextBlock lbl) lbl.Text = value;
-                        if (_currentControl is GroupBox gb) gb.Header = value;
-                        break;
-                    case "Text":
-                        if (_currentControl is TextBox txt) txt.Text = value;
-                        break;
-                    case "TabIndex":
-                        if (_currentControl is Control ctrlTab)
-                        {
-                            int index = (int)ParseDouble(value);
-                            if (index >= 0) ctrlTab.TabIndex = index;
-                        }
-                        break;
-                    case "Index":
-                        // Si el usuario borra el texto, ponemos null
-                        if (string.IsNullOrWhiteSpace(value))
-                        {
-                            VB6Data.SetIndex(_currentControl, null);
-                        }
-                        else
-                        {
-                            // Intentamos parsear el entero
-                            if (int.TryParse(value, out int idx) && idx >= 0)
-                            {
-                                VB6Data.SetIndex(_currentControl, idx);
-                            }
-                        }
-                        break;
-                    default: return false;
+                    string newName = item.Value.ToString();
+                    if (!IsValidVb6Name(newName))
+                    {
+                        MessageBox.Show("Nombre inválido.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        InspectObject(_currentControl); // Revertir
+                        return;
+                    }
+                    if (CheckNameAvailability != null && !CheckNameAvailability(newName))
+                    {
+                        InspectObject(_currentControl); // Revertir
+                        return;
+                    }
+                    _currentControl.Name = newName;
+                    InspectObject(_currentControl); // Actualizar UI
                 }
-                return true;
+                else
+                {
+                    // 3. Aplicar Propiedad Genérica
+                    PropertyManager.ApplyProperty(_currentControl, item);
+                }
+
+                // 4. Notificar fin (Refrescar adornos visuales)
+                PropertyChanged?.Invoke(this, EventArgs.Empty);
             }
-            catch
+            catch (Exception ex)
             {
-                return false;
+                // Si falla, revertimos la UI
+                // MessageBox.Show($"Error aplicando propiedad: {ex.Message}");
+                _isUpdating = true;
+                InspectObject(_currentControl);
             }
         }
 
-        // Validador Estilo VB6
+        // ==========================================
+        // UI HELPERS
+        // ==========================================
+        private void CloseBtn_Click(object sender, RoutedEventArgs e) => CloseRequested?.Invoke(this, EventArgs.Empty);
+
+        private void SortButton_Click(object sender, RoutedEventArgs e)
+        {
+            // Toggle logic for sorting buttons
+            if (sender == BtnCategorized) BtnAlphabetical.IsChecked = false;
+            else BtnCategorized.IsChecked = false;
+
+            // Recargar para aplicar orden
+            InspectObject(_currentControl);
+        }
+
         private bool IsValidVb6Name(string name)
         {
             if (string.IsNullOrWhiteSpace(name)) return false;
-            if (name.Length > 40) return false; // Límite VB6
-            // Regex: Empieza con letra, sigue con letras/números/guion bajo.
             return Regex.IsMatch(name, @"^[a-zA-Z][a-zA-Z0-9_]*$");
         }
 
-        private double ParseDouble(string text)
-        {
-            if (string.IsNullOrWhiteSpace(text)) return double.NaN;
-            if (double.TryParse(text, NumberStyles.Any, CultureInfo.InvariantCulture, out double result)) return result;
-            if (double.TryParse(text, NumberStyles.Any, CultureInfo.CurrentCulture, out double result2)) return result2;
-            return double.NaN;
-        }
 
-        private void CloseBtn_Click(object sender, RoutedEventArgs e)
+        // Método que recibe el color desde el UserControl ColorPicker
+        private void OnColorPickedFromPopup(string hexColor)
         {
-            CloseRequested?.Invoke(this, EventArgs.Empty);
-        }
+            // 1. Buscamos qué fila originó esto.
+            // Como el evento viene de un Popup, es un poco truculento encontrar el DataContext original.
+            // Pero WPF es inteligente: el 'sender' será el ColorPicker.
+            // Y su DataContext heredado debería ser el 'PropertyItem' de la fila.
 
-        public class PropertyItem
-        {
-            public string Name { get; set; }
-            public object Value { get; set; }
+            if (PropGrid.SelectedItem is PropertyItem item)
+            {
+                // Actualizamos el valor del item (esto actualiza el TextBox visualmente)
+                item.Value = hexColor;
+
+                // Forzamos la aplicación del cambio al control real
+                ApplyChange(item);
+
+                // Cerramos el popup (El popup se cierra solo al hacer click fuera, 
+                // pero visualmente ya seleccionamos)
+                // Nota: Para cerrar el Popup programáticamente necesitaríamos referencia al ToggleButton,
+                // pero al cambiar el foco suele cerrarse solo por StaysOpen="False".
+            }
         }
     }
 }
