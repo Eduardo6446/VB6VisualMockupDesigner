@@ -639,12 +639,70 @@
                 </Grid>
 
                 <TabControl x:Name="MainTabControl" 
-                            Background="Transparent" 
-                            BorderThickness="0" 
-                            Padding="0"
-                            ItemContainerStyle="{StaticResource VsCodeTabStyle}"
-                            Visibility="Hidden"
-                            MouseMove="Lienzo_MouseMove">
+                    Grid.Row="1" 
+                    Grid.Column="1"
+                    Background="Transparent" 
+                    BorderThickness="0" 
+                    Padding="0"
+                    Visibility="Hidden"
+                    ItemContainerStyle="{StaticResource VsCodeTabStyle}"
+                    MouseMove="Lienzo_MouseMove">
+
+                    <TabControl.Template>
+                        <ControlTemplate TargetType="TabControl">
+                            <Grid KeyboardNavigation.TabNavigation="Local">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+
+                                <Border Grid.Row="0" 
+                                Background="{DynamicResource HeaderBackground}"
+                                BorderBrush="{DynamicResource BorderBrush}" 
+                                BorderThickness="0,0,0,1">
+
+                                    <ScrollViewer x:Name="TabScrollViewer"
+                                          HorizontalScrollBarVisibility="Auto" 
+                                          VerticalScrollBarVisibility="Disabled"
+                                          CanContentScroll="True"
+                                          PanningMode="HorizontalOnly"
+                                          PreviewMouseWheel="TabScrollViewer_PreviewMouseWheel">
+
+                                        <ScrollViewer.Resources>
+                                            <Style TargetType="ScrollBar">
+                                                <Setter Property="Height" Value="3.3"/>
+                                                <Setter Property="MinHeight" Value="0"/>
+                                                <Setter Property="Background" Value="Transparent"/>
+                                                <Setter Property="Template">
+                                                    <Setter.Value>
+                                                        <ControlTemplate TargetType="ScrollBar">
+                                                            <Grid x:Name="GridRoot">
+                                                                <Track x:Name="PART_Track" IsDirectionReversed="False">
+                                                                    <Track.Thumb>
+                                                                        <Thumb>
+                                                                            <Thumb.Template>
+                                                                                <ControlTemplate TargetType="Thumb">
+                                                                                    <Border Background="#66808080" CornerRadius="1.5"/>
+                                                                                </ControlTemplate>
+                                                                            </Thumb.Template>
+                                                                        </Thumb>
+                                                                    </Track.Thumb>
+                                                                </Track>
+                                                            </Grid>
+                                                        </ControlTemplate>
+                                                    </Setter.Value>
+                                                </Setter>
+                                            </Style>
+                                        </ScrollViewer.Resources>
+
+                                        <StackPanel IsItemsHost="True" Orientation="Horizontal"/>
+                                    </ScrollViewer>
+                                </Border>
+
+                                <ContentPresenter Grid.Row="1" ContentSource="SelectedContent"/>
+                            </Grid>
+                        </ControlTemplate>
+                    </TabControl.Template>
                 </TabControl>
             </Grid>
 

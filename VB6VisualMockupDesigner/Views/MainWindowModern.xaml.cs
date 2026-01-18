@@ -1404,6 +1404,23 @@ namespace VB6VisualMockupDesigner.Views
             }
         }
 
+        // Evento para convertir el scroll vertical de la rueda en scroll horizontal para las pestañas
+        private void TabScrollViewer_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            var scrollViewer = sender as ScrollViewer;
+            if (scrollViewer != null)
+            {
+                // Si la rueda va hacia arriba (Delta > 0), movemos a la izquierda
+                if (e.Delta > 0)
+                    scrollViewer.LineLeft();
+                // Si la rueda va hacia abajo (Delta < 0), movemos a la derecha
+                else
+                    scrollViewer.LineRight();
+
+                e.Handled = true; // Detenemos el evento para que no afecte a otros controles
+            }
+        }
+
 
     }
 }
