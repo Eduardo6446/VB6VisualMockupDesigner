@@ -234,22 +234,40 @@ namespace VB6VisualMockupDesigner.Controls
 
                 if (Math.Abs(snapDeltaX) < 1 && Math.Abs(snapDeltaY) < 1) return;
 
-                // --- INICIO DEL CAMBIO ---
-                // Si nos estamos moviendo realmente y NO hemos guardado el estado previo todavía:
                 if (!_hasSavedUndoForDrag)
                 {
-                    SaveUndoSnapshot();      // 1. Guardamos CÓMO ESTABAN antes de mover
-                    _hasSavedUndoForDrag = true; // 2. Marcamos para no guardar 100 veces mientras arrastra
+                    SaveUndoSnapshot();
+                    _hasSavedUndoForDrag = true;
                 }
-                // --- FIN DEL CAMBIO ---
+
+                // --- LÓGICA DE LÍMITES (NUEVO) ---
+                // Obtenemos el tamaño del formulario contenedor
+                double formWidth = WindowResizerGrid.Width;
+                double formHeight = WindowResizerGrid.Height;
+                if (double.IsNaN(formWidth)) formWidth = WindowResizerGrid.ActualWidth;
+                if (double.IsNaN(formHeight)) formHeight = WindowResizerGrid.ActualHeight;
 
                 foreach (var control in _selectedControls)
                 {
                     if (_initialPositions.TryGetValue(control, out Point startPos))
                     {
-                        double newLeft = Math.Max(0, startPos.X + snapDeltaX);
-                        double newTop = Math.Max(0, startPos.Y + snapDeltaY);
+                        var frameworkElement = control as FrameworkElement;
+                        double ctrlW = frameworkElement.ActualWidth;
+                        double ctrlH = frameworkElement.ActualHeight;
 
+                        // Calculamos la nueva posición deseada
+                        double newLeft = startPos.X + snapDeltaX;
+                        double newTop = startPos.Y + snapDeltaY;
+
+                        // 1. Restricción Izquierda/Arriba (No menor a 0)
+                        newLeft = Math.Max(0, newLeft);
+                        newTop = Math.Max(0, newTop);
+
+                        // 2. Restricción Derecha/Abajo (No mayor al ancho del form - ancho del control)
+                        if (newLeft + ctrlW > formWidth) newLeft = formWidth - ctrlW;
+                        if (newTop + ctrlH > formHeight) newTop = formHeight - ctrlH;
+
+                        // Aplicar
                         Canvas.SetLeft(control, newLeft);
                         Canvas.SetTop(control, newTop);
                     }
