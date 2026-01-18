@@ -730,25 +730,19 @@ namespace VB6VisualMockupDesigner.Views
 
             if (tb != null || e.OriginalSource is PasswordBox)
             {
-                // CASO A: ¿Es el Panel de Propiedades?
-                // Usamos (DependencyObject)e.OriginalSource para que funcione con TextBox y PasswordBox
+
+
                 if (IsDescendant((DependencyObject)e.OriginalSource, PropertiesPanel))
                 {
-                    return; // Bloquear atajo global, dejar que el control maneje su Ctrl+Z/C/V
+                    return; 
                 }
 
-                // CASO B: ¿Es el Editor de Código?
-                // Verificamos si la pestaña actual contiene DIRECTAMENTE este TextBox
+
                 if (tb != null && MainTabControl.SelectedContent == tb)
                 {
                     return; // Bloquear atajo global, es código fuente.
                 }
 
-                // CASO C: Toolbox o Buscador Global
-                // Si llegamos aquí, es un TextBox (probablemente el buscador), pero NO es 
-                // ni de propiedades ni de código. 
-                // EN ESTE CASO DEJAMOS PASAR EL EVENTO (no hacemos return).
-                // Así, si pulsas Ctrl+Z en el buscador, el Designer lo capturará.
             }
 
 
@@ -816,6 +810,31 @@ namespace VB6VisualMockupDesigner.Views
                 else
                     designer.LockSelected();   // Ctrl + L
 
+                e.Handled = true;
+            }
+
+            else if (!isCtrl && (e.Key == Key.Left || e.Key == Key.Right || e.Key == Key.Up || e.Key == Key.Down))
+            {
+                // Definir velocidad
+                // Normal: 1 pixel (precisión)
+                // Shift: 10 pixeles (Grid grande / Rápido)
+                double step = isShift ? 10.0 : 1.0;
+
+                double dx = 0;
+                double dy = 0;
+
+                switch (e.Key)
+                {
+                    case Key.Left: dx = -step; break;
+                    case Key.Right: dx = step; break;
+                    case Key.Up: dy = -step; break;
+                    case Key.Down: dy = step; break;
+                }
+
+                // Ejecutar movimiento
+                designer.NudgeSelection(dx, dy);
+
+                // IMPORTANTE: Handled = true evita que el ScrollViewer se mueva cuando presionas flechas
                 e.Handled = true;
             }
 

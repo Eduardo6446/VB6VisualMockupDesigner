@@ -1646,6 +1646,66 @@ namespace VB6VisualMockupDesigner.Controls
             NotifySelectionChanged();
         }
 
+        // ==========================================
+        // MOVIMIENTO CON TECLADO (NUDGING)
+        // ==========================================
+
+        public void NudgeSelection(double deltaX, double deltaY)
+        {
+            if (_selectedControls.Count == 0) return;
+
+            // 1. Guardar estado para Undo
+            SaveUndoSnapshot();
+
+            // 2. Obtener límites del formulario para no salirnos
+            double formWidth = WindowResizerGrid.Width;
+            double formHeight = WindowResizerGrid.Height;
+            if (double.IsNaN(formWidth)) formWidth = WindowResizerGrid.ActualWidth;
+            if (double.IsNaN(formHeight)) formHeight = WindowResizerGrid.ActualHeight;
+
+            bool moved = false;
+
+            foreach (var control in _selectedControls)
+            {
+                var fe = control as FrameworkElement;
+                if (fe == null) continue;
+
+                // Obtener posición actual
+                double currentLeft = Canvas.GetLeft(fe);
+                double currentTop = Canvas.GetTop(fe);
+                if (double.IsNaN(currentLeft)) currentLeft = 0;
+                if (double.IsNaN(currentTop)) currentTop = 0;
+
+                // Calcular nueva posición
+                double newLeft = currentLeft + deltaX;
+                double newTop = currentTop + deltaY;
+
+                // --- APLICAR LÍMITES (Igual que con el Mouse) ---
+
+                // 1. No salir por la izquierda/arriba
+                newLeft = Math.Max(0, newLeft);
+                newTop = Math.Max(0, newTop);
+
+                // 2. No salir por la derecha/abajo
+                if (newLeft + fe.ActualWidth > formWidth) newLeft = formWidth - fe.ActualWidth;
+                if (newTop + fe.ActualHeight > formHeight) newTop = formHeight - fe.ActualHeight;
+
+                // Solo aplicar si hubo cambio real
+                if (newLeft != currentLeft || newTop != currentTop)
+                {
+                    Canvas.SetLeft(fe, newLeft);
+                    Canvas.SetTop(fe, newTop);
+                    moved = true;
+                }
+            }
+
+            if (moved)
+            {
+                UpdateSelectionVisuals(); // Mover el borde azul con el control
+                NotifySelectionChanged(); // Actualizar propiedades (Left/Top) en el panel
+            }
+        }
+
 
     }
 }
