@@ -33,6 +33,9 @@ namespace VB6VisualMockupDesigner.Controls
         public static bool GetIsLocked(DependencyObject element) => (bool)element.GetValue(IsLockedProperty);
     }
 
+    public enum ResizeDirection { None, TopLeft, Top, TopRight, Right, BottomRight, Bottom, BottomLeft, Left }
+
+
 
     // PARTIAL CLASS: Manejo de Interacción con Controles
     public partial class DesignerCanvas
@@ -60,7 +63,6 @@ namespace VB6VisualMockupDesigner.Controls
         // Estado inicial para redimensión
         private double _initSelLeft, _initSelTop, _initSelWidth, _initSelHeight;
 
-        private enum ResizeDirection { None, TopLeft, Top, TopRight, Right, BottomRight, Bottom, BottomLeft, Left }
         private ResizeDirection _currentResizeDir = ResizeDirection.None;
 
         private UIElement _primarySelection => _selectedControls.Count == 1 ? _selectedControls.First() : null;

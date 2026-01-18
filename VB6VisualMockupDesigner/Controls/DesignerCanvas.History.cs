@@ -1,227 +1,162 @@
-﻿using System; // <--- Faltaba para Exception
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using VB6VisualMockupDesigner.Models; // Para CanvasState, ControlSnapshot
-using VB6VisualMockupDesigner.Helpers; // Para RetroControlFactory
-using VB6VisualMockupDesigner.Services;
-using System.Windows.Input; // <--- Importante para Clipboard
+using System.Windows.Input;
+using System.Windows.Markup; // Necesario para XamlWriter/Reader
+using System.Windows.Media;
+using System.Windows.Shapes;
+using System.IO;
+using System.Text;
+using VB6VisualMockupDesigner.Models;
 
 namespace VB6VisualMockupDesigner.Controls
 {
     public partial class DesignerCanvas
     {
-        // PILAS DE HISTORIAL
-        private Stack<CanvasState> _undoStack = new Stack<CanvasState>();
-        private Stack<CanvasState> _redoStack = new Stack<CanvasState>();
-        private bool _hasSavedUndoForDrag = false; // <--- AGREGAR ESTA VARIABLE
+        // ==========================================
+        // 1. SISTEMA DE UNDO / REDO (Versión Jerárquica XAML)
+        // ==========================================
 
-        // Offset para que al pegar varias veces no queden uno encima de otro
+        // Pila de Strings XAML (Snapshots completos del Canvas)
+        private Stack<string> _undoStack = new Stack<string>();
+        private Stack<string> _redoStack = new Stack<string>();
+        private bool _hasSavedUndoForDrag = false;
         private double _pasteOffset = 10;
-
-        // ==========================================
-        // LÓGICA DE UNDO / REDO (Ctrl+Z, Ctrl+Y)
-        // ==========================================
 
         public void SaveUndoSnapshot()
         {
-            var snapshot = GetCurrentState();
-            _undoStack.Push(snapshot);
-            _redoStack.Clear();
-            GenerateNewVersion();
+            // Usamos el helper seguro
+            string xaml = CreateSafeXamlSnapshot();
+
+            if (!string.IsNullOrEmpty(xaml))
+            {
+                _undoStack.Push(xaml);
+                _redoStack.Clear(); // Al hacer una nueva acción, se borra el futuro (Redo)
+                GenerateNewVersion();
+            }
         }
 
         public void Undo()
         {
             if (_undoStack.Count == 0) return;
 
-            var currentState = GetCurrentState();
+            // 1. Guardar estado actual en Redo (usando el helper seguro)
+            string currentState = CreateSafeXamlSnapshot();
             _redoStack.Push(currentState);
 
-            var previousState = _undoStack.Pop();
-            RestoreState(previousState);
+            // 2. Restaurar estado anterior
+            string previousState = _undoStack.Pop();
+            RestoreStateFromXaml(previousState);
         }
 
         public void Redo()
         {
             if (_redoStack.Count == 0) return;
 
-            var currentState = GetCurrentState();
+            // 1. Guardar estado actual en Undo (usando el helper seguro)
+            string currentState = CreateSafeXamlSnapshot();
             _undoStack.Push(currentState);
 
-            var nextState = _redoStack.Pop();
-            RestoreState(nextState);
+            // 2. Restaurar estado futuro
+            string nextState = _redoStack.Pop();
+            RestoreStateFromXaml(nextState);
         }
 
-        // Helpers de Estado
-        private CanvasState GetCurrentState()
+
+        private void RestoreStateFromXaml(string xamlState)
         {
-            var state = new CanvasState();
-            state.VersionId = _currentVersionId; // <--- GUARDAMOS EL ID ACTUAL
-            foreach (UIElement child in DesignSurface.Children)
-            {
-                if (child is FrameworkElement fe && !(child is System.Windows.Shapes.Rectangle) && !(child is Border))
-                {
-                    string text = "";
-                    if (fe is ContentControl cc) text = cc.Content?.ToString();
-                    else if (fe is TextBox tb) text = tb.Text;
-                    else if (fe is TextBlock txt) text = txt.Text;
-
-                    state.Controls.Add(new ControlSnapshot
-                    {
-                        Type = fe.Tag?.ToString() ?? fe.GetType().Name,
-
-                        // USAMOS LOS HELPERS AQUÍ:
-                        Left = GetSafeLeft(fe),
-                        Top = GetSafeTop(fe),
-
-                        // SANITIZACIÓN TAMBIÉN PARA TAMAÑO:
-                        Width = double.IsNaN(fe.Width) ? fe.ActualWidth : fe.Width,
-                        Height = double.IsNaN(fe.Height) ? fe.ActualHeight : fe.Height,
-
-                        Text = text,
-                        Tag = fe.Tag?.ToString(),
-
-                        IsSelected = _selectedControls.Contains(fe)
-                    });
-                }
-            }
-            return state;
-        }
-
-        private void RestoreState(CanvasState state)
-        {
-
-            _currentVersionId = state.VersionId;
-
-            // 1. Limpiar estado actual
+            // 1. Limpieza inicial
             ClearSelection();
             DesignSurface.Children.Clear();
             _resizeHandles.Clear();
+            _selectionAdorners.Clear();
 
-            // Re-agregar SelectionRect si es necesario (manejado en ClearCanvas, pero por seguridad notificamos)
-            ControlSelected?.Invoke(this, null);
-
-
-
-            // 2. Reconstruir controles
-            foreach (var item in state.Controls)
+            try
             {
-                string cleanType = item.Type;
-                if (string.IsNullOrEmpty(cleanType)) continue;
+                var context = new ParserContext();
+                context.XmlnsDictionary.Add("", "http://schemas.microsoft.com/winfx/2006/xaml/presentation");
+                context.XmlnsDictionary.Add("x", "http://schemas.microsoft.com/winfx/2006/xaml");
+                // Asegúrate que este namespace sea el correcto de tu proyecto
+                context.XmlnsDictionary.Add("local", "clr-namespace:VB6VisualMockupDesigner.Controls;assembly=VB6VisualMockupDesigner");
 
-                UIElement newControl = RetroControlFactory.Create(cleanType);
-
-                if (newControl is FrameworkElement fe)
+                using (var stream = new MemoryStream(Encoding.UTF8.GetBytes(xamlState)))
                 {
-                    fe.Width = item.Width;
-                    fe.Height = item.Height;
+                    Canvas loadedCanvas = XamlReader.Load(stream, context) as Canvas;
 
-                    if (fe is ContentControl cc) cc.Content = item.Text;
-                    else if (fe is TextBox tb) tb.Text = item.Text;
-                    else if (fe is TextBlock txt) txt.Text = item.Text;
-
-                    fe.Tag = item.Tag;
-
-                    // Usamos el método base para conectar eventos
-                    // NOTA: Pasamos las coordenadas, pero luego las forzamos abajo para evitar Doble-Snap
-                    AddControlToCanvas(newControl, item.Left, item.Top);
-
-                    // --- CORRECCIÓN CRÍTICA ---
-                    // AddControlToCanvas hace SnapToGrid. 
-                    // Al restaurar, queremos la posición EXACTA del historial, no redondearla de nuevo.
-                    Canvas.SetLeft(newControl, item.Left);
-                    Canvas.SetTop(newControl, item.Top);
-
-                    if (item.IsSelected)
+                    if (loadedCanvas != null)
                     {
-                        _selectedControls.Add(newControl);
+                        // 2. Restaurar controles: Usamos una lista temporal para no modificar la colección mientras iteramos
+                        var childrenToMove = new List<UIElement>();
+                        foreach (UIElement child in loadedCanvas.Children)
+                        {
+                            childrenToMove.Add(child);
+                        }
+
+                        // Vaciamos el contenedor temporal para romper vínculos
+                        loadedCanvas.Children.Clear();
+
+                        foreach (var child in childrenToMove)
+                        {
+                            // DOBLE SEGURIDAD: Desconectar explícitamente
+                            ForceDisconnect(child);
+
+                            DesignSurface.Children.Add(child);
+
+                            if (child is FrameworkElement fe)
+                            {
+                                WireEventsRecursively(fe);
+                            }
+                        }
                     }
-
                 }
-
-                CheckDirtyStatus();
             }
-
-
-            // Asegurar que el recuadro de selección esté presente (si se borró en el Clear)
-            // (Tu método ClearCanvas ya debería manejar esto, pero no hace daño verificar)
-            if (SelectionRect != null && !DesignSurface.Children.Contains(SelectionRect))
+            catch (Exception ex)
             {
-                DesignSurface.Children.Add(SelectionRect);
+                System.Diagnostics.Debug.WriteLine("Error Restore: " + ex.Message);
             }
 
-            this.UpdateLayout();
+            // 3. Restaurar Herramientas del Sistema
+            // AQUI ES DONDE TE DABA EL ERROR ANTES.
+            // Ahora usamos ForceDisconnect antes de agregar para asegurar que estén libres.
 
-            // 4. Restaurar Adornos Visuales (Bordes azules y Handles blancos)
-            // Esto se basa en la lista _selectedControls que acabamos de llenar en el paso 2
-            UpdateSelectionVisuals();
+            if (SelectionRect != null)
+            {
+                ForceDisconnect(SelectionRect);
+                if (!DesignSurface.Children.Contains(SelectionRect)) DesignSurface.Children.Add(SelectionRect);
+            }
 
-            // 5. Avisar a la UI (Propiedades)
-            NotifySelectionChanged();
+            if (SnapLineOverlay != null)
+            {
+                ForceDisconnect(SnapLineOverlay); // <--- ESTO ARREGLA TU ERROR
+                if (!DesignSurface.Children.Contains(SnapLineOverlay)) DesignSurface.Children.Add(SnapLineOverlay);
+            }
+
+            if (QuickEditBox != null)
+            {
+                ForceDisconnect(QuickEditBox);
+                if (!DesignSurface.Children.Contains(QuickEditBox))
+                {
+                    DesignSurface.Children.Add(QuickEditBox);
+                    Panel.SetZIndex(QuickEditBox, int.MaxValue);
+                }
+            }
+
+            GenerateNewVersion();
         }
 
+
         // ==========================================
-        // LÓGICA DE COPY / PASTE / CUT (Ctrl+C, V, X)
+        // 2. COPY / PASTE / CUT (Jerárquico)
         // ==========================================
 
         public void CopySelected()
         {
-
-            ExecuteCopy();
-
-
             if (_selectedControls.Count == 0) return;
 
+            // Usamos XamlWriter para copiar, igual que antes, pero esto ya soporta jerarquía
             ExecuteCopy();
-
-            DesignerClipboard.Clear();
-
-            // === CORRECCIÓN 1: Sanitizar el cálculo del punto mínimo (Ancla del grupo) ===
-            // Si Canvas.GetLeft devuelve NaN, asumimos que es 0.
-            double minX = _selectedControls.Min(c =>
-            {
-
-                double v = Canvas.GetLeft(c);
-                return double.IsNaN(v) ? 0 : v;
-            });
-
-            double minY = _selectedControls.Min(c =>
-            {
-                double v = Canvas.GetTop(c);
-                return double.IsNaN(v) ? 0 : v;
-            });
-
-            foreach (FrameworkElement fe in _selectedControls)
-            {
-                string text = "";
-                if (fe is ContentControl cc) text = cc.Content?.ToString();
-                else if (fe is TextBox tb) text = tb.Text;
-                else if (fe is TextBlock txt) text = txt.Text;
-
-                // === CORRECCIÓN 2: Obtener coordenadas seguras para el item actual ===
-                double currentL = Canvas.GetLeft(fe);
-                double currentT = Canvas.GetTop(fe);
-
-                if (double.IsNaN(currentL)) currentL = 0;
-                if (double.IsNaN(currentT)) currentT = 0;
-
-                DesignerClipboard.Items.Add(new ClipboardItem
-                {
-                    ControlType = fe.Tag?.ToString(),
-                    Width = double.IsNaN(fe.Width) ? fe.ActualWidth : fe.Width,
-                    Height = double.IsNaN(fe.Height) ? fe.ActualHeight : fe.Height,
-                    ContentText = text,
-
-                    // Ahora la matemática es segura: Numero - Numero = Numero
-                    RelativeLeft = currentL - minX,
-                    RelativeTop = currentT - minY
-                });
-            }
-            ExecuteCopy();
-
-
             _pasteOffset = 10;
         }
 
@@ -235,186 +170,6 @@ namespace VB6VisualMockupDesigner.Controls
             }
         }
 
-        // Este método ahora solo devuelve la lista de objetos recuperados, NO los agrega al canvas todavía
-        public List<UIElement> GetElementsFromClipboard()
-        {
-            var list = new List<UIElement>();
-            try
-            {
-                // 1. Verificar si hay datos
-                if (!Clipboard.ContainsData(DataFormats.Xaml)) return list;
-
-                string xamlString = Clipboard.GetData(DataFormats.Xaml) as string;
-                if (string.IsNullOrEmpty(xamlString)) return list;
-
-                // 2. Configurar el Contexto (Esencial para encontrar VB6Data)
-                var context = new System.Windows.Markup.ParserContext();
-                context.XmlnsDictionary.Add("", "http://schemas.microsoft.com/winfx/2006/xaml/presentation");
-                context.XmlnsDictionary.Add("x", "http://schemas.microsoft.com/winfx/2006/xaml");
-                // Asegúrate de que este namespace coincida con tu proyecto
-                context.XmlnsDictionary.Add("local", "clr-namespace:VB6VisualMockupDesigner;assembly=VB6VisualMockupDesigner");
-
-                // 3. SOLUCIÓN A TUS ERRORES: Usar MemoryStream
-                // Convertimos el string a bytes y usamos un Stream, que es lo que XamlReader prefiere.
-                var bytes = System.Text.Encoding.UTF8.GetBytes(xamlString);
-
-                using (var stream = new System.IO.MemoryStream(bytes))
-                {
-                    // Ahora sí usamos Load(Stream, ParserContext) que es la sobrecarga más segura
-                    var loadedObject = System.Windows.Markup.XamlReader.Load(stream, context);
-
-                    if (loadedObject is Canvas rootCanvas)
-                    {
-                        // Caso A: Copiamos varios controles (vienen en el Canvas contenedor)
-                        var children = new List<UIElement>();
-                        foreach (UIElement child in rootCanvas.Children) children.Add(child);
-
-                        rootCanvas.Children.Clear();
-                        list.AddRange(children);
-                    }
-                    else if (loadedObject is UIElement singleElement)
-                    {
-                        // Caso B: Copiamos un solo control sin contenedor
-                        list.Add(singleElement);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine("Error al leer portapapeles: " + ex.Message);
-                MessageBox.Show("Error al pegar: " + ex.Message);
-            }
-            return list;
-        }
-
-        public void Paste()
-        {
-            // 1. Recuperar objetos limpios del portapapeles
-            List<UIElement> newControls = GetElementsFromClipboard();
-            if (newControls.Count == 0) return;
-
-            SaveUndoSnapshot();
-            ClearSelection();
-
-            double offset = 20; // Desplazamiento visual para que no queden encima
-
-            foreach (var obj in newControls)
-            {
-                if (obj is FrameworkElement newCtrl)
-                {
-                    // 2. Calcular nueva posición
-                    double l = GetSafeLeft(newCtrl) + offset;
-                    double t = GetSafeTop(newCtrl) + offset;
-                    Canvas.SetLeft(newCtrl, l);
-                    Canvas.SetTop(newCtrl, t);
-
-                    // 3. LÓGICA DE NOMBRES / ARRAYS
-                    string intendedName = newCtrl.Name;
-                    FrameworkElement existingCtrl = FindControlByName(intendedName);
-
-                    if (existingCtrl != null && !string.IsNullOrEmpty(intendedName))
-                    {
-                        var result = MessageBox.Show(
-                            $"Ya existe un control llamado '{intendedName}'.\n¿Desea crear una matriz de controles (Control Array)?",
-                            "Conflicto de Nombres",
-                            MessageBoxButton.YesNoCancel,
-                            MessageBoxImage.Question);
-
-                        if (result == MessageBoxResult.Cancel) continue; // Saltamos este control
-
-                        if (result == MessageBoxResult.Yes) // CREAR ARRAY
-                        {
-                            // Asignar índice al original si no tiene
-                            int? existingIndex = VB6Data.GetIndex(existingCtrl);
-                            if (existingIndex == null) VB6Data.SetIndex(existingCtrl, 0);
-
-                            // Buscar siguiente índice libre
-                            int nextIndex = GetNextAvailableIndex(intendedName);
-
-                            newCtrl.Name = intendedName; // Mismo nombre
-                            VB6Data.SetIndex(newCtrl, nextIndex); // Nuevo índice
-                        }
-                        else // NO (RENOMBRAR)
-                        {
-                            newCtrl.Name = GenerateUniqueName(intendedName);
-                            VB6Data.SetIndex(newCtrl, null); // Sin índice
-                        }
-                    }
-                    else
-                    {
-                        // Nombre libre, pero limpiamos el Index por si venía copiado de un array
-                        // A menos que quieras copiar el índice también, pero usualmente al copiar y pegar libre
-                        // se espera un control nuevo independiente.
-                        VB6Data.SetIndex(newCtrl, null);
-                    }
-
-                    // 4. Agregar al Canvas y Seleccionar
-                    DesignSurface.Children.Add(newCtrl);
-
-                    // Reconectar eventos
-                    newCtrl.PreviewMouseDown += Control_PreviewMouseDown;
-                    newCtrl.PreviewMouseMove += Control_PreviewMouseMove;
-                    newCtrl.PreviewMouseUp += Control_PreviewMouseUp;
-
-                    AddToSelection(newCtrl);
-                }
-            }
-
-            NotifySelectionChanged();
-        }
-
-        // --- MÉTODOS AUXILIARES PARA EL PEGADO ---
-
-        private FrameworkElement FindControlByName(string name)
-        {
-            foreach (UIElement child in DesignSurface.Children)
-            {
-                if (child is FrameworkElement fe && string.Equals(fe.Name, name, StringComparison.OrdinalIgnoreCase))
-                {
-                    return fe;
-                }
-            }
-            return null;
-        }
-
-        private int GetNextAvailableIndex(string name)
-        {
-            int maxIndex = -1;
-            foreach (UIElement child in DesignSurface.Children)
-            {
-                if (child is FrameworkElement fe && string.Equals(fe.Name, name, StringComparison.OrdinalIgnoreCase))
-                {
-                    int? idx = VB6Data.GetIndex(fe);
-                    if (idx.HasValue && idx.Value > maxIndex)
-                    {
-                        maxIndex = idx.Value;
-                    }
-                }
-            }
-            return maxIndex + 1;
-        }
-
-        private string GenerateUniqueName(string baseName)
-        {
-            // Si el nombre termina en número (ej: Command1), intentamos seguir la secuencia (Command2)
-            // Si no (ej: cmdAceptar), agregamos 1 (cmdAceptar1)
-
-            // Lógica simple: Probar baseName + "1", "2", "3"...
-            int i = 1;
-            while (true)
-            {
-                // Intentamos detectar si baseName ya tiene número al final para incrementarlo inteligentemente
-                // Por simplicidad ahora, concatenamos.
-                string candidate = $"{baseName}{i}";
-                if (FindControlByName(candidate) == null)
-                {
-                    return candidate;
-                }
-                i++;
-            }
-        }
-
-
         public void ExecuteCopy()
         {
             try
@@ -422,23 +177,31 @@ namespace VB6VisualMockupDesigner.Controls
                 var controls = GetSelectedControls();
                 if (controls.Count == 0) return;
 
-                // 1. Envolver en un root temporal para que sea XML válido
-                System.Text.StringBuilder sb = new System.Text.StringBuilder();
-                sb.Append("<Canvas xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation' xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml' xmlns:local='clr-namespace:VB6VisualMockupDesigner;assembly=VB6VisualMockupDesigner'>");
+                // 1. Limpieza de menús específica para la selección
+                // (Nota: Copy es especial porque solo copia la selección, no todo el canvas,
+                //  así que mantenemos la lógica local, pero aseguramos limpieza de menús)
+                _tempMenuStorage.Clear();
+                foreach (var item in controls) DetachContextMenusRecursively(item);
 
-                foreach (var item in controls)
+                StringBuilder sb = new StringBuilder();
+                sb.Append("<Canvas xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation' xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml' xmlns:local='clr-namespace:VB6VisualMockupDesigner.Controls;assembly=VB6VisualMockupDesigner'>");
+
+                try
                 {
-                    try
+                    foreach (var item in controls)
                     {
-                        // Guardamos cada control
-                        string xaml = System.Windows.Markup.XamlWriter.Save(item);
+                        string xaml = XamlWriter.Save(item);
                         sb.Append(xaml);
                     }
-                    catch (Exception exSerial) { System.Diagnostics.Debug.WriteLine("Error serializando: " + exSerial.Message); }
                 }
+                finally
+                {
+                    // Restaurar siempre
+                    ReattachContextMenus();
+                }
+
                 sb.Append("</Canvas>");
 
-                // 2. Enviar al portapapeles
                 var dataObject = new DataObject();
                 dataObject.SetData(DataFormats.Xaml, sb.ToString());
                 Clipboard.SetDataObject(dataObject, true);
@@ -446,9 +209,357 @@ namespace VB6VisualMockupDesigner.Controls
             catch (Exception ex)
             {
                 MessageBox.Show("Error al copiar: " + ex.Message);
+                ReattachContextMenus(); // Seguridad extra
             }
         }
 
+        public void Paste()
+        {
+            // 1. Obtener objetos del portapapeles
+            List<UIElement> newControls = GetElementsFromClipboard();
+            if (newControls.Count == 0) return;
 
+            SaveUndoSnapshot();
+            ClearSelection();
+
+            // 2. Determinar destino (¿Pegar en el Form o dentro de un Frame seleccionado?)
+            Canvas targetCanvas = DesignSurface;
+            FrameworkElement containerElement = null;
+
+            if (_selectedControls.Count == 1)
+            {
+                // Si hay 1 cosa seleccionada, verificamos si es un contenedor
+                var selected = _selectedControls.First() as FrameworkElement;
+                Canvas inner = GetInnerCanvas(selected);
+                if (inner != null)
+                {
+                    targetCanvas = inner;
+                    containerElement = selected;
+                }
+            }
+
+            foreach (var obj in newControls)
+            {
+                if (obj is FrameworkElement newCtrl)
+                {
+                    // 3. Generar nuevo nombre único
+                    if (!string.IsNullOrEmpty(newCtrl.Name))
+                    {
+                        // Lógica simplificada de renombramiento
+                        newCtrl.Name = GenerateUniqueName(newCtrl.Name);
+                        // Limpiar índice de array por seguridad al pegar
+                        VB6Data.SetIndex(newCtrl, null);
+                    }
+
+                    // 4. Calcular posición
+                    double l = GetSafeLeft(newCtrl) + _pasteOffset;
+                    double t = GetSafeTop(newCtrl) + _pasteOffset;
+
+                    // Si pegamos dentro de un Frame, ajustamos para que no se vaya muy lejos
+                    if (targetCanvas != DesignSurface)
+                    {
+                        l = 10;
+                        t = 10;
+                        _pasteOffset += 10; // Cascada
+                    }
+
+                    Canvas.SetLeft(newCtrl, SnapToGrid(l));
+                    Canvas.SetTop(newCtrl, SnapToGrid(t));
+
+                    // 5. Agregar al destino
+                    targetCanvas.Children.Add(newCtrl);
+
+                    // 6. ¡CRÍTICO! CONECTAR EVENTOS A TODO EL ÁRBOL (HIJOS INCLUIDOS)
+                    WireEventsRecursively(newCtrl);
+
+                    AddToSelection(newCtrl);
+                }
+            }
+
+            // Si pegamos en el root, aumentamos offset global
+            if (targetCanvas == DesignSurface) _pasteOffset += 10;
+
+            NotifySelectionChanged();
+        }
+
+        public List<UIElement> GetElementsFromClipboard()
+        {
+            var list = new List<UIElement>();
+            try
+            {
+                if (!Clipboard.ContainsData(DataFormats.Xaml)) return list;
+                string xamlString = Clipboard.GetData(DataFormats.Xaml) as string;
+                if (string.IsNullOrEmpty(xamlString)) return list;
+
+                var context = new ParserContext();
+                context.XmlnsDictionary.Add("", "http://schemas.microsoft.com/winfx/2006/xaml/presentation");
+                context.XmlnsDictionary.Add("x", "http://schemas.microsoft.com/winfx/2006/xaml");
+                // Ajusta el namespace a tu proyecto
+                context.XmlnsDictionary.Add("local", "clr-namespace:VB6VisualMockupDesigner.Controls;assembly=VB6VisualMockupDesigner");
+
+                var bytes = Encoding.UTF8.GetBytes(xamlString);
+                using (var stream = new MemoryStream(bytes))
+                {
+                    var loadedObject = XamlReader.Load(stream, context);
+
+                    if (loadedObject is Canvas rootCanvas)
+                    {
+                        var children = new List<UIElement>();
+                        foreach (UIElement child in rootCanvas.Children) children.Add(child);
+                        rootCanvas.Children.Clear();
+                        list.AddRange(children);
+                    }
+                    else if (loadedObject is UIElement singleElement)
+                    {
+                        list.Add(singleElement);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("Error pegar: " + ex.Message);
+            }
+            return list;
+        }
+
+        // ==========================================
+        // 3. HELPER RECURSIVO DE EVENTOS (LA MAGIA)
+        // ==========================================
+
+        private void WireEventsRecursively(FrameworkElement element)
+        {
+            if (element == null) return;
+
+            // 1. Conectar eventos al elemento actual (Si es un control nuestro)
+            // Filtramos para no conectar eventos a partes internas que no debemos tocar
+            if (IsDesignerControl(element))
+            {
+                element.PreviewMouseDown -= Control_PreviewMouseDown; // Evitar duplicados
+                element.PreviewMouseDown += Control_PreviewMouseDown;
+
+                element.PreviewMouseMove -= Control_PreviewMouseMove;
+                element.PreviewMouseMove += Control_PreviewMouseMove;
+
+                element.PreviewMouseUp -= Control_PreviewMouseUp;
+                element.PreviewMouseUp += Control_PreviewMouseUp;
+
+                if (this.Resources.Contains("ControlContextMenu"))
+                {
+                    element.ContextMenu = (ContextMenu)this.Resources["ControlContextMenu"];
+                }
+            }
+
+            // 2. Buscar contenedores hijos y recursar
+            // Si es un Frame/PictureBox/Panel, tiene un Canvas dentro con hijos
+            Canvas innerCanvas = GetInnerCanvas(element);
+            if (innerCanvas != null)
+            {
+                foreach (UIElement child in innerCanvas.Children)
+                {
+                    if (child is FrameworkElement feChild)
+                    {
+                        WireEventsRecursively(feChild);
+                    }
+                }
+            }
+            // Caso especial SSPanel (Grid -> Canvas)
+            else if (element is Border b && b.Child is Grid g)
+            {
+                foreach (var grandChild in g.Children)
+                {
+                    if (grandChild is Canvas c)
+                    {
+                        foreach (UIElement greatChild in c.Children)
+                            if (greatChild is FrameworkElement k) WireEventsRecursively(k);
+                    }
+                }
+            }
+        }
+
+        private bool IsDesignerControl(FrameworkElement fe)
+        {
+            // Identificar si es un control del usuario y no una parte interna (como un scrollbar de un listbox)
+            // Nuestra fábrica pone Tags o nombres específicos.
+            if (fe.Tag != null) return true;
+            if (fe is TextBox || fe is Button || fe is Label || fe is CheckBox || fe is RadioButton || fe is GroupBox || fe is Border) return true;
+            return false;
+        }
+
+
+        // ==========================================
+        // 4. HELPERS DE NOMBRES Y OTROS
+        // ==========================================
+
+        private FrameworkElement FindControlByName(string name)
+        {
+            // Búsqueda recursiva porque ahora hay jerarquía
+            return FindControlRecursive(DesignSurface, name);
+        }
+
+        private FrameworkElement FindControlRecursive(Panel parent, string name)
+        {
+            foreach (UIElement child in parent.Children)
+            {
+                if (child is FrameworkElement fe)
+                {
+                    if (string.Equals(fe.Name, name, StringComparison.OrdinalIgnoreCase)) return fe;
+
+                    // Si es contenedor, buscar dentro
+                    Canvas inner = GetInnerCanvas(fe);
+                    if (inner != null)
+                    {
+                        var found = FindControlRecursive(inner, name);
+                        if (found != null) return found;
+                    }
+                }
+            }
+            return null;
+        }
+
+        private string GenerateUniqueName(string baseName)
+        {
+            int i = 1;
+            // Quitamos números al final para no generar Command111
+            string root = System.Text.RegularExpressions.Regex.Replace(baseName, @"[\d-]", string.Empty);
+
+            while (true)
+            {
+                string candidate = $"{root}{i}";
+                if (FindControlByName(candidate) == null) return candidate;
+                i++;
+            }
+        }
+
+        // --- HELPERS PARA EVITAR EL ERROR DE DUPLICATE NAME EN XAMLWRITER ---
+
+        private Dictionary<FrameworkElement, ContextMenu> _tempMenuStorage = new Dictionary<FrameworkElement, ContextMenu>();
+
+        // Quita los menús de un elemento y todos sus hijos recursivamente
+        private void DetachContextMenusRecursively(FrameworkElement element)
+        {
+            if (element == null) return;
+
+            // 1. Guardar y quitar menú del elemento actual
+            if (element.ContextMenu != null)
+            {
+                _tempMenuStorage[element] = element.ContextMenu;
+                element.ContextMenu = null;
+            }
+
+            // 2. Recorrer hijos (usando tu helper GetInnerCanvas para contenedores)
+            Canvas inner = GetInnerCanvas(element);
+            if (inner != null)
+            {
+                foreach (UIElement child in inner.Children)
+                {
+                    if (child is FrameworkElement feChild)
+                        DetachContextMenusRecursively(feChild);
+                }
+            }
+            // Caso especial SSPanel que tiene Grid
+            else if (element is Border b && b.Child is Grid g)
+            {
+                foreach (var grandChild in g.Children)
+                {
+                    if (grandChild is Canvas c)
+                    {
+                        foreach (UIElement greatChild in c.Children)
+                            if (greatChild is FrameworkElement k) DetachContextMenusRecursively(k);
+                    }
+                }
+            }
+        }
+
+        // Restaura los menús que quitamos
+        private void ReattachContextMenus()
+        {
+            foreach (var kvp in _tempMenuStorage)
+            {
+                kvp.Key.ContextMenu = kvp.Value;
+            }
+            _tempMenuStorage.Clear();
+        }
+
+        // Helper para desconectar un elemento de CUALQUIER padre que tenga
+        private void ForceDisconnect(UIElement element)
+        {
+            if (element == null) return;
+
+            // 1. Verificar padre visual (Capa de dibujo)
+            var visualParent = VisualTreeHelper.GetParent(element) as Panel;
+            if (visualParent != null)
+            {
+                visualParent.Children.Remove(element);
+            }
+
+            // 2. Verificar padre lógico (Capa de objetos)
+            // A veces el padre visual es null pero el lógico no.
+            if (element is FrameworkElement fe && fe.Parent is Panel logicalParentPanel)
+            {
+                if (logicalParentPanel.Children.Contains(element))
+                {
+                    logicalParentPanel.Children.Remove(element);
+                }
+            }
+        }
+
+        // Método maestro para tomar fotos del Canvas sin romper WPF
+        private string CreateSafeXamlSnapshot()
+        {
+            // 1. PREPARACIÓN: Quitar cosas que no queremos guardar o que rompen XamlWriter
+
+            // A. Quitar Menús (Evita error "Duplicate name MnuLockItem")
+            _tempMenuStorage.Clear();
+            foreach (UIElement child in DesignSurface.Children)
+            {
+                if (child is FrameworkElement fe) DetachContextMenusRecursively(fe);
+            }
+
+            // B. Quitar Adornos Visuales (Bordes azules, Handles, Líneas rojas)
+            var visualArtifacts = new List<UIElement>();
+
+            // Recolectar para quitar temporalmente
+            foreach (var child in DesignSurface.Children.OfType<UIElement>().ToList())
+            {
+                // Identificamos artefactos visuales
+                if (child == SelectionRect ||
+                    child == SnapLineOverlay ||
+                    child == QuickEditBox ||
+                    _resizeHandles.Contains(child) ||
+                    _selectionAdorners.Values.Contains(child))
+                {
+                    visualArtifacts.Add(child);
+                    DesignSurface.Children.Remove(child);
+                }
+            }
+
+            string xaml = "";
+
+            try
+            {
+                // 2. TOMAR LA FOTO (SERIALIZAR)
+                xaml = XamlWriter.Save(DesignSurface);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("Error generando snapshot: " + ex.Message);
+            }
+            finally
+            {
+                // 3. RESTAURAR TODO (Ponerlo como estaba)
+
+                // Restaurar Menús
+                ReattachContextMenus();
+
+                // Restaurar Adornos
+                foreach (var artifact in visualArtifacts)
+                {
+                    if (!DesignSurface.Children.Contains(artifact))
+                        DesignSurface.Children.Add(artifact);
+                }
+            }
+
+            return xaml;
+        }
     }
 }

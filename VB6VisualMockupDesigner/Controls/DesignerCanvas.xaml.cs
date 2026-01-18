@@ -34,6 +34,7 @@ namespace VB6VisualMockupDesigner.Controls
             InitializeComponent();
             this.Loaded += (s, e) => { CenterView(); };
             _savedVersionId = _currentVersionId; // Sincronizamos al nacer
+            SaveUndoSnapshot();
 
         }
 
@@ -191,6 +192,7 @@ namespace VB6VisualMockupDesigner.Controls
             CenterFormOnCanvas();
 
             MarkAsClean();
+            SaveUndoSnapshot();
         }
 
         private void RenderChildren(VbControlModel model, FrameworkElement container)
