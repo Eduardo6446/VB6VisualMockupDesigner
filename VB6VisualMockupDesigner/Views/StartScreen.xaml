@@ -160,12 +160,16 @@
                         Tag="&#xE8B7;" 
                         Margin="0,0,0,10"/>
 
-                <Separator Background="{DynamicResource BorderBrush}" Margin="0,20"/>
+                <TextBlock x:Name="TxtVersionTitle" 
+                           Text="Novedades" 
+                           FontSize="16" FontWeight="Bold" 
+                           Foreground="{DynamicResource PrimaryText}" Margin="0,0,0,10"/>
 
-                <TextBlock Text="Novedades v0.8" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource PrimaryText}" Margin="0,0,0,10"/>
-                <TextBlock Text="• Selección Múltiple (Ctrl+Click)" Foreground="{DynamicResource SecondaryText}" Margin="0,0,0,5"/>
-                <TextBlock Text="• Historial Deshacer/Rehacer" Foreground="{DynamicResource SecondaryText}" Margin="0,0,0,5"/>
-                <TextBlock Text="• Exportación a PNG" Foreground="{DynamicResource SecondaryText}" Margin="0,0,0,5"/>
+                <TextBlock Text="• Jerarquía de Contenedores (Parenting)" Foreground="{DynamicResource SecondaryText}" Margin="0,0,0,5"/>
+                <TextBlock Text="• Guías de Alineación Inteligentes (Smart Snap)" Foreground="{DynamicResource SecondaryText}" Margin="0,0,0,5"/>
+                <TextBlock Text="• Arrastre Fantasma (Ghost Dragging)" Foreground="{DynamicResource SecondaryText}" Margin="0,0,0,5"/>
+                <TextBlock Text="• Historial de Deshacer/Rehacer Robusto" Foreground="{DynamicResource SecondaryText}" Margin="0,0,0,5"/>
+                <TextBlock Text="• Soporte de 'Copy &amp; Paste' Anidado" Foreground="{DynamicResource SecondaryText}" Margin="0,0,0,5"/>
 
             </StackPanel>
         </Border>

@@ -31,7 +31,11 @@ namespace VB6VisualMockupDesigner.Views
         {
             InitializeComponent();
 
+            this.Title = VersionInfo.WindowTitle;
+
             this.WindowState = WindowState.Maximized;
+
+
 
             // Inicializamos el toolbox
             _toolboxView = new ToolboxView();

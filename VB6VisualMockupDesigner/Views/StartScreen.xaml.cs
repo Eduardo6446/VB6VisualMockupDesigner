@@ -17,6 +17,7 @@ namespace VB6VisualMockupDesigner.Views
         public StartScreen()
         {
             InitializeComponent();
+            TxtVersionTitle.Text = $"Novedades en v{VersionInfo.FullVersion}";
             LoadRecentsToUI();
         }
 
