@@ -149,8 +149,28 @@ namespace VB6VisualMockupDesigner.Views
                 }
             };
 
+            SecondaryPanel.NodeSelected += (control) =>
+            {
+                if (MainTabControl.SelectedItem is TabItem tab && tab.Content is DesignerCanvas designer)
+                {
+                    designer.SelectControl(control);
+                }
+            };
+
+            // Botón Cerrar del panel
+            SecondaryPanel.CloseRequested += (s, e) => TogglePanel(SecondaryPanel, false);
             this.Closing += MainWindowModern_Closing; // <--- AGREGAR ESTO
 
+        }
+
+        private void RefreshDocumentOutline()
+        {
+            if (SecondaryPanel.Visibility == Visibility.Visible &&
+                MainTabControl.SelectedItem is TabItem tab &&
+                tab.Content is DesignerCanvas designer)
+            {
+                SecondaryPanel.LoadHierarchy(designer);
+            }
         }
 
         private void MainTabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -177,6 +197,8 @@ namespace VB6VisualMockupDesigner.Views
                     UpdateToolboxState(false);
                 }
             }
+            RefreshDocumentOutline();
+
         }
 
         // Helper para gestionar el estado de la Toolbox
@@ -548,6 +570,7 @@ namespace VB6VisualMockupDesigner.Views
                              && !(c is Border)); // Ignorar bordes de selección
 
                 this.PropertiesPanel.UpdateObjectList(allControls, control as FrameworkElement);
+                RefreshDocumentOutline();
             };
 
             // 5. Asignar el diseñador a la pestaña
@@ -602,9 +625,21 @@ namespace VB6VisualMockupDesigner.Views
             TogglePanel(PropertiesPanel, true);
         }
 
+        // Helper para refrescar el árbol si está visible
+        private void UpdateDocumentOutline()
+        {
+            if (SecondaryPanel.Visibility == Visibility.Visible &&
+                MainTabControl.SelectedItem is TabItem tab &&
+                tab.Content is DesignerCanvas designer)
+            {
+                SecondaryPanel.LoadHierarchy(designer);
+            }
+        }
+
         private void MnuShowAux_Click(object sender, RoutedEventArgs e)
         {
             TogglePanel(SecondaryPanel, true);
+            UpdateDocumentOutline(); // <--- AGREGAR ESTO PARA QUE CARGUE AL ABRIR
         }
 
         // Botón X del panel secundario (el de propiedades usa su evento propio)
@@ -618,6 +653,7 @@ namespace VB6VisualMockupDesigner.Views
         {
             panel.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
             UpdateRightLayout();
+            if (show && panel == SecondaryPanel) RefreshDocumentOutline(); // <--- AGREGAR
         }
 
         // ----------------------------------------------------
