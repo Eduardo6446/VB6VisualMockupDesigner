@@ -1,91 +1,149 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using VB6VisualMockupDesigner.Views; // Requiere .NET Core 3.1 o superior (o NuGet en .NET Framework)
-using VB6VisualMockupDesigner.Models;
-using VB6VisualMockupDesigner.Controls;
-using VB6VisualMockupDesigner.Services;
+using System.Text.RegularExpressions;
 
 namespace VB6VisualMockupDesigner.Helpers
 {
-    // MODELO DE DATOS
+    // ==========================================
+    // 1. EL MODELO DE DATOS (ÁRBOL)
+    // ==========================================
     public class VbControlModel
     {
-        public string Type { get; set; }        // Ej: VB.PictureBox
-        public string Name { get; set; }        // Ej: picBoxMain
-        public int Index { get; set; } = -1;    // Para arrays
+        public string Type { get; set; }        // Ej: VB.CommandButton
+        public string Name { get; set; }        // Ej: cmdAceptar
+
+        // Diccionario para propiedades (Left, Top, Caption, etc.)
         public Dictionary<string, string> Properties { get; set; } = new Dictionary<string, string>();
+
+        // Lista de hijos (Aquí vive la jerarquía)
         public List<VbControlModel> Children { get; set; } = new List<VbControlModel>();
-        public VbControlModel Parent { get; set; }
     }
 
-    // LÓGICA ESTÁTICA (Parser y Conversor)
+    // ==========================================
+    // 2. EL PARSER (CEREBRO DE CARGA)
+    // ==========================================
     public static class Vb6Helpers
     {
-        // 1 pixel ≈ 15 twips
-        public static double TwipsToPixels(double twips) => twips / 15.0;
-
-        public static double TwipsToPixels(string twipsStr)
-        {
-            if (double.TryParse(twipsStr, out double d)) return d / 15.0;
-            return 0;
-        }
-
-        public static double GetPropVal(VbControlModel m, string key)
-        {
-            if (m.Properties.ContainsKey(key) && double.TryParse(m.Properties[key], out double val))
-                return val;
-            return 0;
-        }
-
+        /// <summary>
+        /// Lee el texto crudo de un .frm y devuelve el objeto raíz (Form) con todos sus hijos anidados.
+        /// </summary>
         public static VbControlModel ParseVb6Form(string fileContent)
         {
-            var lines = fileContent.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
-            VbControlModel root = null;
-            VbControlModel current = null;
+            // 1. Normalizar saltos de línea y limpiar vacíos
+            var lines = fileContent.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+
+            // 2. Pila para rastrear la profundidad (Quién es el padre actual)
             Stack<VbControlModel> stack = new Stack<VbControlModel>();
+
+            VbControlModel rootForm = null;
 
             foreach (var rawLine in lines)
             {
                 string line = rawLine.Trim();
                 if (string.IsNullOrWhiteSpace(line)) continue;
 
+                // ---------------------------------------------------------
+                // A. INICIO DE BLOQUE: "Begin VB.Control Nombre"
+                // ---------------------------------------------------------
                 if (line.StartsWith("Begin "))
                 {
-                    var parts = line.Substring(6).Split(' ');
-                    string type = parts[0];
-                    string name = parts.Length > 1 ? parts[1] : type;
+                    // Separar partes: [0]Begin [1]Tipo [2]Nombre
+                    var parts = line.Split(' ');
 
-                    var newControl = new VbControlModel { Type = type, Name = name, Parent = current };
+                    if (parts.Length >= 2)
+                    {
+                        string type = parts[1];
+                        string name = parts.Length > 2 ? parts[2] : "Unknown";
 
-                    if (current != null) current.Children.Add(newControl);
-                    else root = newControl;
+                        var newControl = new VbControlModel { Type = type, Name = name };
 
-                    current = newControl;
-                    stack.Push(current);
+                        if (stack.Count == 0)
+                        {
+                            // Si la pila está vacía, este es el Formulario (Raíz)
+                            rootForm = newControl;
+                        }
+                        else
+                        {
+                            // Si hay pila, el tope es mi PADRE. Me agrego a sus hijos.
+                            var parent = stack.Peek();
+                            parent.Children.Add(newControl);
+                        }
+
+                        // Me subo a la pila. Ahora yo soy el "Padre Activo" para lo que siga.
+                        stack.Push(newControl);
+                    }
                 }
-                else if (line == "End")
+                // ---------------------------------------------------------
+                // B. FIN DE BLOQUE: "End"
+                // ---------------------------------------------------------
+                else if (line.StartsWith("End"))
                 {
                     if (stack.Count > 0)
                     {
+                        // Ya terminé de leer este control y sus hijos. Me bajo de la pila.
                         stack.Pop();
-                        current = stack.Count > 0 ? stack.Peek() : null;
                     }
                 }
-                else if (line.Contains("=") && current != null)
+                // ---------------------------------------------------------
+                // C. PROPIEDADES: "Caption = 'Hola Mundo'"
+                // ---------------------------------------------------------
+                else if (line.Contains("=") && stack.Count > 0 && !line.StartsWith("Attribute"))
                 {
-                    var eqIndex = line.IndexOf('=');
-                    string propName = line.Substring(0, eqIndex).Trim();
-                    string propValue = line.Substring(eqIndex + 1).Trim();
+                    var currentControl = stack.Peek(); // Propiedad del control actual en el tope
 
-                    if (propValue.Contains("'")) propValue = propValue.Substring(0, propValue.IndexOf("'")).Trim();
-                    propValue = propValue.Replace("\"", "");
+                    // Dividimos solo en el PRIMER igual (para soportar textos con '=')
+                    var parts = line.Split(new[] { '=' }, 2);
 
-                    if (!current.Properties.ContainsKey(propName))
-                        current.Properties.Add(propName, propValue);
+                    if (parts.Length == 2)
+                    {
+                        string key = parts[0].Trim();
+                        string value = parts[1].Trim();
+
+                        // Limpieza: Quitar comentarios (') al final, si no están entre comillas
+                        if (value.Contains("'") && !value.StartsWith("\""))
+                        {
+                            value = value.Split('\'')[0].Trim();
+                        }
+
+                        // Limpieza: Quitar comillas de strings
+                        if (value.StartsWith("\"") && value.EndsWith("\""))
+                        {
+                            value = value.Substring(1, value.Length - 2);
+                        }
+
+                        // Guardar
+                        if (!currentControl.Properties.ContainsKey(key))
+                        {
+                            currentControl.Properties[key] = value;
+                        }
+                    }
                 }
             }
-            return root;
+
+            return rootForm;
+        }
+
+        // ==========================================
+        // 3. UTILIDADES DE CONVERSIÓN
+        // ==========================================
+
+        // Conversión estándar: 15 Twips = 1 Pixel (a 96 DPI)
+        public static double TwipsToPixels(string twipsStr)
+        {
+            if (string.IsNullOrWhiteSpace(twipsStr)) return 0;
+            if (double.TryParse(twipsStr, out double val)) return val / 15.0;
+            return 0;
+        }
+
+        // Sobrecarga para doubles directos
+        public static double TwipsToPixels(double twips) => twips / 15.0;
+
+        // Helper seguro para obtener propiedades del diccionario (evita KeyNotFoundException)
+        public static string GetPropVal(VbControlModel model, string key)
+        {
+            if (model.Properties.TryGetValue(key, out string val)) return val;
+            return "0"; // Valor por defecto seguro para cálculos matemáticos
         }
     }
 }
