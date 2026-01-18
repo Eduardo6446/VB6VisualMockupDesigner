@@ -270,8 +270,25 @@ namespace VB6VisualMockupDesigner.Controls
                         // Aplicar
                         Canvas.SetLeft(control, newLeft);
                         Canvas.SetTop(control, newTop);
+
+
+                        if (_selectedControls.Count == 1)
+                        {
+                            // Mostramos posición X, Y
+                            InfoTip.PlacementTarget = _selectedControls.First(); // Que siga al control
+                            UpdateInfoTip($"Left: {(int)newLeft}, Top: {(int)newTop}");
+                        }
+                        else
+                        {
+                            // Si son varios, mostramos cuánto nos hemos movido (Delta)
+                            InfoTip.PlacementTarget = _primarySelection;
+                            UpdateInfoTip($"dx: {(int)snapDeltaX}, dy: {(int)snapDeltaY}");
+                        }
+
                     }
                 }
+
+
 
                 UpdateSelectionVisuals();
                 this.Focus();
@@ -305,7 +322,7 @@ namespace VB6VisualMockupDesigner.Controls
             // ===============================================
 
             NotifySelectionChanged();
-
+            HideInfoTip();
         }
 
         private void DesignSurface_MouseDown(object sender, MouseButtonEventArgs e)
@@ -1705,6 +1722,41 @@ namespace VB6VisualMockupDesigner.Controls
                 NotifySelectionChanged(); // Actualizar propiedades (Left/Top) en el panel
             }
         }
+
+        private void UpdateInfoTip(string text)
+        {
+            if (InfoTip == null) return;
+
+            InfoTipText.Text = text;
+
+            // Posicionar el Popup cerca del mouse
+            // Usamos Mouse.GetPosition relativo al Popup para moverlo
+            // Pero como Placement es Relative, necesitamos ajustarlo manualmente o dejar que siga al target.
+            // Truco simple: Abrirlo y cerrarlo fuerza update, o usar HorizontalOffset.
+
+            InfoTip.HorizontalOffset = 15; // Un poco a la derecha del mouse
+            InfoTip.VerticalOffset = 15;   // Un poco abajo
+
+            // Nota: El PlacementTarget será el control que estamos arrastrando
+            // o el DesignSurface si queremos coordenadas globales.
+
+            if (!InfoTip.IsOpen)
+            {
+                InfoTip.IsOpen = true;
+            }
+        }
+
+        private void HideInfoTip()
+        {
+            if (InfoTip != null) InfoTip.IsOpen = false;
+        }
+
+
+
+
+
+
+
 
 
     }

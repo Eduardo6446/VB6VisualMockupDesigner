@@ -205,6 +205,25 @@
                                              AcceptsReturn="True" 
                                              LostFocus="QuickEditBox_LostFocus"
                                              PreviewKeyDown="QuickEditBox_PreviewKeyDown"/>
+                                    <Popup x:Name="InfoTip" 
+                                           Placement="Relative"
+                                           AllowsTransparency="True"
+                                           IsHitTestVisible="False">
+                                        <Border Background="#FFFFE1" 
+                                                BorderBrush="Black" 
+                                                BorderThickness="1" 
+                                                Padding="4,2"
+                                                CornerRadius="0">
+                                            <Border.Effect>
+                                                <DropShadowEffect ShadowDepth="2" Opacity="0.3" BlurRadius="5"/>
+                                            </Border.Effect>
+                                            <TextBlock x:Name="InfoTipText" 
+                                                       Text="X: 0, Y: 0" 
+                                                       FontSize="11" 
+                                                       FontFamily="Segoe UI"
+                                                       Foreground="Black"/>
+                                        </Border>
+                                    </Popup>
                                 </Canvas>
                             </Grid>
                         </Grid>
