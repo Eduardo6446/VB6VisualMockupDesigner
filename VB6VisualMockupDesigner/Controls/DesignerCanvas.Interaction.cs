@@ -832,32 +832,58 @@ namespace VB6VisualMockupDesigner.Controls
         }
 
 
-        public void CreateControlAt(string type, Point position)
+        public void CreateControlAt(string type, Point dropPositionGlobal)
         {
             UIElement newControl = RetroControlFactory.Create(type);
+            if (newControl == null) return;
 
-            if (newControl != null)
+            // 1. Asignar tamaño por defecto si hace falta
+            if (newControl is FrameworkElement fe)
             {
-                // Asignar tamaño por defecto si viene sin medidas
-                if (newControl is FrameworkElement fe)
-                {
-                    if (double.IsNaN(fe.Width) || fe.Width == 0) fe.Width = 100;
-                    if (double.IsNaN(fe.Height) || fe.Height == 0) fe.Height = 35;
-                }
-
-                // AddControlToCanvas ya se encarga de:
-                // 1. Snap to Grid
-                // 2. Children.Add
-                // 3. Conectar eventos (MouseDown, etc)
-                AddControlToCanvas(newControl, position.X, position.Y);
-
-                // Seleccionar automáticamente el nuevo control
-                ClearSelection();
-                AddToSelection(newControl);
-                NotifySelectionChanged();
-
-                GenerateNewVersion();
+                if (double.IsNaN(fe.Width) || fe.Width == 0) fe.Width = 100;
+                if (double.IsNaN(fe.Height) || fe.Height == 0) fe.Height = 35;
             }
+
+            // 2. BUSCAR PADRE BAJO EL MOUSE
+            FrameworkElement parentContainer = GetContainerAtPoint(dropPositionGlobal, null);
+            Canvas targetCanvas = GetInnerCanvas(parentContainer);
+
+            // 3. DECIDIR DÓNDE AGREGARLO
+            if (targetCanvas != null)
+            {
+                // A) AGREGAR A CONTENEDOR
+                // Necesitamos convertir la coordenada Global (DesignSurface) a Local (InnerCanvas)
+                Point localPos = DesignSurface.TranslatePoint(dropPositionGlobal, targetCanvas);
+
+                Canvas.SetLeft(newControl, SnapToGrid(localPos.X));
+                Canvas.SetTop(newControl, SnapToGrid(localPos.Y));
+
+                targetCanvas.Children.Add(newControl);
+            }
+            else
+            {
+                // B) AGREGAR AL FORMULARIO (ROOT)
+                // Usamos el método antiguo
+                AddControlToCanvas(newControl, dropPositionGlobal.X, dropPositionGlobal.Y);
+            }
+
+            // 4. CONECTAR EVENTOS (Esto aplica igual para ambos casos)
+            if (newControl is FrameworkElement element)
+            {
+                element.PreviewMouseDown += Control_PreviewMouseDown;
+                element.PreviewMouseMove += Control_PreviewMouseMove;
+                element.PreviewMouseUp += Control_PreviewMouseUp;
+
+                // Menú contextual
+                if (this.Resources.Contains("ControlContextMenu"))
+                    element.ContextMenu = (ContextMenu)this.Resources["ControlContextMenu"];
+            }
+
+            // 5. SELECCIONAR
+            ClearSelection();
+            AddToSelection(newControl);
+            NotifySelectionChanged();
+            GenerateNewVersion();
         }
 
         public void AddControlToCanvas(UIElement control, double x, double y)
@@ -1620,120 +1646,94 @@ namespace VB6VisualMockupDesigner.Controls
         {
             FrameworkElement foundContainer = null;
 
-            // Usamos HitTest con un Callback para poder "perforar" capas
             VisualTreeHelper.HitTest(
                 DesignSurface,
-
-                // 1. FILTRO: ¿Qué objetos ignoramos inmediatamente?
                 (dependencyObject) =>
                 {
-                    // Ignorar el control que estamos arrastrando
                     if (dependencyObject == excludeControl) return HitTestFilterBehavior.ContinueSkipSelfAndChildren;
 
-                    // Ignorar el Rectángulo de Selección y la Caja de Edición (Culpables habituales)
-                    if (dependencyObject is Rectangle && (dependencyObject as FrameworkElement).Name == "SelectionRect")
-                        return HitTestFilterBehavior.ContinueSkipSelf;
-
-                    if (dependencyObject is TextBox && (dependencyObject as FrameworkElement).Name == "QuickEditBox")
-                        return HitTestFilterBehavior.ContinueSkipSelf;
+                    // Ignorar utilidades
+                    if (dependencyObject is FrameworkElement fe)
+                    {
+                        if (fe.Name == "SelectionRect" || fe.Name == "QuickEditBox" || fe.Name == "SnapLineOverlay")
+                            return HitTestFilterBehavior.ContinueSkipSelf;
+                    }
 
                     return HitTestFilterBehavior.Continue;
                 },
-
-                // 2. RESULTADO: ¿Qué hacemos cuando tocamos algo?
                 (result) =>
                 {
                     DependencyObject hit = result.VisualHit;
 
-                    // Subimos por el árbol desde lo que tocamos
+                    // Subimos por el árbol visual desde el punto del clic
                     while (hit != null && hit != DesignSurface)
                     {
-                        // ¿Es un GroupBox (Frame)?
-                        if (hit is GroupBox)
+                        if (hit is FrameworkElement fe && fe.Tag is string typeTag)
                         {
-                            foundContainer = hit as FrameworkElement;
-                            return HitTestResultBehavior.Stop; // ¡ENCONTRADO! Detener búsqueda.
+                            // LISTA BLANCA DE CONTENEDORES
+                            // Si el objeto tiene uno de estos Tags, es un padre válido
+                            if (typeTag == "Frame" || typeTag == "SSFrame" ||
+                                typeTag == "PictureBox" || typeTag == "SSPanel")
+                            {
+                                foundContainer = fe;
+                                return HitTestResultBehavior.Stop; // ¡Encontrado!
+                            }
                         }
-
-                        // ¿Es un Border que parece PictureBox? (Para el futuro)
-                        if (hit is Border && (hit as FrameworkElement).Name.StartsWith("Picture"))
-                        {
-                            foundContainer = hit as FrameworkElement;
-                            return HitTestResultBehavior.Stop;
-                        }
-
                         hit = VisualTreeHelper.GetParent(hit);
                     }
-
-                    // Si no era un contenedor, sigue buscando más abajo (Perforar)
                     return HitTestResultBehavior.Continue;
                 },
-
-                // Parámetros del punto
                 new PointHitTestParameters(point)
             );
 
             return foundContainer;
         }
-
         private void HandleReparenting(FrameworkElement control)
         {
+            // 1. Dónde está el mouse ahora (Global)
+            Point mousePosGlobal = Mouse.GetPosition(DesignSurface);
 
-            Point mousePos = Mouse.GetPosition(DesignSurface);
-
-            // (Ya no es estrictamente necesario apagar IsHitTestVisible con el nuevo método, 
-            // pero es buena práctica mantenerlo por seguridad)
+            // 2. Apagar hit-test del control para ver qué hay DEBAJO
             bool wasHitVisible = control.IsHitTestVisible;
             control.IsHitTestVisible = false;
 
-            // LLAMADA AL NUEVO RADAR
-            FrameworkElement newParentContainer = GetContainerAtPoint(mousePos, control);
+            FrameworkElement newParentContainer = GetContainerAtPoint(mousePosGlobal, control);
 
-            control.IsHitTestVisible = wasHitVisible;
+            control.IsHitTestVisible = wasHitVisible; // Restaurar
 
-            // Identificar padre actual
+            // 3. Obtener el Canvas del nuevo padre (o null si es el root)
+            Canvas newParentCanvas = GetInnerCanvas(newParentContainer);
+
+            // 4. Obtener el Canvas actual (donde vive el control ahora)
             Panel oldParentPanel = VisualTreeHelper.GetParent(control) as Panel;
 
-            // === CASO A: ENTRAR A UN FRAME ===
-            if (newParentContainer != null && oldParentPanel != null)
+            // CASO A: MOVER HACIA UN CONTENEDOR
+            if (newParentCanvas != null && oldParentPanel != newParentCanvas)
             {
-                // Verificar que no sea el mismo padre (evitar parpadeo)
-                // Ojo: newParentContainer es el GroupBox, oldParentPanel es el Canvas interno
-                // Hay que comparar con cuidado.
+                // Calcular posición Global actual del control (esquina superior izquierda)
+                Point currentPosGlobal = control.TranslatePoint(new Point(0, 0), DesignSurface);
 
-                Panel targetPanel = null;
-                if (newParentContainer is GroupBox gb) targetPanel = gb.Content as Panel;
+                // Convertir esa posición al sistema de coordenadas del Nuevo Padre
+                Point newLocalPos = DesignSurface.TranslatePoint(currentPosGlobal, newParentCanvas);
 
-                // Si encontramos un destino válido y NO estamos ya ahí
-                if (targetPanel != null && oldParentPanel != targetPanel)
-                {
-                    // Calculamos posición GLOBAL actual del control
-                    Point globalPos = control.TranslatePoint(new Point(0, 0), DesignSurface);
+                // Ejecutar mudanza
+                oldParentPanel.Children.Remove(control);
+                newParentCanvas.Children.Add(control);
 
-                    // Calculamos posición RELATIVA al nuevo padre
-                    Point relativePos = DesignSurface.TranslatePoint(globalPos, targetPanel);
-
-                    // Mover
-                    oldParentPanel.Children.Remove(control);
-                    targetPanel.Children.Add(control);
-
-                    control.Margin = new Thickness(0);
-                    Canvas.SetLeft(control, relativePos.X);
-                    Canvas.SetTop(control, relativePos.Y);
-                }
+                Canvas.SetLeft(control, newLocalPos.X);
+                Canvas.SetTop(control, newLocalPos.Y);
             }
-            // === CASO B: SALIR AL CANVAS PRINCIPAL ===
+            // CASO B: SACAR AL ROOT (Si soltamos fuera de cualquier contenedor válido)
             else if (newParentContainer == null && oldParentPanel != DesignSurface)
             {
-                // Posición GLOBAL
-                Point globalPos = control.TranslatePoint(new Point(0, 0), DesignSurface);
+                // Calcular posición Global
+                Point currentPosGlobal = control.TranslatePoint(new Point(0, 0), DesignSurface);
 
                 oldParentPanel.Children.Remove(control);
                 DesignSurface.Children.Add(control);
 
-                control.Margin = new Thickness(0);
-                Canvas.SetLeft(control, globalPos.X);
-                Canvas.SetTop(control, globalPos.Y);
+                Canvas.SetLeft(control, currentPosGlobal.X);
+                Canvas.SetTop(control, currentPosGlobal.Y);
             }
         }
 
@@ -1862,7 +1862,35 @@ namespace VB6VisualMockupDesigner.Controls
             SnapLineOverlay.Children.Add(line);
         }
 
+        // Extrae el Canvas donde deben vivir los hijos, sin importar el tipo de control
+        private Canvas GetInnerCanvas(FrameworkElement container)
+        {
+            if (container == null) return null;
 
+            // CASO 1: Frame / SSFrame (GroupBox)
+            if (container is GroupBox gb)
+            {
+                return gb.Content as Canvas;
+            }
+
+            // CASO 2: PictureBox (Border directo con Canvas)
+            if (container is Border b && b.Child is Canvas c)
+            {
+                return c;
+            }
+
+            // CASO 3: SSPanel (Border -> Grid -> Canvas)
+            // El SSPanel es complejo porque tiene un Grid con Texto y Canvas superpuestos
+            if (container is Border bPanel && bPanel.Child is Grid g)
+            {
+                foreach (var child in g.Children)
+                {
+                    if (child is Canvas canvas) return canvas;
+                }
+            }
+
+            return null;
+        }
 
 
 

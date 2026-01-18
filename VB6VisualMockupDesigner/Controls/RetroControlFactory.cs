@@ -11,7 +11,28 @@ namespace VB6VisualMockupDesigner.Controls
 {
     public static class RetroControlFactory
     {
-        
+
+        private static Canvas CreateChildCanvas()
+        {
+            return new Canvas
+            {
+                // Estirar para llenar el padre
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                VerticalAlignment = VerticalAlignment.Stretch,
+
+                // CRÍTICO: Transparent detecta clicks/drops. 'null' NO los detecta.
+                Background = Brushes.Transparent,
+
+                // Recortar controles que se salen del borde
+                ClipToBounds = true,
+
+                // Tamaño mínimo para asegurar que siempre haya donde soltar
+                MinWidth = 10,
+                MinHeight = 10
+            };
+        }
+
+
         public static UIElement Create(string type)
         {
 
@@ -37,7 +58,8 @@ namespace VB6VisualMockupDesigner.Controls
                         Effect = new System.Windows.Media.Effects.DropShadowEffect { ShadowDepth = 0, BlurRadius = 0 },
                         ClipToBounds = true // IMPORTANTE: Recorta contenido
                     };
-                    picBorder.Child = new Canvas(); // Contenedor interno
+                    //picBorder.Child = new Canvas(); // Contenedor interno
+                    picBorder.Child = CreateChildCanvas();
                     element = picBorder;
                     break;
 
@@ -95,7 +117,8 @@ namespace VB6VisualMockupDesigner.Controls
                     innerCanvas.MinHeight = 100;
                     innerCanvas.MinWidth = 100;
 
-                    grp.Content = innerCanvas;
+                    //grp.Content = innerCanvas;
+                    grp.Content = CreateChildCanvas();
                     // ========================
 
                     element = grp;
@@ -245,31 +268,23 @@ namespace VB6VisualMockupDesigner.Controls
                 // COLECCIÓN THREED32.OCX (SHERIDAN 3D CONTROLS)
                 // =========================================================
 
-                case "SSPanel":
-                    // El SSPanel es fundamentalmente un Border con efectos de bisel
+                case "SSPanel": // Threed32 Panel
                     var ssPanel = new Border
                     {
                         Width = 150,
                         Height = 40,
                         Background = vbGray,
-                        // Simulación de bisel 'Inset' (Hundido) clásico de Sheridan
                         BorderBrush = Brushes.Gray,
                         BorderThickness = new Thickness(1),
                         SnapsToDevicePixels = true,
-                        // Sombra ligera para diferenciarlo del Form
                         Effect = new System.Windows.Media.Effects.DropShadowEffect { ShadowDepth = 1, Color = Colors.White, Direction = -45, BlurRadius = 0, Opacity = 0.5 }
                     };
 
-                    // Lógica de Contenedor (Igual que el Frame)
-                    var panelCanvas = new Canvas();
-                    panelCanvas.HorizontalAlignment = HorizontalAlignment.Stretch;
-                    panelCanvas.VerticalAlignment = VerticalAlignment.Stretch;
-                    panelCanvas.Background = Brushes.Transparent; // Necesario para hit-test
-                    panelCanvas.MinWidth = 50;
-                    panelCanvas.MinHeight = 20;
+                    // El SSPanel es especial: tiene Texto de fondo y Controles encima.
+                    var panelGrid = new Grid();
 
-                    // Texto por defecto centrado (típico de SSPanel)
-                    var panelLabel = new TextBlock
+                    // Capa 1: Texto Centrado
+                    panelGrid.Children.Add(new TextBlock
                     {
                         Text = "SSPanel1",
                         Foreground = Brushes.Black,
@@ -277,13 +292,12 @@ namespace VB6VisualMockupDesigner.Controls
                         FontSize = fontParams.Size,
                         HorizontalAlignment = HorizontalAlignment.Center,
                         VerticalAlignment = VerticalAlignment.Center,
-                        IsHitTestVisible = false // Para no bloquear clicks al canvas
-                    };
+                        IsHitTestVisible = false // El texto no bloquea el drop
+                    });
 
-                    // Usamos un Grid para superponer el Canvas (drop area) y el Texto
-                    var panelGrid = new Grid();
-                    panelGrid.Children.Add(panelLabel); // Fondo: Texto
-                    panelGrid.Children.Add(panelCanvas); // Frente: Zona de drop
+                    // Capa 2: Canvas para soltar controles (encima del texto)
+                    var dropCanvas = CreateChildCanvas();
+                    panelGrid.Children.Add(dropCanvas);
 
                     ssPanel.Child = panelGrid;
                     element = ssPanel;
@@ -328,8 +342,7 @@ namespace VB6VisualMockupDesigner.Controls
                     element = ssOpt;
                     break;
 
-                case "SSFrame":
-                    // El Frame de Sheridan tenía bordes más gruesos y configurables
+                case "SSFrame": // Threed32 Frame
                     var ssGrp = new GroupBox
                     {
                         Header = "SSFrame1",
@@ -338,20 +351,11 @@ namespace VB6VisualMockupDesigner.Controls
                         FontFamily = fontParams.Family,
                         FontSize = fontParams.Size,
                         Background = vbGray,
-                        BorderBrush = Brushes.Black, // Borde negro más marcado
+                        BorderBrush = Brushes.Black,
                         BorderThickness = new Thickness(1)
                     };
-
-                    // Lógica de contenedor crítica
-                    var ssFrameCanvas = new Canvas
-                    {
-                        HorizontalAlignment = HorizontalAlignment.Stretch,
-                        VerticalAlignment = VerticalAlignment.Stretch,
-                        Background = Brushes.Transparent,
-                        MinHeight = 50,
-                        MinWidth = 50
-                    };
-                    ssGrp.Content = ssFrameCanvas;
+                    // INYECCIÓN DEL CANVAS INTERNO
+                    ssGrp.Content = CreateChildCanvas();
                     element = ssGrp;
                     break;
 
