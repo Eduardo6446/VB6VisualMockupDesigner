@@ -2,73 +2,146 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using VB6VisualMockupDesigner.Models; // Requiere .NET Core 3.1 o superior (o NuGet en .NET Framework)
-using VB6VisualMockupDesigner.Helpers;
-using VB6VisualMockupDesigner.Services;
-using VB6VisualMockupDesigner.Controls;
-using VB6VisualMockupDesigner.Views;
 
 namespace VB6VisualMockupDesigner.Controls
 {
-    // PARTIAL CLASS: Manejo de Redimensión del Formulario Principal
     public partial class DesignerCanvas
     {
-        // Variables específicas para el Formulario (Renombradas para no chocar con los Controles)
+        // Estados del Formulario
+        private bool _isMovingForm = false;
         private bool _isResizingForm = false;
-        private Point _formResizeClickStart;
+
+        // Puntos de inicio
+        private Point _formClickStartPoint;
+        private Thickness _initialFormMargin;
         private double _initialFormWidth;
         private double _initialFormHeight;
 
-        private void ResizeGrip_MouseDown(object sender, MouseButtonEventArgs e)
+        // Dirección de redimensión (usaremos Tags en el XAML: "TopLeft", "BottomRight", etc.)
+        private string _currentResizeDirection = "";
+
+        // ==========================================
+        // 1. MOVER EL FORMULARIO (Desde la Barra de Título)
+        // ==========================================
+        private void FormTitle_MouseDown(object sender, MouseButtonEventArgs e)
         {
-            var grip = sender as UIElement;
-            _isResizingForm = true;
+            // Solo si hacemos clic en el borde/titulo, no en los botones de cerrar/min
+            if (e.OriginalSource is Button) return;
 
-            // Usamos 'this' para obtener la posición relativa al Canvas general
-            _formResizeClickStart = e.GetPosition(this);
+            var element = sender as UIElement;
+            _isMovingForm = true;
+            _formClickStartPoint = e.GetPosition(this); // Posición en el Canvas contenedor
+            _initialFormMargin = WindowResizerGrid.Margin;
 
-            _initialFormWidth = WindowResizerGrid.Width;
-            _initialFormHeight = WindowResizerGrid.Height;
-
-            grip.CaptureMouse();
+            element.CaptureMouse();
             e.Handled = true;
         }
 
-        private void ResizeGrip_MouseMove(object sender, MouseEventArgs e)
+        private void FormTitle_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (_isMovingForm)
+            {
+                Point currentPos = e.GetPosition(this);
+                double deltaX = currentPos.X - _formClickStartPoint.X;
+                double deltaY = currentPos.Y - _formClickStartPoint.Y;
+
+                // Movemos aplicando Margen
+                double newLeft = Math.Max(0, _initialFormMargin.Left + deltaX);
+                double newTop = Math.Max(0, _initialFormMargin.Top + deltaY);
+
+                WindowResizerGrid.Margin = new Thickness(newLeft, newTop, 0, 0);
+            }
+        }
+
+        private void FormTitle_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            if (_isMovingForm)
+            {
+                _isMovingForm = false;
+                (sender as UIElement).ReleaseMouseCapture();
+            }
+        }
+
+        // ==========================================
+        // 2. REDIMENSIONAR EL FORMULARIO (Desde 8 puntos)
+        // ==========================================
+        private void ResizeForm_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            var rect = sender as System.Windows.Shapes.Rectangle;
+            if (rect == null) return;
+
+            _isResizingForm = true;
+            _currentResizeDirection = rect.Tag.ToString();
+
+            _formClickStartPoint = e.GetPosition(this);
+            _initialFormWidth = WindowResizerGrid.ActualWidth;
+            _initialFormHeight = WindowResizerGrid.ActualHeight;
+            _initialFormMargin = WindowResizerGrid.Margin;
+
+            rect.CaptureMouse();
+            e.Handled = true;
+        }
+
+        private void ResizeForm_MouseMove(object sender, MouseEventArgs e)
         {
             if (_isResizingForm)
             {
                 Point currentPos = e.GetPosition(this);
 
-                // Calcular diferencia
-                double deltaX = currentPos.X - _formResizeClickStart.X;
-                double deltaY = currentPos.Y - _formResizeClickStart.Y;
+                // Snap básico (opcional, aquí lo hacemos fluido, si quieres snap usa SnapToGrid)
+                double deltaX = currentPos.X - _formClickStartPoint.X;
+                double deltaY = currentPos.Y - _formClickStartPoint.Y;
 
-                // Calcular nuevo tamaño aplicando SnapToGrid (Método definido en la otra parte de la clase)
-                double newWidth = SnapToGrid(_initialFormWidth + deltaX);
-                double newHeight = SnapToGrid(_initialFormHeight + deltaY);
+                double newW = _initialFormWidth;
+                double newH = _initialFormHeight;
+                double newLeft = _initialFormMargin.Left;
+                double newTop = _initialFormMargin.Top;
 
-                // Restricciones mínimas (para no desaparecer el form)
-                if (newWidth < 100) newWidth = 100;
-                if (newHeight < 100) newHeight = 100;
-
-                // 1. Redimensionar contenedor padre (Grid principal del mock)
-                if (WindowResizerGrid != null)
+                // Lógica según dirección
+                if (_currentResizeDirection.Contains("Right"))
                 {
-                    WindowResizerGrid.Width = newWidth;
-                    WindowResizerGrid.Height = newHeight;
+                    newW = Math.Max(100, _initialFormWidth + deltaX);
+                }
+                if (_currentResizeDirection.Contains("Bottom"))
+                {
+                    newH = Math.Max(100, _initialFormHeight + deltaY);
+                }
+                if (_currentResizeDirection.Contains("Left"))
+                {
+                    // Al crecer a la izquierda: Aumenta Ancho, Disminuye Margen Left
+                    double proposedWidth = _initialFormWidth - deltaX;
+                    if (proposedWidth >= 100)
+                    {
+                        newW = proposedWidth;
+                        newLeft = _initialFormMargin.Left + deltaX;
+                    }
+                }
+                if (_currentResizeDirection.Contains("Top"))
+                {
+                    // Al crecer arriba: Aumenta Alto, Disminuye Margen Top
+                    double proposedHeight = _initialFormHeight - deltaY;
+                    if (proposedHeight >= 100)
+                    {
+                        newH = proposedHeight;
+                        newTop = _initialFormMargin.Top + deltaY;
+                    }
                 }
 
-                // 2. Sincronizar el borde visual (El estilo "Retro")
+                // Aplicar cambios
+                WindowResizerGrid.Width = newW;
+                WindowResizerGrid.Height = newH;
+                WindowResizerGrid.Margin = new Thickness(newLeft, newTop, 0, 0);
+
+                // Sincronizar borde visual interno
                 if (RetroFormContainer != null)
                 {
-                    RetroFormContainer.Width = newWidth;
-                    RetroFormContainer.Height = newHeight;
+                    RetroFormContainer.Width = newW;
+                    RetroFormContainer.Height = newH;
                 }
             }
         }
 
-        private void ResizeGrip_MouseUp(object sender, MouseButtonEventArgs e)
+        private void ResizeForm_MouseUp(object sender, MouseButtonEventArgs e)
         {
             if (_isResizingForm)
             {
@@ -77,28 +150,14 @@ namespace VB6VisualMockupDesigner.Controls
             }
         }
 
-        // Método público para establecer dimensiones desde fuera (ej: al cargar un archivo .frm)
         public void SetFormDimensions(double width, double height)
         {
-            if (width < 100) width = 100;
-            if (height < 100) height = 100;
-
-            // Ajustar contenedor
             if (WindowResizerGrid != null)
             {
                 WindowResizerGrid.Width = width;
                 WindowResizerGrid.Height = height;
-
-                // Centrar el formulario en el lienzo grande
-                if (DesignGrid != null)
-                {
-                    double l = (DesignGrid.Width - width) / 2;
-                    double t = (DesignGrid.Height - height) / 2;
-                    WindowResizerGrid.Margin = new Thickness(Math.Max(0, l), Math.Max(0, t), 0, 0);
-                }
+                CenterFormOnCanvas(); // Re-centrar al establecer tamaño manual
             }
-
-            // Ajustar Borde Visual
             if (RetroFormContainer != null)
             {
                 RetroFormContainer.Width = width;

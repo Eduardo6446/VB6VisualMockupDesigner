@@ -1083,57 +1083,47 @@ namespace VB6VisualMockupDesigner.Controls
 
         public void SaveAsImage(string filePath)
         {
-            // 1. Guardar la selección actual
+            // 1. Guardar selección actual y limpiar
             var currentSelection = _selectedControls.ToList();
-            double scale = 3.0; // <--- 1.0 es calidad normal, 2.0 es retina, 3.0 es alta resolución
-            double dpi = 96d;
-
-
-            // 2. Limpiar selección visualmente
             ClearSelection();
-
-            // Forzamos que WPF recalcule el layout visual YA, para asegurar que no hay bordes azules
             this.UpdateLayout();
+
+            // 2. OCULTAR LOS HANDLES DE REDIMENSIÓN DEL FORM (NUEVO)
+            if (FormResizeHandles != null) FormResizeHandles.Visibility = Visibility.Collapsed;
 
             // 3. Elemento a capturar
             FrameworkElement elementToCapture = this.WindowResizerGrid;
 
-            // Validación de seguridad: Si el ancho/alto es 0, no hay nada que guardar
             if (elementToCapture.ActualWidth == 0 || elementToCapture.ActualHeight == 0)
             {
                 RestoreSelection(currentSelection);
-                MessageBox.Show("El formulario tiene un tamaño inválido.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                if (FormResizeHandles != null) FormResizeHandles.Visibility = Visibility.Visible;
+                MessageBox.Show("El formulario tiene un tamaño inválido.");
                 return;
             }
 
+            // 4. Renderizar
+            double scale = 3.0;
+            double dpi = 96d;
 
-
-            // 4. TRUCO PARA EVITAR LA IMAGEN NEGRA: USAR DRAWINGVISUAL
-            // En lugar de renderizar el grid directamente, creamos un "Lienzo Virtual"
             DrawingVisual drawingVisual = new DrawingVisual();
             using (DrawingContext context = drawingVisual.RenderOpen())
             {
-                context.PushTransform(new ScaleTransform(scale, scale));
-
                 VisualBrush brush = new VisualBrush(elementToCapture);
-
-                // El pincel sigue tomando el tamaño original del control
+                // IMPORTANTE: Al ocultar los handles, el renderizado es limpio
+                context.PushTransform(new ScaleTransform(scale, scale));
                 context.DrawRectangle(brush, null, new Rect(0, 0, elementToCapture.ActualWidth, elementToCapture.ActualHeight));
-
-                context.Pop(); // Cerramos la transformación
+                context.Pop();
             }
 
-            // 5. Renderizamos el Lienzo Virtual (no el grid directo)
             RenderTargetBitmap bmp = new RenderTargetBitmap(
-               (int)(elementToCapture.ActualWidth * scale),  // <--- Ancho x3
-                (int)(elementToCapture.ActualHeight * scale), // <--- Alto x3
-                dpi,
-                dpi,
-                PixelFormats.Pbgra32);
+               (int)(elementToCapture.ActualWidth * scale),
+                (int)(elementToCapture.ActualHeight * scale),
+                dpi, dpi, PixelFormats.Pbgra32);
 
-            bmp.Render(drawingVisual); // Renderizamos el visual que acabamos de dibujar
+            bmp.Render(drawingVisual);
 
-            // 6. Guardar en disco
+            // 5. Guardar
             PngBitmapEncoder encoder = new PngBitmapEncoder();
             encoder.Frames.Add(BitmapFrame.Create(bmp));
 
@@ -1142,7 +1132,8 @@ namespace VB6VisualMockupDesigner.Controls
                 encoder.Save(fs);
             }
 
-            // 7. Restaurar la selección
+            // 6. RESTAURAR VISIBILIDAD Y SELECCIÓN
+            if (FormResizeHandles != null) FormResizeHandles.Visibility = Visibility.Visible;
             RestoreSelection(currentSelection);
         }
 
