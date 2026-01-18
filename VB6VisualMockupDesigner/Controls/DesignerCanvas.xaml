@@ -225,6 +225,10 @@
                                         </Border>
                                     </Popup>
                                 </Canvas>
+                                <Canvas x:Name="SnapLineOverlay" 
+                                        IsHitTestVisible="False" 
+                                        Background="Transparent"
+                                        ClipToBounds="True"/>
                             </Grid>
                         </Grid>
                     </Border>

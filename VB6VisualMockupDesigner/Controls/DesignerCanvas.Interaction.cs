@@ -225,14 +225,121 @@ namespace VB6VisualMockupDesigner.Controls
         {
             if (_isDragging && _selectedControls.Count > 0)
             {
-                Point currentMousePos = e.GetPosition(DesignSurface);
+                // 1. Limpiar líneas rojas del frame anterior
+                if (SnapLineOverlay != null) SnapLineOverlay.Children.Clear();
 
+                Point currentMousePos = e.GetPosition(DesignSurface);
                 double rawDeltaX = currentMousePos.X - _dragStartPoint.X;
                 double rawDeltaY = currentMousePos.Y - _dragStartPoint.Y;
-                double snapDeltaX = SnapToGrid(rawDeltaX);
-                double snapDeltaY = SnapToGrid(rawDeltaY);
 
-                if (Math.Abs(snapDeltaX) < 1 && Math.Abs(snapDeltaY) < 1) return;
+                // Variables para el movimiento final
+                double correctedDeltaX = rawDeltaX;
+                double correctedDeltaY = rawDeltaY;
+                double snapThreshold = 5.0; // Distancia de imantación
+                bool snappedX = false;
+                bool snappedY = false;
+
+                // --- SMART SNAP LOGIC ---
+                // Solo activamos guías si movemos UN solo control (para no saturar)
+                if (_selectedControls.Count == 1)
+                {
+                    var activeCtrl = _selectedControls.First() as FrameworkElement;
+                    if (_initialPositions.TryGetValue(activeCtrl, out Point startPos))
+                    {
+                        // Coordenadas propuestas
+                        double pLeft = startPos.X + rawDeltaX;
+                        double pTop = startPos.Y + rawDeltaY;
+                        double pRight = pLeft + activeCtrl.ActualWidth;
+                        double pBottom = pTop + activeCtrl.ActualHeight;
+
+                        // Iterar contra todos los "hermanos" en el lienzo
+                        foreach (UIElement child in DesignSurface.Children)
+                        {
+                            // Ignorar a sí mismo y elementos técnicos
+                            if (child == activeCtrl || child == SelectionRect || child is Rectangle || child is Border || child == QuickEditBox || child == InfoTip) continue;
+
+                            if (child is FrameworkElement target && target.Visibility == Visibility.Visible)
+                            {
+                                double tLeft = Canvas.GetLeft(target);
+                                double tTop = Canvas.GetTop(target);
+                                double tRight = tLeft + target.ActualWidth;
+                                double tBottom = tTop + target.ActualHeight;
+
+                                // --- SNAP VERTICAL (Alinear Eje X) ---
+                                if (!snappedX)
+                                {
+                                    // Izquierda con Izquierda
+                                    if (Math.Abs(pLeft - tLeft) < snapThreshold)
+                                    {
+                                        correctedDeltaX = tLeft - startPos.X;
+                                        DrawSnapLine(tLeft, Math.Min(pTop, tTop), tLeft, Math.Max(pBottom, tBottom));
+                                        snappedX = true;
+                                    }
+                                    // Izquierda con Derecha (Mi Izq toca su Der)
+                                    else if (Math.Abs(pLeft - tRight) < snapThreshold)
+                                    {
+                                        correctedDeltaX = tRight - startPos.X;
+                                        DrawSnapLine(tRight, Math.Min(pTop, tTop), tRight, Math.Max(pBottom, tBottom));
+                                        snappedX = true;
+                                    }
+                                    // Derecha con Derecha
+                                    else if (Math.Abs(pRight - tRight) < snapThreshold)
+                                    {
+                                        correctedDeltaX = (tRight - activeCtrl.ActualWidth) - startPos.X;
+                                        DrawSnapLine(tRight, Math.Min(pTop, tTop), tRight, Math.Max(pBottom, tBottom));
+                                        snappedX = true;
+                                    }
+                                    // Derecha con Izquierda (Mi Der toca su Izq)
+                                    else if (Math.Abs(pRight - tLeft) < snapThreshold)
+                                    {
+                                        correctedDeltaX = (tLeft - activeCtrl.ActualWidth) - startPos.X;
+                                        DrawSnapLine(tLeft, Math.Min(pTop, tTop), tLeft, Math.Max(pBottom, tBottom));
+                                        snappedX = true;
+                                    }
+                                }
+
+                                // --- SNAP HORIZONTAL (Alinear Eje Y) ---
+                                if (!snappedY)
+                                {
+                                    // Top con Top
+                                    if (Math.Abs(pTop - tTop) < snapThreshold)
+                                    {
+                                        correctedDeltaY = tTop - startPos.Y;
+                                        DrawSnapLine(Math.Min(pLeft, tLeft), tTop, Math.Max(pRight, tRight), tTop);
+                                        snappedY = true;
+                                    }
+                                    // Top con Bottom
+                                    else if (Math.Abs(pTop - tBottom) < snapThreshold)
+                                    {
+                                        correctedDeltaY = tBottom - startPos.Y;
+                                        DrawSnapLine(Math.Min(pLeft, tLeft), tBottom, Math.Max(pRight, tRight), tBottom);
+                                        snappedY = true;
+                                    }
+                                    // Bottom con Bottom
+                                    else if (Math.Abs(pBottom - tBottom) < snapThreshold)
+                                    {
+                                        correctedDeltaY = (tBottom - activeCtrl.ActualHeight) - startPos.Y;
+                                        DrawSnapLine(Math.Min(pLeft, tLeft), tBottom, Math.Max(pRight, tRight), tBottom);
+                                        snappedY = true;
+                                    }
+                                    // Bottom con Top
+                                    else if (Math.Abs(pBottom - tTop) < snapThreshold)
+                                    {
+                                        correctedDeltaY = (tTop - activeCtrl.ActualHeight) - startPos.Y;
+                                        DrawSnapLine(Math.Min(pLeft, tLeft), tTop, Math.Max(pRight, tRight), tTop);
+                                        snappedY = true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Si NO hubo imantación, usamos el Grid normal
+                double finalDeltaX = snappedX ? correctedDeltaX : SnapToGrid(rawDeltaX);
+                double finalDeltaY = snappedY ? correctedDeltaY : SnapToGrid(rawDeltaY);
+
+                if (Math.Abs(finalDeltaX) < 1 && Math.Abs(finalDeltaY) < 1) return;
 
                 if (!_hasSavedUndoForDrag)
                 {
@@ -240,8 +347,7 @@ namespace VB6VisualMockupDesigner.Controls
                     _hasSavedUndoForDrag = true;
                 }
 
-                // --- LÓGICA DE LÍMITES (NUEVO) ---
-                // Obtenemos el tamaño del formulario contenedor
+                // --- APLICAR LIMITES DEL FORMULARIO ---
                 double formWidth = WindowResizerGrid.Width;
                 double formHeight = WindowResizerGrid.Height;
                 if (double.IsNaN(formWidth)) formWidth = WindowResizerGrid.ActualWidth;
@@ -251,44 +357,30 @@ namespace VB6VisualMockupDesigner.Controls
                 {
                     if (_initialPositions.TryGetValue(control, out Point startPos))
                     {
-                        var frameworkElement = control as FrameworkElement;
-                        double ctrlW = frameworkElement.ActualWidth;
-                        double ctrlH = frameworkElement.ActualHeight;
+                        var fe = control as FrameworkElement;
+                        double newLeft = startPos.X + finalDeltaX;
+                        double newTop = startPos.Y + finalDeltaY;
 
-                        // Calculamos la nueva posición deseada
-                        double newLeft = startPos.X + snapDeltaX;
-                        double newTop = startPos.Y + snapDeltaY;
-
-                        // 1. Restricción Izquierda/Arriba (No menor a 0)
+                        // Restricciones (0,0 y Ancho/Alto Form)
                         newLeft = Math.Max(0, newLeft);
                         newTop = Math.Max(0, newTop);
+                        if (newLeft + fe.ActualWidth > formWidth) newLeft = formWidth - fe.ActualWidth;
+                        if (newTop + fe.ActualHeight > formHeight) newTop = formHeight - fe.ActualHeight;
 
-                        // 2. Restricción Derecha/Abajo (No mayor al ancho del form - ancho del control)
-                        if (newLeft + ctrlW > formWidth) newLeft = formWidth - ctrlW;
-                        if (newTop + ctrlH > formHeight) newTop = formHeight - ctrlH;
-
-                        // Aplicar
                         Canvas.SetLeft(control, newLeft);
                         Canvas.SetTop(control, newTop);
 
-
+                        // Actualizar Tooltip de coordenadas
                         if (_selectedControls.Count == 1)
                         {
-                            // Mostramos posición X, Y
-                            InfoTip.PlacementTarget = _selectedControls.First(); // Que siga al control
-                            UpdateInfoTip($"Left: {(int)newLeft}, Top: {(int)newTop}");
+                            if (InfoTip != null)
+                            {
+                                InfoTip.PlacementTarget = fe;
+                                UpdateInfoTip($"X: {(int)newLeft}, Y: {(int)newTop}");
+                            }
                         }
-                        else
-                        {
-                            // Si son varios, mostramos cuánto nos hemos movido (Delta)
-                            InfoTip.PlacementTarget = _primarySelection;
-                            UpdateInfoTip($"dx: {(int)snapDeltaX}, dy: {(int)snapDeltaY}");
-                        }
-
                     }
                 }
-
-
 
                 UpdateSelectionVisuals();
                 this.Focus();
@@ -322,6 +414,7 @@ namespace VB6VisualMockupDesigner.Controls
             // ===============================================
 
             NotifySelectionChanged();
+            SnapLineOverlay?.Children.Clear(); // <--- IMPORTANTE
             HideInfoTip();
         }
 
@@ -1752,7 +1845,22 @@ namespace VB6VisualMockupDesigner.Controls
         }
 
 
-
+        // Método auxiliar para dibujar la línea roja
+        private void DrawSnapLine(double x1, double y1, double x2, double y2)
+        {
+            var line = new Line
+            {
+                X1 = x1,
+                Y1 = y1,
+                X2 = x2,
+                Y2 = y2,
+                Stroke = Brushes.Red,
+                StrokeThickness = 1,
+                StrokeDashArray = new DoubleCollection { 4, 2 }, // Punteado
+                SnapsToDevicePixels = true
+            };
+            SnapLineOverlay.Children.Add(line);
+        }
 
 
 
