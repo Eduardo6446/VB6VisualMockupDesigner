@@ -10,7 +10,10 @@ namespace VB6VisualMockupDesigner.Helpers
             Dark,
             Light,
             Personalized,
-            HighContrast
+            HighContrast,
+            SoftRose,
+            CyberYellow,
+            Blueprint
         }
 
         public static ThemeType CurrentTheme { get; private set; } = ThemeType.Dark;
@@ -144,6 +147,86 @@ namespace VB6VisualMockupDesigner.Helpers
 
                     SetColor(dict, "CanvasGridColor", "#005500");
                     SetColor(dict, "SelectionFill", "#4000FF00");
+                    break;
+                case ThemeType.SoftRose:
+                    SetColor(dict, "AppBackground", "#FFF0F5"); // Lavender Blush
+                    SetColor(dict, "PanelBackground", "#FFFFFF");
+                    SetColor(dict, "SideBarBackground", "#FFF0F5");
+                    SetColor(dict, "HeaderBackground", "#FFE4E1"); // Misty Rose
+                    SetColor(dict, "BorderBrush", "#FFB6C1"); // Light Pink
+
+                    SetColor(dict, "PrimaryText", "#4A4A4A"); // Gris oscuro suave
+                    SetColor(dict, "SecondaryText", "#885566");
+                    SetColor(dict, "IconColor", "#C71585"); // Medium Violet Red
+                    SetColor(dict, "SuccessText", "#2E7D32");
+
+                    SetColor(dict, "HoverBrush", "#FFF5EE"); // Seashell
+                    SetColor(dict, "PressedBrush", "#FF69B4");
+                    SetColor(dict, "BrandColor", "#DB7093"); // Pale Violet Red
+                    SetColor(dict, "AccentColor", "#FF1493"); // Deep Pink
+
+                    SetColor(dict, "TreeHoverBrush", "#FFF5F8");
+                    SetColor(dict, "TreeSelectedBrush", "#FFEBF0");
+                    SetColor(dict, "TreeArrowColor", "#DB7093");
+
+                    SetColor(dict, "CanvasGridColor", "#FFC0CB");
+                    SetColor(dict, "SelectionFill", "#40FF1493");
+                    break;
+
+                // 2. TEMA AMARILLO (Cyber Yellow / Construcción)
+                case ThemeType.CyberYellow:
+                    SetColor(dict, "AppBackground", "#F5F5F5");
+                    SetColor(dict, "PanelBackground", "#FFFFFF");
+                    SetColor(dict, "SideBarBackground", "#FAFAFA");
+
+                    // ANTES: #1A1A1A (Negro) -> AHORA: #EEEEEE (Gris muy claro)
+                    // Esto elimina la franja negra fea detrás de las pestañas
+                    SetColor(dict, "HeaderBackground", "#EEEEEE");
+
+                    SetColor(dict, "BorderBrush", "#E0E0E0");
+
+                    SetColor(dict, "PrimaryText", "#212121");
+                    SetColor(dict, "SecondaryText", "#757575");
+                    SetColor(dict, "IconColor", "#FBC02D");
+                    SetColor(dict, "SuccessText", "#388E3C");
+
+                    SetColor(dict, "HoverBrush", "#FFFDE7"); // Amarillo muy pálido al pasar el mouse
+                    SetColor(dict, "PressedBrush", "#FFEB3B");
+                    SetColor(dict, "BrandColor", "#FBC02D"); // Amarillo Ocre
+                    SetColor(dict, "AccentColor", "#FFD600"); // Amarillo Eléctrico
+
+                    SetColor(dict, "TreeHoverBrush", "#FFF8E1");
+                    SetColor(dict, "TreeSelectedBrush", "#FFF9C4");
+                    SetColor(dict, "TreeArrowColor", "#FBC02D");
+
+                    SetColor(dict, "CanvasGridColor", "#CCCCCC");
+                    SetColor(dict, "SelectionFill", "#40FFD600");
+                    break;
+
+                // 3. TEMA BLUEPRINT (Arquitecto) - Mi favorito para Mockups
+                case ThemeType.Blueprint:
+                    SetColor(dict, "AppBackground", "#002B49"); // Azul plano oscuro
+                    SetColor(dict, "PanelBackground", "#003355");
+                    SetColor(dict, "SideBarBackground", "#00223A");
+                    SetColor(dict, "HeaderBackground", "#001D33");
+                    SetColor(dict, "BorderBrush", "#005588");
+
+                    SetColor(dict, "PrimaryText", "#FFFFFF");
+                    SetColor(dict, "SecondaryText", "#88CCFF");
+                    SetColor(dict, "IconColor", "#FFFFFF");
+                    SetColor(dict, "SuccessText", "#44FF88");
+
+                    SetColor(dict, "HoverBrush", "#20FFFFFF");
+                    SetColor(dict, "PressedBrush", "#0077BB");
+                    SetColor(dict, "BrandColor", "#0088CC");
+                    SetColor(dict, "AccentColor", "#FFFFFF"); // Blanco puro para resaltar
+
+                    SetColor(dict, "TreeHoverBrush", "#30FFFFFF");
+                    SetColor(dict, "TreeSelectedBrush", "#50FFFFFF");
+                    SetColor(dict, "TreeArrowColor", "#FFFFFF");
+
+                    SetColor(dict, "CanvasGridColor", "#40FFFFFF"); // Grid blanca tenue
+                    SetColor(dict, "SelectionFill", "#30FFFFFF");
                     break;
             }
 

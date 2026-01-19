@@ -96,6 +96,9 @@ namespace VB6VisualMockupDesigner.Views
                     case "Light": type = ThemeManager.ThemeType.Light; break;
                     case "Personalized": type = ThemeManager.ThemeType.Personalized; break;
                     case "HighContrast": type = ThemeManager.ThemeType.HighContrast; break;
+                    case "SoftRose": type = ThemeManager.ThemeType.SoftRose; break;
+                    case "CyberYellow": type = ThemeManager.ThemeType.CyberYellow; break;
+                    case "Blueprint": type = ThemeManager.ThemeType.Blueprint; break;
                 }
 
                 // Aplicar tema visualmente

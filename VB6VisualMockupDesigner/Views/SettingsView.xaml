@@ -42,8 +42,12 @@
                     <ComboBox x:Name="CboThemes" Width="220" Padding="6" SelectionChanged="CboThemes_SelectionChanged">
                         <ComboBoxItem Content="🌑  Modo Oscuro" Tag="Dark"/>
                         <ComboBoxItem Content="☀️  Modo Claro" Tag="Light"/>
-                        <ComboBoxItem Content="🎨  Personalizado" Tag="Personalized"/>
+                        <ComboBoxItem Content="🌸  Soft Rose" Tag="SoftRose"/>
+                        <ComboBoxItem Content="⚡  Cyber Yellow" Tag="CyberYellow"/>
+                        <ComboBoxItem Content="📐  Blueprint (Plano)" Tag="Blueprint"/>
                         <ComboBoxItem Content="💻  Alto Contraste" Tag="HighContrast"/>
+                        <Separator/>
+                        <ComboBoxItem Content="🎨  Personalizado" Tag="Personalized"/>
                     </ComboBox>
                 </StackPanel>
 
