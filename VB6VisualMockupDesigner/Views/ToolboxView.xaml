@@ -14,7 +14,7 @@
                     <ControlTemplate TargetType="{x:Type GroupItem}">
                         <StackPanel Margin="0,5,0,5">
                             <TextBlock Text="{Binding Name}" 
-                                       Foreground="Gray" FontWeight="Bold" FontSize="10" 
+                                       Foreground="{DynamicResource SecondaryText}" FontWeight="Bold" FontSize="10" 
                                        Margin="5,0,0,5"/>
                             <ItemsPresenter />
                         </StackPanel>

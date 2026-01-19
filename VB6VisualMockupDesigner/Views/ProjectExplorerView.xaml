@@ -8,12 +8,10 @@
              d:DesignHeight="450" d:DesignWidth="250"
              FontFamily="Segoe UI"
              AllowDrop="True"
-          DragOver="ProjectTree_DragOver"
-          Drop="ProjectTree_Drop"
-             >
+             DragOver="ProjectTree_DragOver"
+             Drop="ProjectTree_Drop">
 
     <UserControl.Resources>
-
         <Style x:Key="ExplorerBtnStyle" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="0"/>
@@ -21,6 +19,7 @@
             <Setter Property="Height" Value="24"/>
             <Setter Property="Margin" Value="2,0"/>
             <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Foreground" Value="{DynamicResource IconColor}"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -29,11 +28,11 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="#E5E5E5"/>
-                                <Setter Property="Foreground" Value="Black"/>
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource HoverBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource PrimaryText}"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="#CCCCCC"/>
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource PressedBrush}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -47,33 +46,13 @@
                     <TextBlock Text="&#xE7C3;" FontFamily="Segoe MDL2 Assets"/>
                 </MenuItem.Icon>
             </MenuItem>
-            <Separator/>
-            <MenuItem Header="Nuevo Archivo..." Click="MnuNewFileContext_Click"/>
-            <MenuItem Header="Nueva Carpeta..." Click="MnuNewFolderContext_Click"/>
-            <Separator/>
-            <MenuItem Header="Renombrar" InputGestureText="F2" Click="MnuRename_Click">
-                <MenuItem.Icon>
-                    <TextBlock Text="&#xE8AC;" FontFamily="Segoe MDL2 Assets"/>
-                </MenuItem.Icon>
-            </MenuItem>
-            <MenuItem Header="Eliminar" InputGestureText="Supr" Click="MnuDelete_Click">
-                <MenuItem.Icon>
-                    <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets" Foreground="Red"/>
-                </MenuItem.Icon>
-            </MenuItem>
-            <Separator/>
-            <MenuItem Header="Revelar en el Explorador" Click="MnuReveal_Click">
-                <MenuItem.Icon>
-                    <TextBlock Text="&#xEC50;" FontFamily="Segoe MDL2 Assets"/>
-                </MenuItem.Icon>
-            </MenuItem>
         </ContextMenu>
 
         <HierarchicalDataTemplate x:Key="ExplorerItemTemplate" ItemsSource="{Binding Children}" DataType="{x:Type models:ExplorerItem}">
             <StackPanel Orientation="Horizontal" Margin="0,1">
                 <TextBlock Text="{Binding IconCode}" 
                        FontFamily="Segoe MDL2 Assets" 
-                       Foreground="{DynamicResource BrandColor}" 
+                       Foreground="{DynamicResource AccentColor}" 
                        Margin="0,0,6,0" 
                        VerticalAlignment="Center"/>
                 <TextBlock Text="{Binding Name}" 
@@ -89,9 +68,7 @@
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Padding" Value="3,2"/>
             <Setter Property="Foreground" Value="{DynamicResource PrimaryText}"/>
-
             <Setter Property="ContextMenu" Value="{StaticResource ItemContextMenu}"/>
-
             <EventSetter Event="PreviewMouseRightButtonDown" Handler="TreeViewItem_PreviewMouseRightButtonDown"/>
 
             <Setter Property="Template">
@@ -117,7 +94,7 @@
                                             <Setter.Value>
                                                 <ControlTemplate TargetType="ToggleButton">
                                                     <TextBlock x:Name="Arrow" Text="&#xE76C;" FontFamily="Segoe MDL2 Assets" 
-                                                           Foreground="#888888" FontSize="10" VerticalAlignment="Center" Margin="4,0"/>
+                                                           Foreground="{DynamicResource TreeArrowColor}" FontSize="10" VerticalAlignment="Center" Margin="4,0"/>
                                                     <ControlTemplate.Triggers>
                                                         <Trigger Property="IsChecked" Value="True">
                                                             <Setter TargetName="Arrow" Property="Text" Value="&#xE70D;"/>
@@ -152,12 +129,12 @@
                             </Trigger>
 
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="#2A2D2E"/>
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource TreeHoverBrush}"/>
                             </Trigger>
 
                             <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="#37373D"/>
-                                <Setter Property="Foreground" Value="White"/>
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource TreeSelectedBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource PrimaryText}"/>
                             </Trigger>
 
                             <MultiDataTrigger>
@@ -165,15 +142,14 @@
                                     <Condition Binding="{Binding IsSelected, RelativeSource={RelativeSource Self}}" Value="True"/>
                                     <Condition Binding="{Binding IsKeyboardFocusWithin, RelativeSource={RelativeSource AncestorType=TreeView}}" Value="False"/>
                                 </MultiDataTrigger.Conditions>
-                                <Setter TargetName="Bd" Property="Background" Value="#2D2D2D"/>
-                                <Setter Property="Foreground" Value="#CCCCCC"/>
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource HoverBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource SecondaryText}"/>
                             </MultiDataTrigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
         </Style>
-
     </UserControl.Resources>
 
     <Grid Background="{DynamicResource PanelBackground}">
@@ -188,21 +164,21 @@
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
-            <TextBlock Text="EXPLORADOR" Foreground="#666666" 
+            <TextBlock Text="EXPLORADOR" Foreground="{DynamicResource SecondaryText}" 
                    FontSize="11" FontWeight="Bold" 
                    VerticalAlignment="Center" Margin="10,0"/>
 
             <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="0,0,5,0">
                 <Button Style="{StaticResource ExplorerBtnStyle}" ToolTip="Nuevo Archivo" Click="BtnNewFile_Click">
-                    <TextBlock Text="&#xE7C3;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="#444444"/>
+                    <TextBlock Text="&#xE7C3;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
                 </Button>
 
                 <Button Style="{StaticResource ExplorerBtnStyle}" ToolTip="Nueva Carpeta" Click="BtnNewFolder_Click">
-                    <TextBlock Text="&#xE8F4;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="#444444"/>
+                    <TextBlock Text="&#xE8F4;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
                 </Button>
 
                 <Button Style="{StaticResource ExplorerBtnStyle}" ToolTip="Colapsar Todo" Click="BtnCollapseAll_Click">
-                    <TextBlock Text="&#xE738;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="#444444"/>
+                    <TextBlock Text="&#xE738;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>
                 </Button>
             </StackPanel>
         </Grid>
@@ -215,8 +191,6 @@
                   SelectedItemChanged="ProjectTree_SelectedItemChanged"
                   ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                   MouseDoubleClick="ProjectTree_MouseDoubleClick"
-          PreviewKeyDown="ProjectTree_PreviewKeyDown"
-                  >
-        </TreeView>
+                  PreviewKeyDown="ProjectTree_PreviewKeyDown"/>
     </Grid>
 </UserControl>

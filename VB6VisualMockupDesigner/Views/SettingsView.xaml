@@ -1,74 +1,190 @@
 ﻿<UserControl x:Class="VB6VisualMockupDesigner.Views.SettingsView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:views="clr-namespace:VB6VisualMockupDesigner.Views"
+             mc:Ignorable="d"
              Background="{DynamicResource AppBackground}" 
              Foreground="{DynamicResource PrimaryText}"
-             Height="450" Width="600">
+             d:DesignHeight="700" d:DesignWidth="600">
 
     <UserControl.Resources>
-        <Style x:Key="CloseButtonStyle" TargetType="Button">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="{DynamicResource SecondaryText}"/>
-            <Setter Property="FontSize" Value="14"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#E81123"/>
-                    <Setter Property="Foreground" Value="White"/>
-                </Trigger>
-            </Style.Triggers>
+        <Style x:Key="PropEditStyle" TargetType="TextBox">
+            <Setter Property="Background" Value="{DynamicResource HeaderBackground}"/>
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryText}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="4,2"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="FontFamily" Value="Consolas"/>
         </Style>
     </UserControl.Resources>
 
     <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="30"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel MaxWidth="600" HorizontalAlignment="Left" Margin="30">
 
-        <Button Grid.Row="0" 
-                Content="✕" 
-                HorizontalAlignment="Right"
-                Width="40" Height="30"
-                Click="BtnClose_Click"
-                Style="{StaticResource CloseButtonStyle}"/>
-
-        <Grid Grid.Row="1" Margin="30,0,30,30">
-            <StackPanel MaxWidth="600" HorizontalAlignment="Left">
                 <TextBlock Text="Configuración" 
                            FontSize="28" FontWeight="Light" 
                            Foreground="{DynamicResource PrimaryText}" Margin="0,0,0,20"/>
 
-                <TextBlock Text="Apariencia" 
+                <TextBlock Text="Apariencia y Tema" 
                            FontSize="18" FontWeight="SemiBold" 
                            Foreground="{DynamicResource AccentColor}" Margin="0,0,0,10"/>
-
                 <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Margin="0,0,0,15"/>
 
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
-                    <TextBlock Text="Tema del Editor:" 
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
+                    <TextBlock Text="Tema Visual:" 
                                VerticalAlignment="Center" 
                                Width="120" Foreground="{DynamicResource SecondaryText}"/>
 
-                    <ComboBox x:Name="CboThemes" Width="200" Padding="6">
-                        <ComboBoxItem Content="Modo Oscuro (VS Code)" Tag="Dark"/>
-                        <ComboBoxItem Content="Modo Claro" Tag="Light"/>
-                        <ComboBoxItem Content="Clásico VB6 (Grid)" Tag="VB6"/>
-                        <ComboBoxItem Content="Personalizado" Tag="Custom"/>
+                    <ComboBox x:Name="CboThemes" Width="220" Padding="6" SelectionChanged="CboThemes_SelectionChanged">
+                        <ComboBoxItem Content="🌑  Modo Oscuro" Tag="Dark"/>
+                        <ComboBoxItem Content="☀️  Modo Claro" Tag="Light"/>
+                        <ComboBoxItem Content="🎨  Personalizado" Tag="Personalized"/>
+                        <ComboBoxItem Content="💻  Alto Contraste" Tag="HighContrast"/>
                     </ComboBox>
                 </StackPanel>
 
-                <TextBlock Text="Editor" 
+                <Border x:Name="PnlCustomization" Background="{DynamicResource PanelBackground}" 
+                        BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" 
+                        Padding="15" Margin="0,0,0,20" Visibility="Collapsed" CornerRadius="4">
+
+                    <StackPanel>
+                        <TextBlock Text="Personalización Avanzada" FontWeight="Bold" Margin="0,0,0,5"/>
+                        <TextBlock Text="Haz clic en los cuadros de color para editar." FontSize="11" Foreground="{DynamicResource SecondaryText}" Margin="0,0,0,15"/>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="20"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="ENTORNO" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource AccentColor}" Margin="0,0,0,5"/>
+
+                                <Grid Margin="0,3">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="80"/>
+                                        <ColumnDefinition Width="25"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Fondo App:" VerticalAlignment="Center" FontSize="11"/>
+                                    <Border Grid.Column="1" Background="{DynamicResource AppBackground}" BorderBrush="Gray" BorderThickness="1" Margin="0,0,5,0"
+                                            Cursor="Hand" MouseLeftButtonUp="OnColorSwatchClicked" Tag="{Binding ElementName=TxtColorAppBg}"/>
+                                    <TextBox Grid.Column="2" x:Name="TxtColorAppBg" Style="{StaticResource PropEditStyle}" TextChanged="TxtColor_TextChanged" Tag="AppBackground"/>
+                                </Grid>
+
+                                <Grid Margin="0,3">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="80"/>
+                                        <ColumnDefinition Width="25"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Paneles:" VerticalAlignment="Center" FontSize="11"/>
+                                    <Border Grid.Column="1" Background="{DynamicResource PanelBackground}" BorderBrush="Gray" BorderThickness="1" Margin="0,0,5,0"
+                                            Cursor="Hand" MouseLeftButtonUp="OnColorSwatchClicked" Tag="{Binding ElementName=TxtColorPanelBg}"/>
+                                    <TextBox Grid.Column="2" x:Name="TxtColorPanelBg" Style="{StaticResource PropEditStyle}" TextChanged="TxtColor_TextChanged" Tag="PanelBackground"/>
+                                </Grid>
+
+                                <Grid Margin="0,3">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="80"/>
+                                        <ColumnDefinition Width="25"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Bordes:" VerticalAlignment="Center" FontSize="11"/>
+                                    <Border Grid.Column="1" Background="{DynamicResource BorderBrush}" BorderBrush="Gray" BorderThickness="1" Margin="0,0,5,0"
+                                            Cursor="Hand" MouseLeftButtonUp="OnColorSwatchClicked" Tag="{Binding ElementName=TxtColorBorder}"/>
+                                    <TextBox Grid.Column="2" x:Name="TxtColorBorder" Style="{StaticResource PropEditStyle}" TextChanged="TxtColor_TextChanged" Tag="BorderBrush"/>
+                                </Grid>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="CONTENIDO" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource AccentColor}" Margin="0,0,0,5"/>
+
+                                <Grid Margin="0,3">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="80"/>
+                                        <ColumnDefinition Width="25"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Texto Princ.:" VerticalAlignment="Center" FontSize="11"/>
+                                    <Border Grid.Column="1" Background="{DynamicResource PrimaryText}" BorderBrush="Gray" BorderThickness="1" Margin="0,0,5,0"
+                                            Cursor="Hand" MouseLeftButtonUp="OnColorSwatchClicked" Tag="{Binding ElementName=TxtColorText}"/>
+                                    <TextBox Grid.Column="2" x:Name="TxtColorText" Style="{StaticResource PropEditStyle}" TextChanged="TxtColor_TextChanged" Tag="PrimaryText"/>
+                                </Grid>
+
+                                <Grid Margin="0,3">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="80"/>
+                                        <ColumnDefinition Width="25"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Texto Sec.:" VerticalAlignment="Center" FontSize="11"/>
+                                    <Border Grid.Column="1" Background="{DynamicResource SecondaryText}" BorderBrush="Gray" BorderThickness="1" Margin="0,0,5,0"
+                                            Cursor="Hand" MouseLeftButtonUp="OnColorSwatchClicked" Tag="{Binding ElementName=TxtColorSecText}"/>
+                                    <TextBox Grid.Column="2" x:Name="TxtColorSecText" Style="{StaticResource PropEditStyle}" TextChanged="TxtColor_TextChanged" Tag="SecondaryText"/>
+                                </Grid>
+
+                                <Grid Margin="0,3">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="80"/>
+                                        <ColumnDefinition Width="25"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Énfasis:" VerticalAlignment="Center" FontSize="11"/>
+                                    <Border Grid.Column="1" Background="{DynamicResource AccentColor}" BorderBrush="Gray" BorderThickness="1" Margin="0,0,5,0"
+                                            Cursor="Hand" MouseLeftButtonUp="OnColorSwatchClicked" Tag="{Binding ElementName=TxtColorAccent}"/>
+                                    <TextBox Grid.Column="2" x:Name="TxtColorAccent" Style="{StaticResource PropEditStyle}" TextChanged="TxtColor_TextChanged" Tag="AccentColor"/>
+                                </Grid>
+                            </StackPanel>
+                        </Grid>
+
+                        <Separator Background="{DynamicResource BorderBrush}" Margin="0,15,0,10"/>
+
+                        <TextBlock Text="DISEÑADOR (CANVAS)" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource AccentColor}" Margin="0,0,0,5"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="20"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <Grid Grid.Column="0" Margin="0,3">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="80"/>
+                                    <ColumnDefinition Width="25"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Rejilla:" VerticalAlignment="Center" FontSize="11"/>
+                                <Border Grid.Column="1" Background="{DynamicResource CanvasGridColor}" BorderBrush="Gray" BorderThickness="1" Margin="0,0,5,0"
+                                        Cursor="Hand" MouseLeftButtonUp="OnColorSwatchClicked" Tag="{Binding ElementName=TxtColorGrid}"/>
+                                <TextBox Grid.Column="2" x:Name="TxtColorGrid" Style="{StaticResource PropEditStyle}" TextChanged="TxtColor_TextChanged" Tag="CanvasGridColor"/>
+                            </Grid>
+
+                            <Grid Grid.Column="2" Margin="0,3">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="80"/>
+                                    <ColumnDefinition Width="25"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Selección:" VerticalAlignment="Center" FontSize="11"/>
+                                <Border Grid.Column="1" Background="{DynamicResource SelectionFill}" BorderBrush="Gray" BorderThickness="1" Margin="0,0,5,0"
+                                        Cursor="Hand" MouseLeftButtonUp="OnColorSwatchClicked" Tag="{Binding ElementName=TxtColorSelection}"/>
+                                <TextBox Grid.Column="2" x:Name="TxtColorSelection" Style="{StaticResource PropEditStyle}" TextChanged="TxtColor_TextChanged" Tag="SelectionFill"/>
+                            </Grid>
+                        </Grid>
+
+                        <TextBlock Text="* Los cambios se guardan automáticamente." FontSize="10" Foreground="{DynamicResource SecondaryText}" Margin="0,15,0,0" HorizontalAlignment="Right"/>
+                    </StackPanel>
+                </Border>
+
+                <TextBlock Text="Editor y Comportamiento" 
                            FontSize="18" FontWeight="SemiBold" 
-                           Foreground="{DynamicResource AccentColor}" Margin="0,20,0,10"/>
+                           Foreground="{DynamicResource AccentColor}" Margin="0,10,0,10"/>
                 <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Margin="0,0,0,15"/>
 
                 <CheckBox Content="Mostrar números de línea (Simulado)" 
@@ -79,6 +195,18 @@
                           Margin="0,5"/>
 
             </StackPanel>
-        </Grid>
+        </ScrollViewer>
+
+        <Popup x:Name="ColorPopup" StaysOpen="False" Placement="Mouse" AllowsTransparency="True">
+            <Border Background="{DynamicResource PanelBackground}" 
+                    BorderBrush="{DynamicResource BorderBrush}" 
+                    BorderThickness="1" Padding="5">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="10" ShadowDepth="3" Opacity="0.4" Color="Black"/>
+                </Border.Effect>
+
+                <views:ColorPicker x:Name="MyColorPicker"/>
+            </Border>
+        </Popup>
     </Grid>
 </UserControl>

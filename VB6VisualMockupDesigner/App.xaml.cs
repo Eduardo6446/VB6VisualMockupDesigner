@@ -30,11 +30,11 @@ namespace VB6VisualMockupDesigner
                 case "Light":
                     ThemeManager.ApplyTheme(ThemeManager.ThemeType.Light);
                     break;
-                case "VB6":
-                    ThemeManager.ApplyTheme(ThemeManager.ThemeType.VB6);
+                case "Personalized":
+                    ThemeManager.ApplyTheme(ThemeManager.ThemeType.Personalized);
                     break;
-                case "Custom":
-                    ThemeManager.ApplyTheme(ThemeManager.ThemeType.Custom);
+                case "HighContrast":
+                    ThemeManager.ApplyTheme(ThemeManager.ThemeType.HighContrast);
                     break;
                 default: // Dark
                     ThemeManager.ApplyTheme(ThemeManager.ThemeType.Dark);

@@ -5,5 +5,29 @@
     <Setting Name="AppTheme" Type="System.String" Scope="User">
       <Value Profile="(Default)">Dark</Value>
     </Setting>
+    <Setting Name="Cust_AppBg" Type="System.String" Scope="User">
+      <Value Profile="(Default)">#004080</Value>
+    </Setting>
+    <Setting Name="Cust_PanelBg" Type="System.String" Scope="User">
+      <Value Profile="(Default)">#D4D0C8</Value>
+    </Setting>
+    <Setting Name="Cust_Text" Type="System.String" Scope="User">
+      <Value Profile="(Default)">#000000</Value>
+    </Setting>
+    <Setting Name="Cust_Accent" Type="System.String" Scope="User">
+      <Value Profile="(Default)">#000080</Value>
+    </Setting>
+    <Setting Name="Cust_SecText" Type="System.String" Scope="User">
+      <Value Profile="(Default)">#404040</Value>
+    </Setting>
+    <Setting Name="Cust_Border" Type="System.String" Scope="User">
+      <Value Profile="(Default)">#808080</Value>
+    </Setting>
+    <Setting Name="Cust_Grid" Type="System.String" Scope="User">
+      <Value Profile="(Default)">#808080</Value>
+    </Setting>
+    <Setting Name="Cust_Selection" Type="System.String" Scope="User">
+      <Value Profile="(Default)">#40000080</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

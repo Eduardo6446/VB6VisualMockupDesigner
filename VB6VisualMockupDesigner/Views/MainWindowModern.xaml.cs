@@ -1152,28 +1152,44 @@ namespace VB6VisualMockupDesigner.Views
             txtCursorPos.Text = "X: 0, Y: 0"; // O dejarlo vacío
         }
 
+        // Busca este método y reemplázalo completamente
         private void MnuPreferences_Click(object sender, RoutedEventArgs e)
         {
-            // Lógica para mostrar SettingsView. 
-            // Como tu diseño usa pestañas o paneles laterales, puedes cargarlo ahí.
-            // Ejemplo rápido: abrirlo en una ventana modal o en una nueva pestaña
-
-            Window settingsWindow = new Window
+            // 1. Verificar si la pestaña de Configuración ya está abierta
+            foreach (TabItem item in MainTabControl.Items)
             {
-                Title = "Preferencias",
-                Content = new SettingsView(), // Tu UserControl
-                Width = 650,
-                Height = 500,
-                WindowStartupLocation = WindowStartupLocation.CenterScreen,
-                Style = null, // Para usar ventana estándar por ahora
-                WindowStyle = WindowStyle.None, // Quita la barra de Windows
-                AllowsTransparency = false, // Mantenemos opacidad
-                BorderThickness = new Thickness(1), // Un borde fino
-                                                    // El color del borde usa el recurso dinámico del tema actual
-                BorderBrush = (System.Windows.Media.Brush)Application.Current.Resources["BrandColor"],
-                Background = (System.Windows.Media.Brush)Application.Current.Resources["AppBackground"]
+                // Usamos el Tag para identificarla de forma única
+                if (item.Tag != null && item.Tag.ToString() == "SETTINGS_TAB")
+                {
+                    MainTabControl.SelectedItem = item;
+                    return; // Ya existe, solo la enfocamos
+                }
+            }
+
+            // 2. Crear la vista
+            var settingsView = new SettingsView();
+
+            // 3. Crear la pestaña
+            var newTab = new TabItem
+            {
+                Header = "Preferencias",
+                Tag = "SETTINGS_TAB", // Identificador único
+                Content = settingsView
             };
-            settingsWindow.ShowDialog();
+
+
+            // 5. Configurar el botón de cerrar de la pestaña (la X pequeña del header)
+            newTab.Loaded += NewTab_Loaded;
+
+            // 6. Agregar y enfocar
+            MainTabControl.Items.Add(newTab);
+            MainTabControl.SelectedItem = newTab;
+
+            // 7. Actualizar UI (Toolbox, etc.)
+            UpdateTabVisibility();
+
+            // Como es configuración, nos aseguramos que la toolbox esté deshabilitada
+            UpdateToolboxState(false);
         }
 
         // Evento del Slider de Zoom

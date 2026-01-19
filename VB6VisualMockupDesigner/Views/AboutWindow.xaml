@@ -112,7 +112,7 @@
 
                     <StackPanel Grid.Column="1" Margin="10,0,0,0">
                         <TextBlock Text=".NET 8.0 - Windows 11" Foreground="{DynamicResource SecondaryText}" FontSize="11"/>
-                        <TextBlock x:Name="txtMemory" Text="Calculando..." Foreground="#4CAF50" FontSize="11" Margin="0,2,0,0" FontFamily="Consolas"/>
+                        <TextBlock x:Name="txtMemory" Text="Calculando..." Foreground="{DynamicResource SuccessText}" />
                     </StackPanel>
                 </Grid>
             </StackPanel>

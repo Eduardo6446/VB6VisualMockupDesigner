@@ -34,5 +34,101 @@ namespace VB6VisualMockupDesigner.Properties {
                 this["AppTheme"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("#004080")]
+        public string Cust_AppBg {
+            get {
+                return ((string)(this["Cust_AppBg"]));
+            }
+            set {
+                this["Cust_AppBg"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("#D4D0C8")]
+        public string Cust_PanelBg {
+            get {
+                return ((string)(this["Cust_PanelBg"]));
+            }
+            set {
+                this["Cust_PanelBg"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("#000000")]
+        public string Cust_Text {
+            get {
+                return ((string)(this["Cust_Text"]));
+            }
+            set {
+                this["Cust_Text"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("#000080")]
+        public string Cust_Accent {
+            get {
+                return ((string)(this["Cust_Accent"]));
+            }
+            set {
+                this["Cust_Accent"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("#404040")]
+        public string Cust_SecText {
+            get {
+                return ((string)(this["Cust_SecText"]));
+            }
+            set {
+                this["Cust_SecText"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("#808080")]
+        public string Cust_Border {
+            get {
+                return ((string)(this["Cust_Border"]));
+            }
+            set {
+                this["Cust_Border"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("#808080")]
+        public string Cust_Grid {
+            get {
+                return ((string)(this["Cust_Grid"]));
+            }
+            set {
+                this["Cust_Grid"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("#40000080")]
+        public string Cust_Selection {
+            get {
+                return ((string)(this["Cust_Selection"]));
+            }
+            set {
+                this["Cust_Selection"] = value;
+            }
+        }
     }
 }
