@@ -289,8 +289,26 @@ namespace VB6VisualMockupDesigner.Views
 
         private void HandleFontPicker(PropertyItem item)
         {
-            MessageBox.Show("Selector de fuente simulado.\nSe aplicará 'Courier New, 12pt'.");
-            item.Value = "Courier New; 12pt"; // Dispara ApplyChange
+            // 1. Obtener el valor actual (o un default si es nulo)
+            string currentVal = item.Value?.ToString() ?? "Microsoft Sans Serif; 8.25pt";
+
+            // 2. Instanciar nuestra ventana personalizada
+            var picker = new FontPickerWindow(currentVal);
+
+            // (Opcional) Centrar sobre la ventana principal si tienes acceso a ella,
+            // o simplemente dejar que WindowStartupLocation="CenterScreen" haga el trabajo.
+            picker.Owner = Application.Current.MainWindow;
+
+            // 3. Mostrar diálogo
+            if (picker.ShowDialog() == true)
+            {
+                // 4. Aplicar el resultado devuelto por la ventana
+                item.Value = picker.ResultString;
+
+                // ApplyChange se llama automáticamente gracias al binding y OnPropertyItemChanged
+                // pero si quieres forzarlo visualmente aquí:
+                // ApplyChange(item); 
+            }
         }
     }
 }

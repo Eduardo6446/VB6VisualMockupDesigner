@@ -5,14 +5,14 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using VB6VisualMockupDesigner.Models;
-using VB6VisualMockupDesigner.Controls; // Necesario para VB6Data y RetroControlFactory
+using VB6VisualMockupDesigner.Controls; // Necesario para VB6Data
 
 namespace VB6VisualMockupDesigner.Helpers
 {
     public static class PropertyManager
     {
         // ==========================================
-        // LISTAS DE OPCIONES (ENUMS DE VB6)
+        // LISTAS DE OPCIONES (ENUMS SIMULADOS)
         // ==========================================
         private static List<string> BoolOptions = new List<string> { "True", "False" };
         private static List<string> AlignOptions = new List<string> { "0 - Left Justify", "1 - Right Justify", "2 - Center" };
@@ -21,7 +21,7 @@ namespace VB6VisualMockupDesigner.Helpers
         private static List<string> AppearanceOptions = new List<string> { "0 - Flat", "1 - 3D" };
 
         // ==========================================
-        // OBTENER PROPIEDADES (LECTURA)
+        // 1. OBTENER PROPIEDADES (LECTURA)
         // ==========================================
         public static List<PropertyItem> GetPropertiesFor(FrameworkElement ctrl)
         {
@@ -44,31 +44,29 @@ namespace VB6VisualMockupDesigner.Helpers
             list.Add(new PropertyItem { Name = "Width", Value = (int)ctrl.Width, Category = "Position", Type = PropertyType.Number });
             list.Add(new PropertyItem { Name = "Height", Value = (int)ctrl.Height, Category = "Position", Type = PropertyType.Number });
 
-            // --- CATEGORÍA: APPEARANCE (Lógica Unificada) ---
+            // --- CATEGORÍA: APPEARANCE ---
 
-            // 1. Caption / Text
+            // Caption / Text
             if (ctrl is ContentControl cc)
             {
-                list.Add(new PropertyItem
-                {
-                    Name = "Caption",
-                    Value = cc.Content,
-                    Category = "Appearance",
-                    Description = "Texto que se muestra en el control."
-                });
+                list.Add(new PropertyItem { Name = "Caption", Value = cc.Content, Category = "Appearance", Description = "Texto que se muestra en el control." });
             }
             else if (ctrl is TextBox tb)
             {
-                list.Add(new PropertyItem
-                {
-                    Name = "Text",
-                    Value = tb.Text,
-                    Category = "Appearance",
-                    Description = "Texto contenido en el control."
-                });
+                list.Add(new PropertyItem { Name = "Text", Value = tb.Text, Category = "Appearance", Description = "Texto contenido en el control." });
+            }
+            // Agregamos soporte de lectura para TextBlocks (Timer, SSPanel, etc.)
+            else if (ctrl is TextBlock txt)
+            {
+                list.Add(new PropertyItem { Name = "Caption", Value = txt.Text, Category = "Appearance", Description = "Texto que se muestra en el control." });
+            }
+            // Soporte para Border que contiene un TextBlock (algunos controles retro)
+            else if (ctrl is Border b && b.Child is TextBlock tbInside)
+            {
+                list.Add(new PropertyItem { Name = "Caption", Value = tbInside.Text, Category = "Appearance", Description = "Texto que se muestra en el control." });
             }
 
-            // 2. Alignment (Para Labels y TextBoxes)
+            // Alignment (Para Labels y TextBoxes)
             if (ctrl is Label || ctrl is TextBox)
             {
                 list.Add(new PropertyItem
@@ -82,10 +80,11 @@ namespace VB6VisualMockupDesigner.Helpers
                 });
             }
 
-            // 3. BackStyle (Transparente vs Opaco - Clave para Labels)
+            // BackStyle (Transparente vs Opaco - Clave para Labels)
             if (ctrl is Label)
             {
                 var bg = (ctrl as Control).Background;
+                // Si es nulo o Transparente -> 0. Si tiene color -> 1.
                 string currentStyle = (bg == null || bg == Brushes.Transparent) ? BackStyleOptions[0] : BackStyleOptions[1];
 
                 list.Add(new PropertyItem
@@ -99,41 +98,59 @@ namespace VB6VisualMockupDesigner.Helpers
                 });
             }
 
-            // 4. BackColor
+            // BackColor & ForeColor
             if (ctrl is Control c)
             {
                 string colorHex = "#FFFFFF";
                 if (c.Background is SolidColorBrush sb) colorHex = sb.Color.ToString();
 
-                list.Add(new PropertyItem
-                {
-                    Name = "BackColor",
-                    Value = colorHex,
-                    Category = "Appearance",
+                list.Add(new PropertyItem 
+                { 
+                    Name = "BackColor", 
+                    Value = colorHex, 
+                    Category = "Appearance", 
                     Type = PropertyType.Color,
                     Description = "Color de fondo."
                 });
 
-                // ForeColor
                 string foreHex = "#000000";
                 if (c.Foreground is SolidColorBrush sf) foreHex = sf.Color.ToString();
 
-                list.Add(new PropertyItem
-                {
-                    Name = "ForeColor",
-                    Value = foreHex,
-                    Category = "Appearance",
+                list.Add(new PropertyItem 
+                { 
+                    Name = "ForeColor", 
+                    Value = foreHex, 
+                    Category = "Appearance", 
                     Type = PropertyType.Color,
                     Description = "Color del texto."
                 });
             }
+            // Soporte lectura de color para TextBlock sueltos (Timer, etc)
+            else if (ctrl is TextBlock t)
+            {
+                string foreHex = "#000000";
+                if (t.Foreground is SolidColorBrush sf) foreHex = sf.Color.ToString();
+                list.Add(new PropertyItem { Name = "ForeColor", Value = foreHex, Category = "Appearance", Type = PropertyType.Color });
+            }
+            else if (ctrl is Border b)
+            {
+                string bgHex = "#D4D0C8";
+                if (b.Background is SolidColorBrush sb) bgHex = sb.Color.ToString();
+                list.Add(new PropertyItem { Name = "BackColor", Value = bgHex, Category = "Appearance", Type = PropertyType.Color });
 
-            // 5. BorderStyle (Bordes)
+                // Si el Border tiene un hijo TextBlock, leemos su ForeColor
+                if (b.Child is TextBlock tbChild)
+                {
+                    string foreHex = "#000000";
+                    if (tbChild.Foreground is SolidColorBrush sf) foreHex = sf.Color.ToString();
+                    list.Add(new PropertyItem { Name = "ForeColor", Value = foreHex, Category = "Appearance", Type = PropertyType.Color });
+                }
+            }
+
+            // BorderStyle
             if (ctrl is Control cBorder)
             {
-                // Detectamos si tiene borde chequeando el grosor
                 string currentBorder = (cBorder.BorderThickness.Top > 0) ? BorderStyleOptions[1] : BorderStyleOptions[0];
-
                 list.Add(new PropertyItem
                 {
                     Name = "BorderStyle",
@@ -145,17 +162,13 @@ namespace VB6VisualMockupDesigner.Helpers
                 });
             }
 
-            // 6. Appearance (Flat vs 3D)
+            // Appearance (Flat vs 3D)
             if (ctrl is Control cApp)
             {
-                // En WPF simulamos Flat/3D con colores de borde.
-                // Si el borde es Negro -> Flat (0), Si es Gris -> 3D (1).
-                // Por defecto asumimos 3D.
-                string currentApp = AppearanceOptions[1];
-
+                string currentApp = AppearanceOptions[1]; // Default 3D (Gris)
                 if (cApp.BorderBrush is SolidColorBrush bBrush && bBrush.Color == Colors.Black)
                 {
-                    currentApp = AppearanceOptions[0];
+                    currentApp = AppearanceOptions[0]; // Flat (Negro)
                 }
 
                 list.Add(new PropertyItem
@@ -169,7 +182,7 @@ namespace VB6VisualMockupDesigner.Helpers
                 });
             }
 
-            // 7. Font
+            // Font
             if (ctrl is Control cFont)
             {
                 string fontInfo = $"{cFont.FontFamily}; {cFont.FontSize}pt";
@@ -185,13 +198,13 @@ namespace VB6VisualMockupDesigner.Helpers
                 });
             }
 
-            // 8. Picture (Imágenes)
+            // Picture
             if (ctrl is Image img)
             {
                 list.Add(new PropertyItem
                 {
                     Name = "Picture",
-                    Value = "", // Difícil de recuperar ruta en WPF, se deja vacío para setear uno nuevo
+                    Value = "",
                     Category = "Appearance",
                     Type = PropertyType.File,
                     Description = "Gráfico mostrado en el control."
@@ -199,6 +212,7 @@ namespace VB6VisualMockupDesigner.Helpers
             }
 
             // --- CATEGORÍA: BEHAVIOR ---
+
             list.Add(new PropertyItem
             {
                 Name = "Visible",
@@ -208,13 +222,17 @@ namespace VB6VisualMockupDesigner.Helpers
                 Options = BoolOptions
             });
 
+            // LÓGICA ENABLED (Simulación visual)
+            bool isLogicallyEnabled = ctrl.Opacity > 0.9;
+
             list.Add(new PropertyItem
             {
                 Name = "Enabled",
-                Value = ctrl.IsEnabled.ToString(),
+                Value = isLogicallyEnabled.ToString(),
                 Category = "Behavior",
                 Type = PropertyType.Boolean,
-                Options = BoolOptions
+                Options = BoolOptions,
+                Description = "Habilita o deshabilita el control (Visualmente en modo diseño)."
             });
 
             if (ctrl is Control cTab)
@@ -224,21 +242,20 @@ namespace VB6VisualMockupDesigner.Helpers
 
             list.Add(new PropertyItem { Name = "Tag", Value = ctrl.Tag, Category = "Misc" });
 
-            // Index (Arrays de controles)
             int? idx = VB6Data.GetIndex(ctrl);
             list.Add(new PropertyItem
             {
                 Name = "Index",
                 Value = idx.HasValue ? idx.ToString() : "",
                 Category = "Misc",
-                Description = "Índice en la matriz de controles."
+                Description = "Indica el índice en una matriz de controles."
             });
 
             return list;
         }
 
         // ==========================================
-        // APLICAR PROPIEDADES (ESCRITURA)
+        // 2. APLICAR PROPIEDADES (ESCRITURA)
         // ==========================================
         public static void ApplyProperty(FrameworkElement ctrl, PropertyItem item)
         {
@@ -252,12 +269,15 @@ namespace VB6VisualMockupDesigner.Helpers
                 case "Width": ctrl.Width = Math.Max(10, ParseDouble(val)); break;
                 case "Height": ctrl.Height = Math.Max(10, ParseDouble(val)); break;
 
-                // --- TEXT CONTENT ---
+                // --- CONTENT ---
                 case "Caption":
                     if (ctrl is ContentControl cc) cc.Content = val;
                     if (ctrl is TextBlock txt) txt.Text = val;
                     if (ctrl is GroupBox gb) gb.Header = val;
+                    // Caso especial: Border que envuelve TextBlock (ej: Timer, SSPanel)
+                    if (ctrl is Border b && b.Child is TextBlock tChild) tChild.Text = val;
                     break;
+
                 case "Text":
                     if (ctrl is TextBox t) t.Text = val;
                     break;
@@ -267,18 +287,16 @@ namespace VB6VisualMockupDesigner.Helpers
                     ApplyAlignment(ctrl, val);
                     break;
 
-                // --- BACKSTYLE (Transparente/Opaco) ---
+                // --- BACKSTYLE (Label Transparent vs Opaque) ---
                 case "BackStyle":
                     if (ctrl is Control cStyle)
                     {
-                        if (val != null && val.Contains("0")) // 0 - Transparent
+                        if (val != null && val.Contains("0")) // Transparent
                         {
                             cStyle.Background = Brushes.Transparent;
                         }
-                        else // 1 - Opaque
+                        else // Opaque
                         {
-                            // Si cambiamos a opaco, ponemos el gris clásico de VB6 por defecto
-                            // a menos que el usuario cambie luego el BackColor.
                             cStyle.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#D4D0C8"));
                         }
                     }
@@ -286,58 +304,45 @@ namespace VB6VisualMockupDesigner.Helpers
 
                 // --- COLORS ---
                 case "BackColor":
-                    if (ctrl is Control cColor)
-                    {
-                        // Si es transparente, cambiar el color no debería hacerlo opaco automáticamente en VB6 puro,
-                        // pero en este diseñador es más amigable que sí pinte el color.
-                        cColor.Background = ParseColor(val);
-                    }
+                    if (ctrl is Control cColor) cColor.Background = ParseColor(val);
                     if (ctrl is Border bColor) bColor.Background = ParseColor(val);
+                    // TextBlock tiene Background también, por si acaso
+                    if (ctrl is TextBlock tColor) tColor.Background = ParseColor(val);
                     break;
 
                 case "ForeColor":
                     if (ctrl is Control cFore) cFore.Foreground = ParseColor(val);
-                    if (ctrl is TextBlock tFore) tFore.Foreground = ParseColor(val);
+                    if (ctrl is TextBlock tFore) tFore.Foreground = ParseColor(val); // <--- AQUI ESTÁ LA LÍNEA RESTAURADA
+                    // Caso especial: Border que envuelve TextBlock
+                    if (ctrl is Border bFore && bFore.Child is TextBlock tbFore) tbFore.Foreground = ParseColor(val);
                     break;
 
-                // --- BORDER STYLE (None / Fixed Single) ---
+                // --- BORDER STYLE ---
                 case "BorderStyle":
                     if (ctrl is Control cBorder)
                     {
-                        if (val != null && val.Contains("1")) // 1 - Fixed Single
+                        if (val != null && val.Contains("1")) // Fixed Single
                         {
                             cBorder.BorderThickness = new Thickness(1);
-
-                            // Por defecto usamos Gris (estilo 3D/Inset standard)
                             cBorder.BorderBrush = Brushes.Gray;
-
-                            // Los labels con borde en VB6 tienen un pequeño padding interno
                             cBorder.Padding = new Thickness(2);
                         }
-                        else // 0 - None
+                        else // None
                         {
                             cBorder.BorderThickness = new Thickness(0);
-                            cBorder.Padding = new Thickness(0); // Sin padding si no hay borde
+                            cBorder.Padding = new Thickness(0);
                         }
                     }
                     break;
 
-                // --- APPEARANCE (Flat / 3D) ---
+                // --- APPEARANCE ---
                 case "Appearance":
-                    if (ctrl is Control cApp)
+                    if (ctrl is Control cApp && cApp.BorderThickness.Top > 0)
                     {
-                        // Solo tiene sentido si hay borde
-                        if (cApp.BorderThickness.Top > 0)
-                        {
-                            if (val != null && val.Contains("0")) // 0 - Flat
-                            {
-                                cApp.BorderBrush = Brushes.Black; // Borde negro sólido
-                            }
-                            else // 1 - 3D
-                            {
-                                cApp.BorderBrush = Brushes.Gray; // Simulación simple de borde hundido
-                            }
-                        }
+                        if (val != null && val.Contains("0")) // Flat
+                            cApp.BorderBrush = Brushes.Black;
+                        else // 3D
+                            cApp.BorderBrush = Brushes.Gray;
                     }
                     break;
 
@@ -345,19 +350,12 @@ namespace VB6VisualMockupDesigner.Helpers
                 case "Font":
                     if (ctrl is Control f)
                     {
-                        try
-                        {
-                            var parts = val.Split(';');
-                            if (parts.Length > 0) f.FontFamily = new FontFamily(parts[0].Trim());
-                            if (parts.Length > 1)
-                            {
-                                string sizeStr = parts[1].ToLower().Replace("pt", "").Trim();
-                                if (double.TryParse(sizeStr, out double size)) f.FontSize = size;
-                            }
-                            if (val.Contains("Bold")) f.FontWeight = FontWeights.Bold;
-                            else f.FontWeight = FontWeights.Normal;
-                        }
-                        catch { /* Ignorar errores de parseo */ }
+                        ApplyFontToControl(f, val);
+                    }
+                    // Soporte para TextBlock sueltos
+                    else if (ctrl is TextBlock tx)
+                    {
+                        ApplyFontToTextBlock(tx, val);
                     }
                     break;
 
@@ -370,7 +368,7 @@ namespace VB6VisualMockupDesigner.Helpers
                             var bitmap = new BitmapImage();
                             bitmap.BeginInit();
                             bitmap.UriSource = new Uri(val);
-                            bitmap.CacheOption = BitmapCacheOption.OnLoad; // Liberar archivo
+                            bitmap.CacheOption = BitmapCacheOption.OnLoad;
                             bitmap.EndInit();
                             img.Source = bitmap;
                         }
@@ -382,15 +380,28 @@ namespace VB6VisualMockupDesigner.Helpers
                 case "Visible":
                     ctrl.Visibility = (val == "True") ? Visibility.Visible : Visibility.Hidden;
                     break;
+
                 case "Enabled":
-                    ctrl.IsEnabled = (val == "True");
+                    // Simulación visual de Enabled
+                    bool enableState = (val == "True");
+                    if (enableState)
+                    {
+                        ctrl.Opacity = 1.0;
+                    }
+                    else
+                    {
+                        ctrl.Opacity = 0.5;
+                    }
                     break;
+
                 case "TabIndex":
                     if (ctrl is Control cTab) cTab.TabIndex = (int)ParseDouble(val);
                     break;
+
                 case "Tag":
                     ctrl.Tag = val;
                     break;
+
                 case "Index":
                     if (string.IsNullOrWhiteSpace(val)) VB6Data.SetIndex(ctrl, null);
                     else if (int.TryParse(val, out int i)) VB6Data.SetIndex(ctrl, i);
@@ -399,20 +410,69 @@ namespace VB6VisualMockupDesigner.Helpers
         }
 
         // ==========================================
-        // MÉTODOS AUXILIARES (HELPERS)
+        // HELPERS PRIVADOS
         // ==========================================
+
+        private static void ApplyFontToControl(Control f, string val)
+        {
+            try
+            {
+                var parts = val.Split(';');
+                if (parts.Length > 0) f.FontFamily = new FontFamily(parts[0].Trim());
+                if (parts.Length > 1)
+                {
+                    string sizeStr = parts[1].ToLower().Replace("pt", "").Trim();
+                    if (double.TryParse(sizeStr, out double size)) f.FontSize = Math.Max(1, size * 1.33); // *1.33 aprox pt a px
+                }
+
+                // Resetear estilos antes de aplicar
+                f.FontWeight = FontWeights.Normal;
+                f.FontStyle = FontStyles.Normal;
+
+                // Como 'Control' no tiene TextDecorations nativo fácil (depende del contenido),
+                // aplicamos solo Bold e Italic. 
+                // Si el Control es un Label o TextBox, podríamos buscar dentro, pero en WPF básico
+                // TextDecorations se heredan mejor en TextBlock.
+
+                if (val.Contains("Bold")) f.FontWeight = FontWeights.Bold;
+                if (val.Contains("Italic")) f.FontStyle = FontStyles.Italic;
+            }
+            catch { }
+        }
+
+        private static void ApplyFontToTextBlock(TextBlock f, string val)
+        {
+            try
+            {
+                var parts = val.Split(';');
+                if (parts.Length > 0) f.FontFamily = new FontFamily(parts[0].Trim());
+                if (parts.Length > 1)
+                {
+                    string sizeStr = parts[1].ToLower().Replace("pt", "").Trim();
+                    if (double.TryParse(sizeStr, out double size)) f.FontSize = Math.Max(1, size * 1.33);
+                }
+
+                f.FontWeight = val.Contains("Bold") ? FontWeights.Bold : FontWeights.Normal;
+                f.FontStyle = val.Contains("Italic") ? FontStyles.Italic : FontStyles.Normal;
+
+                // TextDecorations
+                var decos = new TextDecorationCollection();
+                if (val.Contains("Underline")) decos.Add(TextDecorations.Underline);
+                if (val.Contains("Strikethrough") || val.Contains("Strikeout")) decos.Add(TextDecorations.Strikethrough);
+                f.TextDecorations = decos;
+            }
+            catch { }
+        }
 
         private static string GetAlignFromControl(FrameworkElement ctrl)
         {
-            // Estandarizar la lectura de alineación
             HorizontalAlignment ha = HorizontalAlignment.Left;
-
             if (ctrl is Control c) ha = c.HorizontalContentAlignment;
-            if (ctrl is TextBox tb) ha = (HorizontalAlignment)tb.TextAlignment; // Conversión aproximada
+            if (ctrl is TextBox tb) ha = (HorizontalAlignment)tb.TextAlignment;
 
             if (ha == HorizontalAlignment.Right) return AlignOptions[1];
             if (ha == HorizontalAlignment.Center) return AlignOptions[2];
-            return AlignOptions[0]; // Default Left
+            return AlignOptions[0];
         }
 
         private static void ApplyAlignment(FrameworkElement ctrl, string val)
@@ -423,7 +483,6 @@ namespace VB6VisualMockupDesigner.Helpers
 
             if (ctrl is Control c) c.HorizontalContentAlignment = align;
 
-            // Para TextBox, TextAlignment funciona mejor visualmente que ContentAlignment
             if (ctrl is TextBox tb)
             {
                 if (align == HorizontalAlignment.Left) tb.TextAlignment = TextAlignment.Left;
@@ -442,12 +501,11 @@ namespace VB6VisualMockupDesigner.Helpers
         {
             try
             {
-                // Soporta Hex (#FFFFFF) y nombres (Red, Blue)
                 return (SolidColorBrush)(new BrushConverter().ConvertFrom(s));
             }
             catch
             {
-                return Brushes.White; // Fallback
+                return Brushes.White;
             }
         }
     }
