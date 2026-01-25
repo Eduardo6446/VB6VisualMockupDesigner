@@ -55,6 +55,31 @@ namespace VB6VisualMockupDesigner.Views
         // ================================================
         // LÓGICA DE IMPORTACIÓN DE FUENTES
         // ================================================
+
+        private string GetFriendlyName(FontFamily ff)
+        {
+            if (ff == null) return "";
+
+            // 1. Intentar obtener el nombre del diccionario de nombres de la fuente
+            string name = ff.FamilyNames.Values.FirstOrDefault();
+
+            // 2. Si no tiene nombre legible, analizamos el Source
+            if (string.IsNullOrEmpty(name) || name.Contains("file://"))
+            {
+                // Si es una ruta tipo "file:///C:/.../font.ttf#MiFuente", 
+                // queremos solo "MiFuente"
+                if (ff.Source.Contains("#"))
+                {
+                    name = ff.Source.Split('#').Last();
+                }
+                else
+                {
+                    name = ff.Source;
+                }
+            }
+            return name;
+        }
+
         private void BtnImport_Click(object sender, RoutedEventArgs e)
         {
             var dlg = new Microsoft.Win32.OpenFileDialog
@@ -68,38 +93,28 @@ namespace VB6VisualMockupDesigner.Views
                 try
                 {
                     Uri fontUri = new Uri(dlg.FileName);
-
-                    // Intentamos leer los metadatos de la fuente para obtener el nombre real de la familia
-                    // (El nombre del archivo no siempre coincide con el nombre de la fuente)
                     GlyphTypeface glyphTypeface = new GlyphTypeface(fontUri);
-
-                    // Buscamos el nombre en inglés (LCID 1033) o el primero disponible
                     string familyName = glyphTypeface.FamilyNames.Values.FirstOrDefault();
 
                     if (string.IsNullOrEmpty(familyName))
-                    {
-                        // Fallback: Usar nombre de archivo si no tiene metadatos legibles
                         familyName = System.IO.Path.GetFileNameWithoutExtension(dlg.FileName);
-                    }
 
-                    // Creamos la FontFamily dinámica.
-                    // Sintaxis WPF para fuentes locales: "file:///Ruta/archivo.ttf#NombreFamilia"
-                    var newFont = new FontFamily(fontUri, "./#" + familyName);
+                    // IMPORTANTE: Construimos la URI completa para que funcione el motor,
+                    // pero el GetFriendlyName se encargará de ocultarla en la UI.
+                    string absoluteFontString = $"{fontUri.AbsoluteUri}#{familyName}";
+                    var newFont = new FontFamily(absoluteFontString);
 
-                    // Insertar al inicio para que el usuario la vea de inmediato
                     _fontCollection.Insert(0, newFont);
 
-                    // Seleccionar automáticamente
                     LstFonts.SelectedItem = newFont;
                     LstFonts.ScrollIntoView(newFont);
 
-                    MessageBox.Show($"Fuente '{familyName}' cargada correctamente.\nAhora puede usarla en este diseño.",
-                                    "Fuente Importada", MessageBoxButton.OK, MessageBoxImage.Information);
+                    // Forzar actualización inmediata del texto
+                    TxtFont.Text = familyName;
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Error al cargar la fuente:\n{ex.Message}",
-                                    "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show($"Error al cargar la fuente:\n{ex.Message}");
                 }
             }
         }
@@ -109,18 +124,18 @@ namespace VB6VisualMockupDesigner.Views
         // ================================================
         private void ParseCurrentString(string fontStr)
         {
-            // Formato esperado: "Family; Sizept; Style..."
             if (string.IsNullOrEmpty(fontStr)) fontStr = "Microsoft Sans Serif; 8.25";
-
             var parts = fontStr.Split(';');
+            string familyToFind = parts.Length > 0 ? parts[0].Trim() : "Microsoft Sans Serif";
 
-            // 1. Familia
-            string family = parts.Length > 0 ? parts[0].Trim() : "Microsoft Sans Serif";
+            // Si viene una ruta larga (file:///...), extraemos solo el nombre para buscarlo visualmente
+            if (familyToFind.Contains("#"))
+                familyToFind = familyToFind.Split('#').Last();
 
-            // Buscamos en la colección. La comparación es flexible para soportar fuentes importadas previamente.
+            // Buscamos comparando nombres amigables
             var foundFont = _fontCollection.FirstOrDefault(f =>
-                f.Source.Equals(family, StringComparison.InvariantCultureIgnoreCase) ||
-                (f.FamilyNames.Values != null && f.FamilyNames.Values.Contains(family))
+                GetFriendlyName(f).Equals(familyToFind, StringComparison.InvariantCultureIgnoreCase) ||
+                f.Source.Equals(familyToFind, StringComparison.InvariantCultureIgnoreCase)
             );
 
             if (foundFont != null)
@@ -128,46 +143,29 @@ namespace VB6VisualMockupDesigner.Views
                 LstFonts.SelectedItem = foundFont;
                 LstFonts.ScrollIntoView(foundFont);
             }
-            else
+            else if (LstFonts.Items.Count > 0)
             {
-                // Si no se encuentra (ej: fuente desinstalada), seleccionar la primera o default
-                if (LstFonts.Items.Count > 0) LstFonts.SelectedIndex = 0;
+                LstFonts.SelectedIndex = 0;
             }
 
-            // 2. Tamaño
             string size = "8";
             if (parts.Length > 1) size = parts[1].ToLower().Replace("pt", "").Trim();
 
-            // Intentar matchear con la lista predefinida
-            // Parseamos a double y luego floor para quitar decimales raros (8.25 -> 8) para la selección de lista
             if (double.TryParse(size, out double sizeNum))
             {
                 int sizeInt = (int)Math.Floor(sizeNum);
-                string sizeStr = sizeInt.ToString();
-
-                if (LstSizes.Items.Contains(sizeStr))
-                {
-                    LstSizes.SelectedItem = sizeStr;
-                }
-                else
-                {
-                    // Si es un tamaño no estándar, lo ponemos en el TextBox directamente
-                    LstSizes.SelectedItem = null;
-                    TxtSize.Text = size;
-                }
+                if (LstSizes.Items.Contains(sizeInt.ToString())) LstSizes.SelectedItem = sizeInt.ToString();
+                else { LstSizes.SelectedItem = null; TxtSize.Text = size; }
             }
 
-            // 3. Estilos (Negrita / Cursiva)
             bool isBold = fontStr.Contains("Bold");
             bool isItalic = fontStr.Contains("Italic");
+            if (isBold && isItalic) LstStyles.SelectedIndex = 3;
+            else if (isBold) LstStyles.SelectedIndex = 2;
+            else if (isItalic) LstStyles.SelectedIndex = 1;
+            else LstStyles.SelectedIndex = 0;
 
-            if (isBold && isItalic) LstStyles.SelectedIndex = 3;      // Negrita Cursiva
-            else if (isBold) LstStyles.SelectedIndex = 2;             // Negrita
-            else if (isItalic) LstStyles.SelectedIndex = 1;           // Cursiva
-            else LstStyles.SelectedIndex = 0;                         // Normal
-
-            // 4. Efectos
-            if (fontStr.Contains("Strikeout") || fontStr.Contains("Strikethrough")) ChkStrike.IsChecked = true;
+            if (fontStr.Contains("Strikethrough")) ChkStrike.IsChecked = true;
             if (fontStr.Contains("Underline")) ChkUnderline.IsChecked = true;
         }
 
@@ -183,7 +181,7 @@ namespace VB6VisualMockupDesigner.Views
             {
                 LblPreview.FontFamily = ff;
                 // Mostramos el nombre amigable si es posible
-                TxtFont.Text = ff.Source.Contains("#") ? ff.FamilyNames.Values.FirstOrDefault() : ff.Source;
+                TxtFont.Text = GetFriendlyName(ff);
             }
 
             // Tamaño

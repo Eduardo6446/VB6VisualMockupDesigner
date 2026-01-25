@@ -5,6 +5,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:models="clr-namespace:VB6VisualMockupDesigner.Models"
              xmlns:views="clr-namespace:VB6VisualMockupDesigner.Views"
+             xmlns:converters="clr-namespace:VB6VisualMockupDesigner.Converters"
              mc:Ignorable="d"
              d:DesignHeight="600" d:DesignWidth="300"
              FontFamily="Segoe UI"
@@ -12,6 +13,8 @@
              Foreground="{DynamicResource PrimaryText}">
 
     <UserControl.Resources>
+
+        <converters:FontStringConverter x:Key="FontStringCleanConverter"/>
 
         <Style x:Key="ToolHeaderButtonStyle" TargetType="Button">
             <Setter Property="Width" Value="22"/>
@@ -114,7 +117,29 @@
                     <ColumnDefinition Width="25"/>
                 </Grid.ColumnDefinitions>
                 <TextBox Grid.Column="0" Text="{Binding Value}" Style="{StaticResource PropEditStyle}" IsReadOnly="True" Foreground="{DynamicResource SecondaryText}"/>
-                <Button Grid.Column="1" Content="..." FontWeight="Bold" Padding="0,-2,0,0" Margin="0,1,1,1" Background="{DynamicResource HeaderBackground}" Foreground="{DynamicResource PrimaryText}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Click="OnDialogButtonClick"/>
+                <Button Grid.Column="1" Content="..." FontWeight="Bold" Padding="0,-2,0,0" Margin="0,1,1,1" 
+                        Background="{DynamicResource HeaderBackground}" Foreground="{DynamicResource PrimaryText}" 
+                        BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" 
+                        Click="OnDialogButtonClick"/>
+            </Grid>
+        </DataTemplate>
+
+        <DataTemplate x:Key="FontEditorTemplate">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="25"/>
+                </Grid.ColumnDefinitions>
+                <TextBox Grid.Column="0" 
+                         Text="{Binding Value, Converter={StaticResource FontStringCleanConverter}}" 
+                         Style="{StaticResource PropEditStyle}" 
+                         IsReadOnly="True" 
+                         Foreground="{DynamicResource SecondaryText}"/>
+
+                <Button Grid.Column="1" Content="..." FontWeight="Bold" Padding="0,-2,0,0" Margin="0,1,1,1" 
+                        Background="{DynamicResource HeaderBackground}" Foreground="{DynamicResource PrimaryText}" 
+                        BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" 
+                        Click="OnDialogButtonClick"/>
             </Grid>
         </DataTemplate>
 
@@ -154,9 +179,11 @@
                             <DataTrigger Binding="{Binding Type}" Value="File">
                                 <Setter Property="ContentTemplate" Value="{StaticResource DialogEditorTemplate}"/>
                             </DataTrigger>
+
                             <DataTrigger Binding="{Binding Type}" Value="Font">
-                                <Setter Property="ContentTemplate" Value="{StaticResource DialogEditorTemplate}"/>
+                                <Setter Property="ContentTemplate" Value="{StaticResource FontEditorTemplate}"/>
                             </DataTrigger>
+
                             <DataTrigger Binding="{Binding Type}" Value="ReadOnly">
                                 <Setter Property="ContentTemplate">
                                     <Setter.Value>
@@ -195,10 +222,7 @@
                     <ComboBox x:Name="ObjectSelector" Width="140" Height="22" IsEnabled="True" FontWeight="Bold" Style="{DynamicResource PropComboStyle}" SelectionChanged="ObjectSelector_SelectionChanged"/>
                 </StackPanel>
 
-                <Button Grid.Column="1" 
-                        Content="&#xE711;" 
-                        Click="CloseBtn_Click" 
-                        Style="{StaticResource ToolHeaderButtonStyle}"/>
+                <Button Grid.Column="1" Content="&#xE711;" Click="CloseBtn_Click" Style="{StaticResource ToolHeaderButtonStyle}"/>
             </Grid>
         </Border>
 
