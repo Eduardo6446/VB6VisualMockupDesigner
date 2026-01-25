@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel; // Necesario para ICollectionView y SortDescription
+using System.ComponentModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data; // Necesario para ListCollectionView
+using System.Windows.Data;
 using VB6VisualMockupDesigner.Helpers;
 using VB6VisualMockupDesigner.Models;
 
@@ -26,7 +26,9 @@ namespace VB6VisualMockupDesigner.Views
         private bool _isUpdating;
         private bool _ignoreComboEvents = false;
 
-        // VARIABLE CLAVE PARA EL BUSCADOR
+        // Lista para mantener referencia y desuscribir eventos
+        private List<PropertyItem> _observedProperties = new List<PropertyItem>();
+
         private ICollectionView _view;
 
         public PropertiesPanel()
@@ -39,8 +41,18 @@ namespace VB6VisualMockupDesigner.Views
         // ============================================================
         public void InspectObject(FrameworkElement control)
         {
+            // 1. Limpieza previa (Importante para no duplicar eventos)
+            if (_observedProperties != null)
+            {
+                foreach (var prop in _observedProperties)
+                {
+                    prop.PropertyChanged -= OnPropertyItemChanged;
+                }
+                _observedProperties.Clear();
+            }
+
             _currentControl = control;
-            _isUpdating = true;
+            _isUpdating = true; // Bloqueamos actualizaciones visuales mientras cargamos
 
             if (control == null)
             {
@@ -50,53 +62,56 @@ namespace VB6VisualMockupDesigner.Views
                 return;
             }
 
-            // 1. Obtener la lista de propiedades del Helper
+            // 2. Obtener nuevas propiedades
             var props = PropertyManager.GetPropertiesFor(control);
 
-            // 2. CREAR LA VISTA FILTRABLE (Aquí está la magia del buscador)
-            _view = new ListCollectionView(props);
+            // 3. SUSCRIPCIÓN A CAMBIOS (La corrección clave)
+            // Esto asegura que si cambias un ComboBox, se detecte inmediatamente.
+            foreach (var prop in props)
+            {
+                prop.PropertyChanged += OnPropertyItemChanged;
+                _observedProperties.Add(prop);
+            }
 
-            // 3. Conectar el filtro
+            // 4. Crear vista filtrable
+            _view = new ListCollectionView(props);
             _view.Filter = FilterProperties;
 
-            // 4. Configurar ordenación y agrupación inicial
             ApplySortingAndGrouping();
 
-            // 5. Asignar al DataGrid
             PropGrid.ItemsSource = _view;
 
-            _isUpdating = false;
+            _isUpdating = false; // Desbloqueamos
+        }
+
+        // Este método se dispara automáticamente cuando el Binding actualiza el valor (ComboBox o TextBox)
+        private void OnPropertyItemChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == "Value")
+            {
+                ApplyChange(sender as PropertyItem);
+            }
         }
 
         // ============================================================
         // 2. LÓGICA DEL BUSCADOR (FILTER)
         // ============================================================
-
-        // Evento que salta cada vez que escribes una letra
         private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
         {
-            // Pedimos a la vista que se actualice pasando el filtro de nuevo
             _view?.Refresh();
         }
 
-        // Esta función decide si una propiedad se muestra o se oculta
         private bool FilterProperties(object obj)
         {
-            // Si la caja está vacía, mostramos todo
             if (string.IsNullOrWhiteSpace(SearchBox.Text)) return true;
-
             var prop = obj as PropertyItem;
             if (prop == null) return false;
-
-            // Buscamos si el nombre contiene el texto (ignorando mayúsculas/minúsculas)
             return prop.Name.IndexOf(SearchBox.Text, StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         // ============================================================
-        // 3. LÓGICA DEL OBJECT SELECTOR (COMBO SUPERIOR)
+        // 3. LÓGICA DEL OBJECT SELECTOR
         // ============================================================
-
-        // Clase interna para el combo
         private class ControlItem
         {
             public string Name { get; set; }
@@ -131,7 +146,6 @@ namespace VB6VisualMockupDesigner.Views
         private void ObjectSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (_ignoreComboEvents) return;
-
             if (ObjectSelector.SelectedItem is ControlItem item)
             {
                 ObjectSelectedFromList?.Invoke(item.Control);
@@ -139,18 +153,16 @@ namespace VB6VisualMockupDesigner.Views
         }
 
         // ============================================================
-        // 4. LÓGICA DE ORDENACIÓN (CATEGORIZADO VS ALFABÉTICO)
+        // 4. ORDENACIÓN
         // ============================================================
         private void SortButton_Click(object sender, RoutedEventArgs e)
         {
             var btn = sender as System.Windows.Controls.Primitives.ToggleButton;
             if (btn == null) return;
 
-            // Lógica de "Radio Button" manual
             if (btn == BtnCategorized) BtnAlphabetical.IsChecked = false;
             else BtnCategorized.IsChecked = false;
 
-            // Re-aplicar orden
             if (_view != null)
             {
                 ApplySortingAndGrouping();
@@ -161,29 +173,27 @@ namespace VB6VisualMockupDesigner.Views
         private void ApplySortingAndGrouping()
         {
             if (_view == null) return;
-
-            // Limpiar orden previo
             _view.GroupDescriptions.Clear();
             _view.SortDescriptions.Clear();
 
             if (BtnCategorized.IsChecked == true)
             {
-                // Agrupar por Categoría
                 _view.GroupDescriptions.Add(new PropertyGroupDescription("Category"));
-                // Ordenar: Primero Categoría, luego Nombre
                 _view.SortDescriptions.Add(new SortDescription("Category", ListSortDirection.Ascending));
                 _view.SortDescriptions.Add(new SortDescription("Name", ListSortDirection.Ascending));
             }
             else
             {
-                // Solo orden alfabético simple
                 _view.SortDescriptions.Add(new SortDescription("Name", ListSortDirection.Ascending));
             }
         }
 
         // ============================================================
-        // 5. EDICIÓN Y CAMBIOS (COMMIT)
+        // 5. APLICAR CAMBIOS
         // ============================================================
+
+        // Mantenemos este evento para TextBoxes, ya que fuerza la actualización del Binding
+        // cuando pierden el foco o presionas Enter.
         private void PropGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
         {
             if (e.EditAction == DataGridEditAction.Commit)
@@ -191,74 +201,71 @@ namespace VB6VisualMockupDesigner.Views
                 var item = e.Row.Item as PropertyItem;
                 if (item != null)
                 {
-                    // Pequeño hack para que el binding se actualice antes de aplicar
-                    // (A veces el TextBox no ha enviado el dato al source todavía)
-                    if (e.EditingElement is TextBox tb) item.Value = tb.Text;
-
-                    ApplyChange(item);
+                    // Forzar actualización del binding para TextBoxes
+                    if (e.EditingElement is TextBox tb)
+                    {
+                        // Esto disparará OnPropertyItemChanged automáticamente
+                        var binding = tb.GetBindingExpression(TextBox.TextProperty);
+                        binding?.UpdateSource();
+                    }
+                    // Nota: No llamamos ApplyChange aquí directamente porque 
+                    // OnPropertyItemChanged ya lo hará al actualizarse el source.
                 }
             }
         }
 
         private void ApplyChange(PropertyItem item)
         {
+            // Protección: No aplicar si estamos cargando el objeto inicialmente
             if (_currentControl == null || _isUpdating) return;
 
-            // Validación especial para el Nombre
+            // Validación de Nombre
             if (item.Name == "(Name)")
             {
                 string newName = item.Value?.ToString();
                 if (CheckNameAvailability != null && !CheckNameAvailability(newName))
                 {
-                    // Revertir si el nombre no es válido o está duplicado
+                    _isUpdating = true; // Evitar loop infinito al revertir
                     item.Value = _currentControl.Name;
+                    _isUpdating = false;
                     return;
                 }
             }
 
-            PropertyChanging?.Invoke(this, EventArgs.Empty); // Para Undo/Redo
+            PropertyChanging?.Invoke(this, EventArgs.Empty); // Snapshot para Undo
+
+            // ¡AQUÍ OCURRE LA MAGIA!
             PropertyManager.ApplyProperty(_currentControl, item);
-            PropertyChanged?.Invoke(this, EventArgs.Empty);  // Para actualizar visuales (bordes azules)
+
+            PropertyChanged?.Invoke(this, EventArgs.Empty);  // Refrescar selección visual
         }
 
         // ============================================================
-        // 6. EVENTOS DE UI AUXILIARES
+        // 6. UI AUXILIARES
         // ============================================================
-
-        // Clic en la fila -> Mostrar descripción abajo
         private void PropGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (PropGrid.SelectedItem is PropertyItem item)
             {
                 DescTitle.Text = item.Name;
-                DescText.Text = string.IsNullOrEmpty(item.Description)
-                    ? "Sin descripción disponible."
-                    : item.Description;
+                DescText.Text = string.IsNullOrEmpty(item.Description) ? "Sin descripción." : item.Description;
             }
             else
             {
-                DescTitle.Text = "";
-                DescText.Text = "";
+                DescTitle.Text = ""; DescText.Text = "";
             }
         }
 
-        // Botón Cerrar (X)
-        private void CloseBtn_Click(object sender, RoutedEventArgs e)
-        {
-            CloseRequested?.Invoke(this, EventArgs.Empty);
-        }
+        private void CloseBtn_Click(object sender, RoutedEventArgs e) => CloseRequested?.Invoke(this, EventArgs.Empty);
 
-        // Color Picker (Popup)
         private void OnColorPickedFromPopup(string hexColor)
         {
             if (PropGrid.SelectedItem is PropertyItem item)
             {
-                item.Value = hexColor;
-                ApplyChange(item);
+                item.Value = hexColor; // Esto dispara OnPropertyItemChanged -> ApplyChange
             }
         }
 
-        // File/Font Picker (Dialogs)
         private void OnDialogButtonClick(object sender, RoutedEventArgs e)
         {
             if ((sender as FrameworkElement)?.DataContext is PropertyItem item)
@@ -276,17 +283,14 @@ namespace VB6VisualMockupDesigner.Views
             };
             if (dlg.ShowDialog() == true)
             {
-                item.Value = dlg.FileName;
-                ApplyChange(item);
+                item.Value = dlg.FileName; // Dispara ApplyChange
             }
         }
 
         private void HandleFontPicker(PropertyItem item)
         {
-            // Mockup simple por ahora
             MessageBox.Show("Selector de fuente simulado.\nSe aplicará 'Courier New, 12pt'.");
-            item.Value = "Courier New; 12pt";
-            ApplyChange(item);
+            item.Value = "Courier New; 12pt"; // Dispara ApplyChange
         }
     }
 }

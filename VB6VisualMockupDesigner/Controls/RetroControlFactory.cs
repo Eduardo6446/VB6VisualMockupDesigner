@@ -1,9 +1,7 @@
-﻿using System.IO;
-using System.Text;
+﻿using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
-using System.Windows.Markup; // Necesario para leer tu XAML
 using System.Windows.Media;
 using System.Windows.Shapes;
 
@@ -11,34 +9,30 @@ namespace VB6VisualMockupDesigner.Controls
 {
     public static class RetroControlFactory
     {
-
+        // =========================================================
+        // HELPER: Crea un Canvas interno para contenedores
+        // =========================================================
         private static Canvas CreateChildCanvas()
         {
             return new Canvas
             {
-                // Estirar para llenar el padre
                 HorizontalAlignment = HorizontalAlignment.Stretch,
                 VerticalAlignment = VerticalAlignment.Stretch,
-
-                // CRÍTICO: Transparent detecta clicks/drops. 'null' NO los detecta.
-                Background = Brushes.Transparent,
-
-                // Recortar controles que se salen del borde
+                Background = Brushes.Transparent, // Crucial para detectar Drag & Drop
                 ClipToBounds = true,
-
-                // Tamaño mínimo para asegurar que siempre haya donde soltar
                 MinWidth = 10,
                 MinHeight = 10
             };
         }
 
-
+        // =========================================================
+        // MÉTODO PRINCIPAL: FABRICA DE CONTROLES
+        // =========================================================
         public static UIElement Create(string type)
         {
-
             FrameworkElement element = null;
 
-            // Estilos y recursos comunes
+            // Recursos y Estilos Comunes
             var fontParams = new { Family = new FontFamily("Microsoft Sans Serif"), Size = 11.0 };
             var vbGray = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#D4D0C8"));
             var vbBlack = Brushes.Black;
@@ -46,6 +40,10 @@ namespace VB6VisualMockupDesigner.Controls
             switch (type)
             {
                 case "Pointer": return null;
+
+                // -----------------------------------------------------
+                // CONTROLES ESTÁNDAR DE VB6
+                // -----------------------------------------------------
 
                 case "PictureBox":
                     var picBorder = new Border
@@ -55,30 +53,28 @@ namespace VB6VisualMockupDesigner.Controls
                         Background = vbGray,
                         BorderBrush = Brushes.Gray,
                         BorderThickness = new Thickness(2),
-                        Effect = new System.Windows.Media.Effects.DropShadowEffect { ShadowDepth = 0, BlurRadius = 0 },
-                        ClipToBounds = true // IMPORTANTE: Recorta contenido
+                        ClipToBounds = true
                     };
-                    //picBorder.Child = new Canvas(); // Contenedor interno
                     picBorder.Child = CreateChildCanvas();
                     element = picBorder;
                     break;
 
                 case "Label":
-                    element = new Label { Content = "Label1", Width = 121, Height = 25, FontFamily = fontParams.Family, FontSize = fontParams.Size, Padding = new Thickness(2) };
-                    break;
-                case "LabelFixed":
-                    // Es un Label, pero parece un TextBox
-                    var lblFixed = new Label
+                    // LÓGICA UNIFICADA:
+                    // Se crea transparente y sin borde por defecto.
+                    // PropertyManager cambiará BackColor/Border si es necesario.
+                    element = new Label
                     {
-                        Content = "Información",
+                        Content = "Label1",
                         Width = 121,
                         Height = 25,
-                        // Usa el estilo de borde hundido
-                        Style = RetroStyles.GetVB6FixedLabelStyle(),
-                        // Opcional: Si quieres que sea blanco como un textbox (pero no editable)
-                        Background = Brushes.White
+                        FontFamily = fontParams.Family,
+                        FontSize = fontParams.Size,
+                        Background = Brushes.Transparent,
+                        BorderThickness = new Thickness(0),
+                        Padding = new Thickness(2, 0, 0, 0), // Padding ligero por defecto
+                        VerticalContentAlignment = VerticalAlignment.Center
                     };
-                    element = lblFixed;
                     break;
 
                 case "TextBox":
@@ -87,7 +83,7 @@ namespace VB6VisualMockupDesigner.Controls
                         Text = "Text1",
                         Width = 121,
                         Height = 25,
-                        Style = RetroStyles.GetVB6TextBoxStyle() // <--- AQUI
+                        Style = RetroStyles.GetVB6TextBoxStyle()
                     };
                     break;
 
@@ -95,53 +91,75 @@ namespace VB6VisualMockupDesigner.Controls
                     var grp = new GroupBox
                     {
                         Header = "Frame1",
-                        Width = 200, // Un poco más grande para probar bien
+                        Width = 200,
                         Height = 150,
                         FontFamily = fontParams.Family,
                         FontSize = fontParams.Size,
                         Background = vbGray,
                         BorderBrush = Brushes.Gray
                     };
-
-                    // === SOLUCIÓN CRÍTICA ===
-                    var innerCanvas = new Canvas();
-
-                    // 1. OBLIGAR a llenar el espacio
-                    innerCanvas.HorizontalAlignment = HorizontalAlignment.Stretch;
-                    innerCanvas.VerticalAlignment = VerticalAlignment.Stretch;
-
-                    // 2. OBLIGAR a ser detectable (El 'null' no detecta clicks, 'Transparent' sí)
-                    innerCanvas.Background = Brushes.Transparent;
-
-                    // 3. OBLIGAR a tener tamaño mínimo (WPF a veces colapsa Canvas vacíos)
-                    innerCanvas.MinHeight = 100;
-                    innerCanvas.MinWidth = 100;
-
-                    //grp.Content = innerCanvas;
                     grp.Content = CreateChildCanvas();
-                    // ========================
-
                     element = grp;
                     break;
 
                 case "CommandButton":
-                    element = new Button { Content = "Command1", Width = 121, Height = 33, Background = vbGray, FontFamily = fontParams.Family, FontSize = fontParams.Size };
+                    element = new Button
+                    {
+                        Content = "Command1",
+                        Width = 121,
+                        Height = 33,
+                        Background = vbGray,
+                        FontFamily = fontParams.Family,
+                        FontSize = fontParams.Size
+                    };
                     break;
 
                 case "CheckBox":
-                    element = new CheckBox { Content = "Check1", Width = 121, Height = 25, FontFamily = fontParams.Family, FontSize = fontParams.Size, VerticalContentAlignment = VerticalAlignment.Center };
+                    element = new CheckBox
+                    {
+                        Content = "Check1",
+                        Width = 121,
+                        Height = 25,
+                        FontFamily = fontParams.Family,
+                        FontSize = fontParams.Size,
+                        VerticalContentAlignment = VerticalAlignment.Center
+                    };
                     break;
 
                 case "OptionButton":
-                    element = new RadioButton { Content = "Option1", Width = 121, Height = 25, FontFamily = fontParams.Family, FontSize = fontParams.Size, VerticalContentAlignment = VerticalAlignment.Center };
+                    element = new RadioButton
+                    {
+                        Content = "Option1",
+                        Width = 121,
+                        Height = 25,
+                        FontFamily = fontParams.Family,
+                        FontSize = fontParams.Size,
+                        VerticalContentAlignment = VerticalAlignment.Center
+                    };
                     break;
 
                 case "ComboBox":
-                    element = new ComboBox { Width = 121, Height = 21, FontFamily = fontParams.Family, FontSize = fontParams.Size, IsEditable = true, Text = "Combo1" };
+                    element = new ComboBox
+                    {
+                        Width = 121,
+                        Height = 21,
+                        FontFamily = fontParams.Family,
+                        FontSize = fontParams.Size,
+                        IsEditable = true,
+                        Text = "Combo1"
+                    };
                     break;
 
                 case "ListBox":
-                    var list = new ListBox { Width = 121, Height = 100, FontFamily = fontParams.Family, FontSize = fontParams.Size, BorderBrush = Brushes.Gray, BorderThickness = new Thickness(1) };
+                    var list = new ListBox
+                    {
+                        Width = 121,
+                        Height = 100,
+                        FontFamily = fontParams.Family,
+                        FontSize = fontParams.Size,
+                        BorderBrush = Brushes.Gray,
+                        BorderThickness = new Thickness(1)
+                    };
                     list.Items.Add("List1");
                     element = list;
                     break;
@@ -151,7 +169,7 @@ namespace VB6VisualMockupDesigner.Controls
                     {
                         Orientation = Orientation.Horizontal,
                         Width = 100,
-                        Height = 17, // Altura clásica
+                        Height = 17,
                         Value = 50,
                         Maximum = 100,
                         Style = RetroStyles.GetVB6ScrollBarStyle(Orientation.Horizontal)
@@ -162,7 +180,7 @@ namespace VB6VisualMockupDesigner.Controls
                     element = new ScrollBar
                     {
                         Orientation = Orientation.Vertical,
-                        Width = 17, // Ancho clásico
+                        Width = 17,
                         Height = 100,
                         Value = 50,
                         Maximum = 100,
@@ -171,65 +189,125 @@ namespace VB6VisualMockupDesigner.Controls
                     break;
 
                 case "Timer":
-                    element = new Border { Width = 34, Height = 34, Background = vbGray, BorderBrush = Brushes.Black, BorderThickness = new Thickness(1), Child = new TextBlock { Text = "Timer", FontSize = 8, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center } };
+                    element = new Border
+                    {
+                        Width = 34,
+                        Height = 34,
+                        Background = vbGray,
+                        BorderBrush = Brushes.Black,
+                        BorderThickness = new Thickness(1),
+                        Child = new TextBlock { Text = "Timer", FontSize = 8, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center }
+                    };
                     break;
 
                 case "DriveListBox":
-                    element = new ComboBox { Width = 121, Height = 21, FontFamily = fontParams.Family, FontSize = fontParams.Size, Text = @"c: [OS]" };
+                    element = new ComboBox
+                    {
+                        Width = 121,
+                        Height = 21,
+                        FontFamily = fontParams.Family,
+                        FontSize = fontParams.Size,
+                        Text = @"c: [OS]"
+                    };
                     break;
 
                 case "DirListBox":
-                    var dirList = new ListBox { Width = 121, Height = 100, FontFamily = fontParams.Family, FontSize = fontParams.Size, BorderBrush = Brushes.Gray };
-                    dirList.Items.Add(@"c:\"); dirList.Items.Add(@"  Windows");
+                    var dirList = new ListBox
+                    {
+                        Width = 121,
+                        Height = 100,
+                        FontFamily = fontParams.Family,
+                        FontSize = fontParams.Size,
+                        BorderBrush = Brushes.Gray
+                    };
+                    dirList.Items.Add(@"c:\");
+                    dirList.Items.Add(@"  Windows");
                     element = dirList;
                     break;
 
                 case "FileListBox":
-                    var fileList = new ListBox { Width = 121, Height = 100, FontFamily = fontParams.Family, FontSize = fontParams.Size, BorderBrush = Brushes.Gray };
+                    var fileList = new ListBox
+                    {
+                        Width = 121,
+                        Height = 100,
+                        FontFamily = fontParams.Family,
+                        FontSize = fontParams.Size,
+                        BorderBrush = Brushes.Gray
+                    };
                     fileList.Items.Add("archivo1.txt");
                     element = fileList;
                     break;
 
                 case "Shape":
-                    element = new System.Windows.Shapes.Rectangle { Width = 50, Height = 50, Stroke = vbBlack, StrokeThickness = 1, Fill = Brushes.Transparent };
+                    element = new System.Windows.Shapes.Rectangle
+                    {
+                        Width = 50,
+                        Height = 50,
+                        Stroke = vbBlack,
+                        StrokeThickness = 1,
+                        Fill = Brushes.Transparent
+                    };
                     break;
 
                 case "Line":
-                    element = new System.Windows.Shapes.Rectangle { Width = 100, Height = 2, Fill = vbBlack };
+                    element = new System.Windows.Shapes.Rectangle
+                    {
+                        Width = 100,
+                        Height = 2,
+                        Fill = vbBlack
+                    };
                     break;
 
                 case "Image":
                     var imgGrid = new Grid { Width = 100, Height = 100, Background = Brushes.Transparent };
-                    imgGrid.Children.Add(new System.Windows.Shapes.Rectangle { Stroke = Brushes.Gray, StrokeThickness = 1, StrokeDashArray = new DoubleCollection() { 4, 2 }, Fill = Brushes.Transparent, IsHitTestVisible = false });
-                    imgGrid.Children.Add(new TextBlock { Text = "Image", Foreground = Brushes.Gray, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, IsHitTestVisible = false });
+                    imgGrid.Children.Add(new System.Windows.Shapes.Rectangle
+                    {
+                        Stroke = Brushes.Gray,
+                        StrokeThickness = 1,
+                        StrokeDashArray = new DoubleCollection() { 4, 2 },
+                        Fill = Brushes.Transparent,
+                        IsHitTestVisible = false
+                    });
+                    imgGrid.Children.Add(new TextBlock
+                    {
+                        Text = "Image",
+                        Foreground = Brushes.Gray,
+                        HorizontalAlignment = HorizontalAlignment.Center,
+                        VerticalAlignment = VerticalAlignment.Center,
+                        IsHitTestVisible = false
+                    });
                     element = imgGrid;
                     break;
 
                 case "Data":
-                    // (Omitido código largo del Data para brevedad, copiar del anterior si se desea)
                     element = new Button { Content = "Data Control", Width = 150, Height = 25, Background = vbGray };
                     break;
 
                 case "OLE":
-                    element = new Border { Width = 75, Height = 75, BorderBrush = Brushes.Gray, BorderThickness = new Thickness(1), Background = Brushes.LightGray, Child = new TextBlock { Text = "OLE", HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center } };
+                    element = new Border
+                    {
+                        Width = 75,
+                        Height = 75,
+                        BorderBrush = Brushes.Gray,
+                        BorderThickness = new Thickness(1),
+                        Background = Brushes.LightGray,
+                        Child = new TextBlock { Text = "OLE", HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center }
+                    };
                     break;
-                // =========================================================
-                // MENU AVANZADO (Padres e Hijos Dinámicos)
-                // =========================================================
 
+                // -----------------------------------------------------
+                // MENÚS
+                // -----------------------------------------------------
                 case "Menu":
-                    // Creamos el Menu nativo de WPF
                     var menuBar = new Menu
                     {
                         Height = 22,
-                        // Aplicamos TU estilo visual
                         Style = RetroStyles.GetVB6MenuStyle()
                     };
 
-                    // --- LÓGICA DE EDICIÓN (Context Menu para agregar items) ---
+                    // Context Menu para agregar items
                     var barContextMenu = new ContextMenu();
                     var addTopLevel = new MenuItem { Header = "Agregar Menú Padre (Top Level)" };
-
                     addTopLevel.Click += (s, e) =>
                     {
                         var dialog = new SimpleInputDialog("Nombre del Menú Principal:", "Nuevo Menú");
@@ -239,36 +317,24 @@ namespace VB6VisualMockupDesigner.Controls
                             menuBar.Items.Add(newItem);
                         }
                     };
-
                     barContextMenu.Items.Add(addTopLevel);
                     menuBar.ContextMenu = barContextMenu;
 
-                    // --- ITEMS POR DEFECTO (Para ver el diseño inmediatamente) ---
-                    // Archivo
+                    // Items por defecto
                     var fileMenu = CreateRetroMenuItem("_Archivo", fontParams.Family, fontParams.Size);
                     fileMenu.Items.Add(CreateRetroMenuItem("Nuevo", fontParams.Family, fontParams.Size));
                     fileMenu.Items.Add(CreateRetroMenuItem("Abrir...", fontParams.Family, fontParams.Size));
-                    fileMenu.Items.Add(new Separator()); // Usará tu estilo de separador automáticamente
+                    fileMenu.Items.Add(new Separator());
                     fileMenu.Items.Add(CreateRetroMenuItem("Salir", fontParams.Family, fontParams.Size));
 
-                    // Edición
-                    var editMenu = CreateRetroMenuItem("_Edición", fontParams.Family, fontParams.Size);
-                    editMenu.Items.Add(CreateRetroMenuItem("Copiar", fontParams.Family, fontParams.Size));
-
-                    // Agregar al menú principal
                     menuBar.Items.Add(fileMenu);
-                    menuBar.Items.Add(editMenu);
-                    menuBar.Items.Add(CreateRetroMenuItem("_Ayuda", fontParams.Family, fontParams.Size));
-
                     element = menuBar;
                     break;
 
-
-                // =========================================================
-                // COLECCIÓN THREED32.OCX (SHERIDAN 3D CONTROLS)
-                // =========================================================
-
-                case "SSPanel": // Threed32 Panel
+                // -----------------------------------------------------
+                // THREED32.OCX (SHERIDAN)
+                // -----------------------------------------------------
+                case "SSPanel":
                     var ssPanel = new Border
                     {
                         Width = 150,
@@ -279,11 +345,7 @@ namespace VB6VisualMockupDesigner.Controls
                         SnapsToDevicePixels = true,
                         Effect = new System.Windows.Media.Effects.DropShadowEffect { ShadowDepth = 1, Color = Colors.White, Direction = -45, BlurRadius = 0, Opacity = 0.5 }
                     };
-
-                    // El SSPanel es especial: tiene Texto de fondo y Controles encima.
                     var panelGrid = new Grid();
-
-                    // Capa 1: Texto Centrado
                     panelGrid.Children.Add(new TextBlock
                     {
                         Text = "SSPanel1",
@@ -292,57 +354,46 @@ namespace VB6VisualMockupDesigner.Controls
                         FontSize = fontParams.Size,
                         HorizontalAlignment = HorizontalAlignment.Center,
                         VerticalAlignment = VerticalAlignment.Center,
-                        IsHitTestVisible = false // El texto no bloquea el drop
+                        IsHitTestVisible = false
                     });
-
-                    // Capa 2: Canvas para soltar controles (encima del texto)
-                    var dropCanvas = CreateChildCanvas();
-                    panelGrid.Children.Add(dropCanvas);
-
+                    panelGrid.Children.Add(CreateChildCanvas()); // Capa de hijos
                     ssPanel.Child = panelGrid;
                     element = ssPanel;
                     break;
 
                 case "SSCommand":
-                    var ssCmd = new Button
+                    element = new Button
                     {
                         Content = "SSCommand1",
                         Width = 100,
                         Height = 35,
                         Style = RetroStyles.GetCustomThreed32Style()
                     };
-
-                    element = ssCmd;
                     break;
 
                 case "SSCheck":
-                    // Checkbox con estilo 3D (a menudo se veía como un botón toggle)
                     var ssCheck = new CheckBox
                     {
                         Content = "SSCheck1",
                         Width = 121,
                         Height = 25,
-                       
-                        Style = RetroStyles.GetCustomThreed32CheckStyle()
-                        
+                        Style = RetroStyles.GetCustomThreed32CheckStyle(),
+                        Padding = new Thickness(5, 0, 0, 0)
                     };
-                    // Padding extra para simular el estilo 'Panel' del check
-                    ssCheck.Padding = new Thickness(5, 0, 0, 0);
                     element = ssCheck;
                     break;
 
                 case "SSOption":
-                    var ssOpt = new RadioButton
+                    element = new RadioButton
                     {
-                        Content = "SSOption1", // Texto por defecto
+                        Content = "SSOption1",
                         Width = 121,
                         Height = 25,
                         Style = RetroStyles.GetCustomThreed32OptionStyle()
                     };
-                    element = ssOpt;
                     break;
 
-                case "SSFrame": // Threed32 Frame
+                case "SSFrame":
                     var ssGrp = new GroupBox
                     {
                         Header = "SSFrame1",
@@ -354,36 +405,26 @@ namespace VB6VisualMockupDesigner.Controls
                         BorderBrush = Brushes.Black,
                         BorderThickness = new Thickness(1)
                     };
-                    // INYECCIÓN DEL CANVAS INTERNO
                     ssGrp.Content = CreateChildCanvas();
                     element = ssGrp;
                     break;
 
                 case "SSRibbon":
-                    // Botones de Toolbar (Picture + Label, o solo Picture)
-                    // Usaremos un ToggleButton para simular el comportamiento de "Grupo"
-                    var ssRib = new System.Windows.Controls.Primitives.ToggleButton
+                    element = new ToggleButton
                     {
                         Content = "Ribbon",
                         Width = 40,
                         Height = 40,
                         Background = vbGray,
                         FontFamily = fontParams.Family,
-                        FontSize = 9 // Fuente pequeña típica de toolbars
+                        FontSize = 9
                     };
-                    element = ssRib;
                     break;
-                // =========================================================
-                // GRID32.OCX (Microsoft Grid Control)
-                // =========================================================
 
+                // -----------------------------------------------------
+                // GRID32.OCX
+                // -----------------------------------------------------
                 case "Grid":
-                    // --- CONFIGURACIÓN ---
-                    double cellWidth = 70;
-                    double cellHeight = 20;
-                    double scrollSize = 17;
-
-                    // 1. Contenedor Principal (Borde Hundido)
                     var gridBorder = new Border
                     {
                         Width = 300,
@@ -394,141 +435,78 @@ namespace VB6VisualMockupDesigner.Controls
                         SnapsToDevicePixels = true
                     };
 
-                    // 2. Estructura de Layout (Grid de 2x2 para separar contenido de scrollbars)
                     var layoutGrid = new Grid();
                     layoutGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-                    layoutGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(scrollSize) });
+                    layoutGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(17) });
                     layoutGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-                    layoutGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(scrollSize) });
+                    layoutGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(17) });
 
-                    // 3. Contenedor de la Tabla (Cabecera + Cuerpo)
-                    // Usamos un Canvas grande que contendrá todo
+                    // Simulación visual del grid
                     var tableArea = new Grid();
-                    tableArea.RowDefinitions.Add(new RowDefinition { Height = new GridLength(cellHeight) }); // Fila Cabecera
-                    tableArea.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) }); // Fila Datos
+                    tableArea.RowDefinitions.Add(new RowDefinition { Height = new GridLength(20) }); // Header
+                    tableArea.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) }); // Body
 
-                    // --- CABECERA ---
                     var headerCanvas = new Canvas { Background = vbGray, ClipToBounds = true };
                     Grid.SetRow(headerCanvas, 0);
                     tableArea.Children.Add(headerCanvas);
 
-                    // --- CUERPO ---
                     var bodyCanvas = new Canvas { Background = Brushes.White, ClipToBounds = true };
                     Grid.SetRow(bodyCanvas, 1);
                     tableArea.Children.Add(bodyCanvas);
 
-                    // Añadir tabla al layout
-                    Grid.SetColumn(tableArea, 0);
-                    Grid.SetRow(tableArea, 0);
+                    Grid.SetColumn(tableArea, 0); Grid.SetRow(tableArea, 0);
                     layoutGrid.Children.Add(tableArea);
 
-                    // --- SCROLLBARS (Decorativos) ---
-                    var vScroll = new ScrollBar { Orientation = Orientation.Vertical, Width = scrollSize, Value = 0, Maximum = 100 };
-                    Grid.SetColumn(vScroll, 1);
-                    Grid.SetRow(vScroll, 0);
+                    // Scrollbars simulados
+                    var vScroll = new ScrollBar { Orientation = Orientation.Vertical, Width = 17, Value = 0, Maximum = 100 };
+                    Grid.SetColumn(vScroll, 1); Grid.SetRow(vScroll, 0);
                     layoutGrid.Children.Add(vScroll);
 
-                    var hScroll = new ScrollBar { Orientation = Orientation.Horizontal, Height = scrollSize, Value = 0, Maximum = 100 };
-                    Grid.SetColumn(hScroll, 0);
-                    Grid.SetRow(hScroll, 1);
+                    var hScroll = new ScrollBar { Orientation = Orientation.Horizontal, Height = 17, Value = 0, Maximum = 100 };
+                    Grid.SetColumn(hScroll, 0); Grid.SetRow(hScroll, 1);
                     layoutGrid.Children.Add(hScroll);
 
-                    // Cuadrito de la esquina
                     var corner = new Border { Background = vbGray };
-                    Grid.SetColumn(corner, 1);
-                    Grid.SetRow(corner, 1);
+                    Grid.SetColumn(corner, 1); Grid.SetRow(corner, 1);
                     layoutGrid.Children.Add(corner);
 
                     gridBorder.Child = layoutGrid;
 
-                    // =============================================================
-                    // LÓGICA DINÁMICA: REDIBUJAR AL CAMBIAR TAMAÑO
-                    // =============================================================
+                    // Dibujado simple de líneas al redimensionar
                     gridBorder.SizeChanged += (s, e) =>
                     {
-                        // Limpiamos lo anterior
                         headerCanvas.Children.Clear();
                         bodyCanvas.Children.Clear();
-
                         double w = tableArea.ActualWidth;
-                        double h = tableArea.ActualHeight; // Altura total (header + body)
                         double bodyH = bodyCanvas.ActualHeight;
-
-                        // Evitar dibujar si es muy pequeño
                         if (w <= 0 || bodyH <= 0) return;
 
-                        // 1. DIBUJAR COLUMNAS (Cabeceras + Líneas Verticales)
-                        int colIndex = 0;
-                        for (double x = 0; x < w; x += cellWidth)
+                        double cellW = 70; double cellH = 20;
+                        int col = 0;
+                        for (double x = 0; x < w; x += cellW)
                         {
-                            colIndex++;
+                            col++;
+                            // Header
+                            var hCell = new Border { Width = cellW, Height = cellH, BorderBrush = Brushes.Gray, BorderThickness = new Thickness(0, 0, 1, 1), Background = (col == 1) ? Brushes.DarkGray : vbGray };
+                            if (col > 1) hCell.Child = new TextBlock { Text = $"Col {col - 1}", FontSize = fontParams.Size, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+                            Canvas.SetLeft(hCell, x); headerCanvas.Children.Add(hCell);
 
-                            // -- Cabecera --
-                            // Borde de la celda header
-                            var headerCell = new Border
-                            {
-                                Width = cellWidth,
-                                Height = cellHeight,
-                                BorderBrush = Brushes.Gray,
-                                BorderThickness = new Thickness(0, 0, 1, 1), // Línea derecha y abajo
-                                Background = vbGray
-                            };
-
-                            // Texto de la cabecera (Col 1, Col 2...)
-                            var headerText = new TextBlock
-                            {
-                                Text = (colIndex == 1) ? "" : $"Col {colIndex - 1}", // La primera suele ser selectora vacía
-                                FontSize = fontParams.Size,
-                                FontFamily = fontParams.Family,
-                                Foreground = Brushes.Black,
-                                HorizontalAlignment = HorizontalAlignment.Center,
-                                VerticalAlignment = VerticalAlignment.Center
-                            };
-                            if (colIndex == 1) headerCell.Background = Brushes.DarkGray; // La esquina superior izq fija más oscura
-
-                            headerCell.Child = headerText;
-                            Canvas.SetLeft(headerCell, x);
-                            headerCanvas.Children.Add(headerCell);
-
-                            // -- Línea Vertical en el Cuerpo --
-                            var vLine = new Line
-                            {
-                                X1 = x + cellWidth,
-                                Y1 = 0,
-                                X2 = x + cellWidth,
-                                Y2 = bodyH,
-                                Stroke = Brushes.LightGray,
-                                StrokeThickness = 1
-                            };
-                            bodyCanvas.Children.Add(vLine);
+                            // VLine
+                            bodyCanvas.Children.Add(new Line { X1 = x + cellW, Y1 = 0, X2 = x + cellW, Y2 = bodyH, Stroke = Brushes.LightGray });
                         }
-
-                        // 2. DIBUJAR FILAS (Líneas Horizontales)
-                        // Empezamos en 0
-                        for (double y = 0; y < bodyH; y += cellHeight)
+                        for (double y = 0; y < bodyH; y += cellH)
                         {
-                            var hLine = new Line
-                            {
-                                X1 = 0,
-                                Y1 = y,
-                                X2 = w,
-                                Y2 = y,
-                                Stroke = Brushes.LightGray,
-                                StrokeThickness = 1
-                            };
-                            bodyCanvas.Children.Add(hLine);
+                            bodyCanvas.Children.Add(new Line { X1 = 0, Y1 = y, X2 = w, Y2 = y, Stroke = Brushes.LightGray });
                         }
                     };
 
                     element = gridBorder;
                     break;
 
-                // =========================================================
-                // GRAPH32.OCX (Microsoft Chart Control)
-                // =========================================================
-
+                // -----------------------------------------------------
+                // GRAPH32.OCX
+                // -----------------------------------------------------
                 case "Graph":
-                    // Contenedor principal
                     var graphBorder = new Border
                     {
                         Width = 200,
@@ -538,208 +516,77 @@ namespace VB6VisualMockupDesigner.Controls
                         BorderThickness = new Thickness(1),
                         Effect = new System.Windows.Media.Effects.DropShadowEffect { ShadowDepth = 2, Color = Colors.Black, Opacity = 0.3, BlurRadius = 4 }
                     };
-
                     var gCanvas = new Canvas();
+                    gCanvas.Children.Add(new TextBlock { Text = "Graph Title", FontWeight = FontWeights.Bold, FontSize = 10 });
+                    Canvas.SetLeft(gCanvas.Children[0], 70); Canvas.SetTop(gCanvas.Children[0], 5);
 
-                    // 1. Título del Gráfico (Típico default: "Graph Title")
-                    var title = new TextBlock
-                    {
-                        Text = "Graph Title",
-                        FontWeight = FontWeights.Bold,
-                        FontSize = 10,
-                        Foreground = Brushes.Black
-                    };
-                    Canvas.SetTop(title, 5);
-                    Canvas.SetLeft(title, 70); // Centrado a ojo
-                    gCanvas.Children.Add(title);
+                    // Ejes y Barras simples
+                    gCanvas.Children.Add(new Line { X1 = 20, Y1 = 20, X2 = 20, Y2 = 130, Stroke = Brushes.Black });
+                    gCanvas.Children.Add(new Line { X1 = 20, Y1 = 130, X2 = 190, Y2 = 130, Stroke = Brushes.Black });
 
-                    // 2. Ejes (Líneas)
-                    // Eje Y
-                    var yAxis = new Line { X1 = 20, Y1 = 20, X2 = 20, Y2 = 130, Stroke = Brushes.Black, StrokeThickness = 1 };
-                    gCanvas.Children.Add(yAxis);
-                    // Eje X
-                    var xAxis = new Line { X1 = 20, Y1 = 130, X2 = 190, Y2 = 130, Stroke = Brushes.Black, StrokeThickness = 1 };
-                    gCanvas.Children.Add(xAxis);
-
-                    // 3. Barras (Datos Simulados)
-                    // Colores clásicos de Graph32
                     Brush[] barColors = { Brushes.Red, Brushes.Green, Brushes.Blue, Brushes.Magenta, Brushes.Yellow };
-                    double[] barHeights = { 60, 90, 40, 80, 50 }; // Alturas simuladas
-
-                    double startX = 30;
-                    double barWidth = 20;
-                    double gap = 10;
-                    double groundY = 130;
-
+                    double[] barH = { 60, 90, 40, 80, 50 };
                     for (int i = 0; i < 5; i++)
                     {
-                        var bar = new System.Windows.Shapes.Rectangle
-                        {
-                            Width = barWidth,
-                            Height = barHeights[i],
-                            Fill = barColors[i],
-                            Stroke = Brushes.Black, // Borde negro fino para que resalte
-                            StrokeThickness = 0.5
-                        };
-
-                        // Posicionar (Recordar que en Canvas Y crece hacia abajo, así que Top = Suelo - Altura)
-                        Canvas.SetLeft(bar, startX + (i * (barWidth + gap)));
-                        Canvas.SetTop(bar, groundY - barHeights[i]);
-
+                        var bar = new System.Windows.Shapes.Rectangle { Width = 20, Height = barH[i], Fill = barColors[i], Stroke = Brushes.Black, StrokeThickness = 0.5 };
+                        Canvas.SetLeft(bar, 30 + (i * 30));
+                        Canvas.SetTop(bar, 130 - barH[i]);
                         gCanvas.Children.Add(bar);
                     }
-
-                    // 4. Leyenda pequeña (Opcional, pero le da el toque)
-                    var legendText = new TextBlock { Text = "Data", FontSize = 8, Foreground = Brushes.Gray };
-                    Canvas.SetLeft(legendText, 160);
-                    Canvas.SetTop(legendText, 10);
-                    gCanvas.Children.Add(legendText);
-
                     graphBorder.Child = gCanvas;
                     element = graphBorder;
                     break;
+
+                // -----------------------------------------------------
+                // OTROS CONTROLES OCX
+                // -----------------------------------------------------
                 case "MaskEdBox":
-                    // Msmask32.ocx - Simulación visual
-                    var maskBox = new TextBox
+                    element = new TextBox
                     {
-                        Text = "__/__/____", // Máscara típica de fecha por defecto
+                        Text = "__/__/____",
                         Width = 100,
                         Height = 25,
-                        FontFamily = new FontFamily("Courier New"), // Monoespaciado para que cuadre la máscara
+                        FontFamily = new FontFamily("Courier New"),
                         FontSize = fontParams.Size,
                         BorderBrush = Brushes.Gray,
                         BorderThickness = new Thickness(1),
                         VerticalContentAlignment = VerticalAlignment.Center
                     };
-                    element = maskBox;
                     break;
 
                 case "CommonDialog":
-                    // comdlg32.ocx - Control invisible (Icono en diseño)
-                    var cmnDlg = new Border
-                    {
-                        Width = 32,
-                        Height = 32,
-                        Background = new SolidColorBrush(Color.FromRgb(200, 200, 200)),
-                        BorderBrush = Brushes.Gray,
-                        BorderThickness = new Thickness(1)
-                    };
-                    // Icono simulado (varias ventanitas)
-                    var cmnCanvas = new Canvas();
-                    cmnCanvas.Children.Add(new System.Windows.Shapes.Rectangle { Width = 20, Height = 14, Stroke = Brushes.Black, StrokeThickness = 1, Fill = Brushes.White, RadiusX = 1, RadiusY = 1 }); // Ventana ppal
-                    Canvas.SetLeft(cmnCanvas.Children[0], 2); Canvas.SetTop(cmnCanvas.Children[0], 2);
-
-                    cmnDlg.Child = cmnCanvas;
+                    var cmnDlg = new Border { Width = 32, Height = 32, Background = new SolidColorBrush(Color.FromRgb(200, 200, 200)), BorderBrush = Brushes.Gray, BorderThickness = new Thickness(1) };
+                    var cmnC = new Canvas();
+                    cmnC.Children.Add(new System.Windows.Shapes.Rectangle { Width = 20, Height = 14, Stroke = Brushes.Black, StrokeThickness = 1, Fill = Brushes.White });
+                    Canvas.SetLeft(cmnC.Children[0], 6); Canvas.SetTop(cmnC.Children[0], 8);
+                    cmnDlg.Child = cmnC;
                     element = cmnDlg;
                     break;
 
                 case "CrystalReport":
-                    // Crystl32.OCX - Control invisible (Icono de diamante en diseño)
-                    var cryRep = new Border
-                    {
-                        Width = 32,
-                        Height = 32,
-                        Background = Brushes.LightGray,
-                        BorderBrush = Brushes.Black,
-                        BorderThickness = new Thickness(1)
-                    };
-
-                    var cryGrid = new Grid();
-                    // Rombo (Diamante)
-                    var diamond = new System.Windows.Shapes.Path
-                    {
-                        Data = Geometry.Parse("M 15,2 L 28,15 L 15,28 L 2,15 Z"),
-                        Fill = Brushes.Blue, // El icono clásico era azulado/cian
-                        Stroke = Brushes.Black,
-                        StrokeThickness = 1,
-                        Stretch = Stretch.Uniform,
-                        Margin = new Thickness(4)
-                    };
-                    cryGrid.Children.Add(diamond);
-
-                    cryRep.Child = cryGrid;
+                    var cryRep = new Border { Width = 32, Height = 32, Background = Brushes.LightGray, BorderBrush = Brushes.Black, BorderThickness = new Thickness(1) };
+                    var cryPath = new System.Windows.Shapes.Path { Data = Geometry.Parse("M 15,2 L 28,15 L 15,28 L 2,15 Z"), Fill = Brushes.Blue, Stroke = Brushes.Black, Stretch = Stretch.Uniform, Margin = new Thickness(4) };
+                    cryRep.Child = cryPath;
                     element = cryRep;
                     break;
 
-                // =========================================================
-                // MAP60.OCX (COBIS Map Control)
-                // =========================================================
-
                 case "Map":
-                    var mapBorder = new Border
-                    {
-                        Width = 100,
-                        Height = 100,
-                        Background = new SolidColorBrush(Color.FromRgb(220, 240, 255)), // Azul claro tipo agua/mapa
-                        BorderBrush = Brushes.Gray,
-                        BorderThickness = new Thickness(1)
-                    };
-
-                    var mapCanvas = new Canvas();
-
-                    // Dibujar algunas "calles" simuladas
-                    mapCanvas.Children.Add(new System.Windows.Shapes.Path
-                    {
-                        Data = Geometry.Parse("M 0,30 L 100,30 M 30,0 L 30,100 M 0,70 L 100,70 M 70,0 L 70,100"),
-                        Stroke = Brushes.White,
-                        StrokeThickness = 2
-                    });
-
-                    // Icono de "Pin" central
-                    var pinPath = new System.Windows.Shapes.Path
-                    {
-                        Data = Geometry.Parse("M 10,0 C 4.5,0 0,4.5 0,10 C 0,17 10,28 10,28 C 10,28 20,17 20,10 C 20,4.5 15.5,0 10,0 Z M 10,7 A 3,3 0 1 1 10,13 A 3,3 0 1 1 10,7 Z"),
-                        Fill = Brushes.Red,
-                        Stroke = Brushes.DarkRed,
-                        StrokeThickness = 1
-                    };
-                    // Centrar el pin
-                    Canvas.SetLeft(pinPath, 40);
-                    Canvas.SetTop(pinPath, 35);
-
-                    mapCanvas.Children.Add(pinPath);
-
-                    // Etiqueta
-                    var mapLabel = new TextBlock
-                    {
-                        Text = "Map32",
-                        FontSize = 9,
-                        Foreground = Brushes.Gray,
-                        FontWeight = FontWeights.Bold
-                    };
-                    Canvas.SetLeft(mapLabel, 2);
-                    Canvas.SetTop(mapLabel, 2);
-                    mapCanvas.Children.Add(mapLabel);
-
-                    mapBorder.Child = mapCanvas;
+                    var mapBorder = new Border { Width = 100, Height = 100, Background = new SolidColorBrush(Color.FromRgb(220, 240, 255)), BorderBrush = Brushes.Gray, BorderThickness = new Thickness(1) };
+                    var mapC = new Canvas();
+                    mapC.Children.Add(new System.Windows.Shapes.Path { Data = Geometry.Parse("M 0,30 L 100,30 M 30,0 L 30,100"), Stroke = Brushes.White, StrokeThickness = 2 });
+                    var pin = new System.Windows.Shapes.Path { Data = Geometry.Parse("M 10,0 C 4.5,0 0,4.5 0,10 C 0,17 10,28 10,28 C 10,28 20,17 20,10 C 20,4.5 15.5,0 10,0 Z"), Fill = Brushes.Red, Stroke = Brushes.DarkRed };
+                    Canvas.SetLeft(pin, 40); Canvas.SetTop(pin, 35);
+                    mapC.Children.Add(pin);
+                    mapBorder.Child = mapC;
                     element = mapBorder;
                     break;
 
                 default:
-                    // PLACEHOLDER ELEGANTE
-                    var placeholder = new Grid
-                    {
-                        Width = 50,
-                        Height = 50,
-                        Background = new SolidColorBrush(Color.FromRgb(240, 240, 240))
-                    };
-                    placeholder.Children.Add(new Rectangle
-                    {
-                        Stroke = Brushes.Gray,
-                        StrokeThickness = 1,
-                        StrokeDashArray = new DoubleCollection() { 4, 2 },
-                        Fill = Brushes.Transparent
-                    });
-                    placeholder.Children.Add(new TextBlock
-                    {
-                        Text = $"[{type}]",
-                        Foreground = Brushes.DarkGray,
-                        FontSize = 9,
-                        VerticalAlignment = VerticalAlignment.Center,
-                        HorizontalAlignment = HorizontalAlignment.Center,
-                        TextWrapping = TextWrapping.Wrap
-                    });
-                    element = placeholder;
+                    // Placeholder genérico para controles desconocidos
+                    var ph = new Grid { Width = 50, Height = 50, Background = new SolidColorBrush(Color.FromRgb(240, 240, 240)) };
+                    ph.Children.Add(new System.Windows.Shapes.Rectangle { Stroke = Brushes.Gray, StrokeThickness = 1, StrokeDashArray = new DoubleCollection() { 4, 2 } });
+                    ph.Children.Add(new TextBlock { Text = $"[{type}]", Foreground = Brushes.DarkGray, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center });
+                    element = ph;
                     break;
             }
 
@@ -747,8 +594,9 @@ namespace VB6VisualMockupDesigner.Controls
             return element;
         }
 
-
-        // Método Helper para crear MenuItems con estilo Retro y capacidad de agregar hijos
+        // =========================================================
+        // HELPER PARA MENÚS
+        // =========================================================
         private static MenuItem CreateRetroMenuItem(string header, FontFamily family, double size)
         {
             var item = new MenuItem
@@ -757,115 +605,54 @@ namespace VB6VisualMockupDesigner.Controls
                 FontFamily = family,
                 FontSize = size,
                 Foreground = Brushes.Black,
-                Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#D4D0C8")),
-                BorderThickness = new Thickness(0)
+                Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#D4D0C8"))
             };
 
             var itemCtxMenu = new ContextMenu();
-
-            // Opción: Agregar Hijo
-            var addChild = new MenuItem { Header = "Agregar Sub-Item (Hijo)" };
-            addChild.Click += (s, e) =>
-            {
-                var newChild = CreateRetroMenuItem("Nuevo Sub-Item", family, size);
-                item.Items.Add(newChild);
-                item.IsSubmenuOpen = true;
-            };
-
-            // Opción: Cambiar Texto (Versión simple sin InputBox)
-            var rename = new MenuItem { Header = "Cambiar Texto..." };
+            var addChild = new MenuItem { Header = "Agregar Sub-Item" };
+            addChild.Click += (s, e) => { item.Items.Add(CreateRetroMenuItem("Nuevo Item", family, size)); item.IsSubmenuOpen = true; };
+            var rename = new MenuItem { Header = "Renombrar..." };
             rename.Click += (s, e) =>
             {
-                // Alternar texto simple para pruebas
-                item.Header = item.Header.ToString() == "Nuevo Menú" ? "Opción X" : "Editado";
+                var dlg = new SimpleInputDialog("Nuevo nombre:", item.Header.ToString());
+                if (dlg.ShowDialog() == true) item.Header = dlg.Answer;
             };
-
-            // Opción: Eliminar
-            var delete = new MenuItem { Header = "Eliminar este Item" };
-            delete.Click += (s, e) =>
-            {
-                if (item.Parent is ItemsControl parentIC)
-                {
-                    parentIC.Items.Remove(item);
-                }
-            };
+            var delete = new MenuItem { Header = "Eliminar" };
+            delete.Click += (s, e) => { if (item.Parent is ItemsControl p) p.Items.Remove(item); };
 
             itemCtxMenu.Items.Add(addChild);
             itemCtxMenu.Items.Add(rename);
             itemCtxMenu.Items.Add(new Separator());
             itemCtxMenu.Items.Add(delete);
-
             item.ContextMenu = itemCtxMenu;
 
             return item;
         }
-
-
-
-
-        // Método Helper para inyectar tu XAML
-        
-
-
-       
-
     }
 
-
-
-    // Coloca esto al final de tu archivo RetroControlFactory.cs
-    // Asegúrate de que esté FUERA de la clase "RetroControlFactory", 
-    // pero DENTRO del namespace "VB6VisualMockupDesigner.Controls"
-
+    // =========================================================
+    // DIÁLOGO SIMPLE PARA ENTRADA DE TEXTO
+    // =========================================================
     public class SimpleInputDialog : Window
     {
         private TextBox _txtInput;
-
-        public string Answer { get { return _txtInput.Text; } }
+        public string Answer => _txtInput.Text;
 
         public SimpleInputDialog(string question, string defaultAnswer = "")
         {
-            Width = 350;
-            Height = 160;
-            Title = "Propiedad";
+            Width = 300; Height = 140; Title = "Entrada";
             WindowStartupLocation = WindowStartupLocation.CenterScreen;
             ResizeMode = ResizeMode.NoResize;
             WindowStyle = WindowStyle.ToolWindow;
-            Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#D4D0C8")); // Gris VB
+            Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#D4D0C8"));
 
-            var stack = new StackPanel { Margin = new Thickness(15) };
-
-            // Etiqueta
-            stack.Children.Add(new TextBlock
-            {
-                Text = question,
-                Margin = new Thickness(0, 0, 0, 10),
-                FontFamily = new FontFamily("Microsoft Sans Serif"),
-                FontSize = 11
-            });
-
-            // TextBox
-            _txtInput = new TextBox
-            {
-                Text = defaultAnswer,
-                FontFamily = new FontFamily("Microsoft Sans Serif"),
-                FontSize = 11
-            };
+            var stack = new StackPanel { Margin = new Thickness(10) };
+            stack.Children.Add(new TextBlock { Text = question, Margin = new Thickness(0, 0, 0, 5) });
+            _txtInput = new TextBox { Text = defaultAnswer };
             _txtInput.SelectAll();
             stack.Children.Add(_txtInput);
 
-            // Botón Aceptar
-            var btnOk = new Button
-            {
-                Content = "Aceptar",
-                IsDefault = true,
-                Width = 80,
-                Height = 25,
-                Margin = new Thickness(0, 15, 0, 0),
-                HorizontalAlignment = HorizontalAlignment.Right,
-                FontFamily = new FontFamily("Microsoft Sans Serif"),
-                FontSize = 11
-            };
+            var btnOk = new Button { Content = "Aceptar", Width = 70, Height = 25, Margin = new Thickness(0, 10, 0, 0), HorizontalAlignment = HorizontalAlignment.Right, IsDefault = true };
             btnOk.Click += (s, e) => { DialogResult = true; };
             stack.Children.Add(btnOk);
 
@@ -877,7 +664,5 @@ namespace VB6VisualMockupDesigner.Controls
             base.OnContentRendered(e);
             _txtInput.Focus();
         }
-
-        
     }
 }
