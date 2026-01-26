@@ -417,27 +417,85 @@ namespace VB6VisualMockupDesigner.Helpers
         {
             try
             {
+                // DEBUG 1: Ver qué llega realmente desde el archivo
+                // MessageBox.Show($"[DEBUG 1] Valor recibido:\n{val}", "Diagnóstico Fuente");
+
                 var parts = val.Split(';');
-                if (parts.Length > 0) f.FontFamily = new FontFamily(parts[0].Trim());
+                if (parts.Length == 0) return;
+
+                string fullString = parts[0].Trim();
+
+                // CASO 1: Es una ruta importada (tiene #)
+                if (fullString.Contains("#"))
+                {
+                    // Limpieza manual del protocolo
+                    string rawPath = fullString.Replace("file:///", "").Replace("file://", "");
+
+                    // Decodificar %20
+                    string cleanPath = Uri.UnescapeDataString(rawPath);
+
+                    // Separar archivo y familia
+                    string[] fontInfo = cleanPath.Split('#');
+                    string filePath = fontInfo[0];
+                    string familyName = fontInfo[1];
+
+                    // DEBUG 2: Ver ruta procesada
+                    // MessageBox.Show($"[DEBUG 2] Ruta procesada:\n'{filePath}'\n\nFamilia:\n'{familyName}'", "Diagnóstico Fuente");
+
+                    if (System.IO.File.Exists(filePath))
+                    {
+                        try
+                        {
+                            // Construcción Base + Relativa
+                            string directory = System.IO.Path.GetDirectoryName(filePath);
+                            string fileName = System.IO.Path.GetFileName(filePath);
+                            Uri folderUri = new Uri(directory + "\\");
+
+                            // DEBUG 3: Intentando cargar
+                            // MessageBox.Show($"[DEBUG 3] Intentando cargar con:\nUri: {folderUri}\nString: ./{fileName}#{familyName}", "Diagnóstico Fuente");
+
+                            f.FontFamily = new FontFamily(folderUri, "./" + fileName + "#" + familyName);
+                        }
+                        catch (Exception ex)
+                        {
+                            MessageBox.Show($"[ERROR CRÍTICO] Falló el constructor de FontFamily:\n{ex.Message}", "Error WPF");
+                        }
+                    }
+                    else
+                    {
+                        // AQUÍ ES DONDE SOSPECHO QUE FALLA
+                        MessageBox.Show($"[ERROR ARCHIVO] El sistema dice que el archivo NO EXISTE en:\n'{filePath}'", "Archivo no encontrado");
+
+                        f.FontFamily = new FontFamily("Microsoft Sans Serif");
+                    }
+                }
+                else
+                {
+                    // CASO 2: Fuente de sistema normal
+                    try { f.FontFamily = new FontFamily(fullString); } catch { }
+                }
+
+                // TAMAÑO
                 if (parts.Length > 1)
                 {
                     string sizeStr = parts[1].ToLower().Replace("pt", "").Trim();
-                    if (double.TryParse(sizeStr, out double size)) f.FontSize = Math.Max(1, size * 1.33); // *1.33 aprox pt a px
+                    if (double.TryParse(sizeStr, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out double s))
+                    {
+                        f.FontSize = Math.Max(s * 1.333, 1);
+                    }
                 }
 
-                // Resetear estilos antes de aplicar
+                // ESTILOS
                 f.FontWeight = FontWeights.Normal;
                 f.FontStyle = FontStyles.Normal;
-
-                // Como 'Control' no tiene TextDecorations nativo fácil (depende del contenido),
-                // aplicamos solo Bold e Italic. 
-                // Si el Control es un Label o TextBox, podríamos buscar dentro, pero en WPF básico
-                // TextDecorations se heredan mejor en TextBlock.
-
-                if (val.Contains("Bold")) f.FontWeight = FontWeights.Bold;
-                if (val.Contains("Italic")) f.FontStyle = FontStyles.Italic;
+                string styleString = val.ToLower();
+                if (styleString.Contains("bold")) f.FontWeight = FontWeights.Bold;
+                if (styleString.Contains("italic")) f.FontStyle = FontStyles.Italic;
             }
-            catch { }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"[ERROR GENERAL]: {ex.Message}", "Excepción no controlada");
+            }
         }
 
         private static void ApplyFontToTextBlock(TextBlock f, string val)
@@ -507,6 +565,19 @@ namespace VB6VisualMockupDesigner.Helpers
             {
                 return Brushes.White;
             }
+        }
+
+        public static void ApplyProperty(FrameworkElement control, string propName, string value)
+        {
+            // 1. Adaptamos los datos crudos del Parser a tu modelo PropertyItem
+            var tempItem = new PropertyItem
+            {
+                Name = propName,
+                Value = value
+            };
+
+            // 2. Llamamos a tu método existente que ya sabe qué hacer
+            ApplyProperty(control, tempItem);
         }
     }
 }

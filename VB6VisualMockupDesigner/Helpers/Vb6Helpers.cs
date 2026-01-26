@@ -1,149 +1,155 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Globalization;
+using System.IO;
 using System.Text.RegularExpressions;
+using System.Windows;
+using VB6VisualMockupDesigner.Models;
 
 namespace VB6VisualMockupDesigner.Helpers
 {
-    // ==========================================
-    // 1. EL MODELO DE DATOS (ÁRBOL)
-    // ==========================================
-    public class VbControlModel
-    {
-        public string Type { get; set; }        // Ej: VB.CommandButton
-        public string Name { get; set; }        // Ej: cmdAceptar
-
-        // Diccionario para propiedades (Left, Top, Caption, etc.)
-        public Dictionary<string, string> Properties { get; set; } = new Dictionary<string, string>();
-
-        // Lista de hijos (Aquí vive la jerarquía)
-        public List<VbControlModel> Children { get; set; } = new List<VbControlModel>();
-    }
-
-    // ==========================================
-    // 2. EL PARSER (CEREBRO DE CARGA)
-    // ==========================================
     public static class Vb6Helpers
     {
-        /// <summary>
-        /// Lee el texto crudo de un .frm y devuelve el objeto raíz (Form) con todos sus hijos anidados.
-        /// </summary>
+        private const double TwipsPerPixel = 15.0;
+
         public static VbControlModel ParseVb6Form(string fileContent)
         {
-            // 1. Normalizar saltos de línea y limpiar vacíos
-            var lines = fileContent.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
-
-            // 2. Pila para rastrear la profundidad (Quién es el padre actual)
-            Stack<VbControlModel> stack = new Stack<VbControlModel>();
-
-            VbControlModel rootForm = null;
-
-            foreach (var rawLine in lines)
+            using (StringReader reader = new StringReader(fileContent))
             {
-                string line = rawLine.Trim();
-                if (string.IsNullOrWhiteSpace(line)) continue;
+                string line;
+                VbControlModel root = null;
+                Stack<VbControlModel> stack = new Stack<VbControlModel>();
 
-                // ---------------------------------------------------------
-                // A. INICIO DE BLOQUE: "Begin VB.Control Nombre"
-                // ---------------------------------------------------------
-                if (line.StartsWith("Begin "))
+                while ((line = reader.ReadLine()) != null)
                 {
-                    // Separar partes: [0]Begin [1]Tipo [2]Nombre
-                    var parts = line.Split(' ');
+                    line = line.Trim();
+                    if (string.IsNullOrEmpty(line) || line.StartsWith("'") || line.StartsWith("Attribute") || line.StartsWith("VERSION")) continue;
 
-                    if (parts.Length >= 2)
+                    // 1. INICIO DE CONTROL (Evitamos confundirnos con BeginProperty)
+                    if (line.StartsWith("Begin ") && !line.StartsWith("BeginProperty"))
                     {
-                        string type = parts[1];
-                        string name = parts.Length > 2 ? parts[2] : "Unknown";
-
-                        var newControl = new VbControlModel { Type = type, Name = name };
-
-                        if (stack.Count == 0)
+                        var parts = line.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                        if (parts.Length >= 2)
                         {
-                            // Si la pila está vacía, este es el Formulario (Raíz)
-                            rootForm = newControl;
-                        }
-                        else
-                        {
-                            // Si hay pila, el tope es mi PADRE. Me agrego a sus hijos.
-                            var parent = stack.Peek();
-                            parent.Children.Add(newControl);
-                        }
+                            var newCtrl = new VbControlModel
+                            {
+                                Type = parts[1],
+                                Name = parts.Length > 2 ? parts[2] : "Unknown"
+                            };
 
-                        // Me subo a la pila. Ahora yo soy el "Padre Activo" para lo que siga.
-                        stack.Push(newControl);
+                            if (stack.Count > 0) stack.Peek().Children.Add(newCtrl);
+                            else root = newCtrl;
+
+                            stack.Push(newCtrl);
+                        }
+                    }
+                    // 2. FIN DE CONTROL
+                    else if (line == "End")
+                    {
+                        if (stack.Count > 0) stack.Pop();
+                    }
+                    // =========================================================
+                    // 3. BLOQUE DE FUENTE (ESTO ES LO QUE TE FALTA)
+                    // =========================================================
+                    else if (line.StartsWith("BeginProperty Font"))
+                    {
+                        if (stack.Count > 0)
+                        {
+
+                            // Leemos las líneas internas del bloque
+                            var fontProps = ReadPropertyBlock(reader);
+
+                            // Creamos el string "file:///...; 12pt; Bold"
+                            string compiledFont = BuildFontString(fontProps);
+
+                            // Lo inyectamos en el control
+                            stack.Peek().Properties["Font"] = compiledFont;
+                        }
+                    }
+                    // =========================================================
+
+                    // 4. PROPIEDADES NORMALES
+                    else if (line.Contains("="))
+                    {
+                        var parts = line.Split(new char[] { '=' }, 2);
+                        if (parts.Length == 2 && stack.Count > 0)
+                        {
+                            string key = parts[0].Trim();
+                            string val = parts[1].Trim();
+
+                            if (val.Contains("'")) val = val.Split('\'')[0].Trim();
+                            if (val.StartsWith("\"") && val.EndsWith("\"")) val = val.Substring(1, val.Length - 2);
+
+                            stack.Peek().Properties[key] = val;
+                        }
                     }
                 }
-                // ---------------------------------------------------------
-                // B. FIN DE BLOQUE: "End"
-                // ---------------------------------------------------------
-                else if (line.StartsWith("End"))
-                {
-                    if (stack.Count > 0)
-                    {
-                        // Ya terminé de leer este control y sus hijos. Me bajo de la pila.
-                        stack.Pop();
-                    }
-                }
-                // ---------------------------------------------------------
-                // C. PROPIEDADES: "Caption = 'Hola Mundo'"
-                // ---------------------------------------------------------
-                else if (line.Contains("=") && stack.Count > 0 && !line.StartsWith("Attribute"))
-                {
-                    var currentControl = stack.Peek(); // Propiedad del control actual en el tope
+                return root;
+            }
+        }
 
-                    // Dividimos solo en el PRIMER igual (para soportar textos con '=')
-                    var parts = line.Split(new[] { '=' }, 2);
+        // --- HELPER CRÍTICO QUE TE FALTA ---
+        private static Dictionary<string, string> ReadPropertyBlock(StringReader reader)
+        {
+            var props = new Dictionary<string, string>();
+            string line;
+            while ((line = reader.ReadLine()) != null)
+            {
+                line = line.Trim();
+                if (line == "EndProperty") break; // Salir al terminar bloque
 
+                if (line.Contains("="))
+                {
+                    var parts = line.Split(new char[] { '=' }, 2);
                     if (parts.Length == 2)
                     {
                         string key = parts[0].Trim();
-                        string value = parts[1].Trim();
+                        string val = parts[1].Trim();
 
-                        // Limpieza: Quitar comentarios (') al final, si no están entre comillas
-                        if (value.Contains("'") && !value.StartsWith("\""))
-                        {
-                            value = value.Split('\'')[0].Trim();
-                        }
+                        if (val.Contains("'")) val = val.Split('\'')[0].Trim();
+                        if (val.StartsWith("\"") && val.EndsWith("\"")) val = val.Substring(1, val.Length - 2);
 
-                        // Limpieza: Quitar comillas de strings
-                        if (value.StartsWith("\"") && value.EndsWith("\""))
-                        {
-                            value = value.Substring(1, value.Length - 2);
-                        }
-
-                        // Guardar
-                        if (!currentControl.Properties.ContainsKey(key))
-                        {
-                            currentControl.Properties[key] = value;
-                        }
+                        props[key] = val;
                     }
                 }
             }
-
-            return rootForm;
+            return props;
         }
 
-        // ==========================================
-        // 3. UTILIDADES DE CONVERSIÓN
-        // ==========================================
-
-        // Conversión estándar: 15 Twips = 1 Pixel (a 96 DPI)
-        public static double TwipsToPixels(string twipsStr)
+        // --- CONSTRUCTOR DE STRING DE FUENTE ---
+        private static string BuildFontString(Dictionary<string, string> fontProps)
         {
-            if (string.IsNullOrWhiteSpace(twipsStr)) return 0;
-            if (double.TryParse(twipsStr, out double val)) return val / 15.0;
+            string name = "Microsoft Sans Serif";
+            string size = "8.25";
+            List<string> styles = new List<string>();
+
+            if (fontProps.ContainsKey("Name")) name = fontProps["Name"];
+            if (fontProps.ContainsKey("Size")) size = fontProps["Size"];
+
+            if (fontProps.ContainsKey("Weight") && double.TryParse(fontProps["Weight"], out double w) && w > 400) styles.Add("Bold");
+            if (fontProps.ContainsKey("Italic") && (fontProps["Italic"] == "-1" || fontProps["Italic"].ToLower() == "true")) styles.Add("Italic");
+            if (fontProps.ContainsKey("Underline") && (fontProps["Underline"] == "-1" || fontProps["Underline"].ToLower() == "true")) styles.Add("Underline");
+            if (fontProps.ContainsKey("Strikethrough") && (fontProps["Strikethrough"] == "-1" || fontProps["Strikethrough"].ToLower() == "true")) styles.Add("Strikethrough");
+
+            string stylePart = styles.Count > 0 ? "; " + string.Join("; ", styles) : "";
+            return $"{name}; {size}pt{stylePart}";
+        }
+
+        public static double TwipsToPixels(string twipsVal)
+        {
+            if (double.TryParse(twipsVal, NumberStyles.Any, CultureInfo.InvariantCulture, out double t)) return t / TwipsPerPixel;
             return 0;
         }
 
-        // Sobrecarga para doubles directos
-        public static double TwipsToPixels(double twips) => twips / 15.0;
-
-        // Helper seguro para obtener propiedades del diccionario (evita KeyNotFoundException)
-        public static string GetPropVal(VbControlModel model, string key)
+        public static long PixelsToTwips(double pixels)
         {
-            if (model.Properties.TryGetValue(key, out string val)) return val;
-            return "0"; // Valor por defecto seguro para cálculos matemáticos
+            if (double.IsNaN(pixels)) return 0;
+            return (long)Math.Round(pixels * TwipsPerPixel);
+        }
+
+        public static string GetPropVal(VbControlModel model, string propName)
+        {
+            return model.Properties.ContainsKey(propName) ? model.Properties[propName] : "0";
         }
     }
 }
