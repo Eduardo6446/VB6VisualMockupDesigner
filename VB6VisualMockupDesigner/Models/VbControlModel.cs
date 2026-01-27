@@ -14,5 +14,7 @@ namespace VB6VisualMockupDesigner.Models
 
         // Lista de hijos (Aquí vive la jerarquía)
         public List<VbControlModel> Children { get; set; } = new List<VbControlModel>();
+
+        public List<MenuModel> Menus { get; set; } = new List<MenuModel>();
     }
 }

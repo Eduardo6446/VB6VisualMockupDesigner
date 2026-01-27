@@ -258,7 +258,77 @@ namespace VB6VisualMockupDesigner.Controls
             }
         }
 
+        public List<MenuModel> CurrentMenus { get; set; } = new List<MenuModel>();
 
+        public void RenderMenus(List<MenuModel> menuItems)
+        {
+            this.CurrentMenus = menuItems;
+
+            if (MenuArea == null) return;
+
+            MenuArea.Children.Clear();
+
+            // Si no hay menús, ocultamos el área para no robar espacio
+            if (menuItems == null || !menuItems.Any())
+            {
+                MenuArea.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            MenuArea.Visibility = Visibility.Visible;
+
+            // Crear el control Menu principal
+            Menu mainMenu = new Menu
+            {
+                Style = RetroStyles.GetVB6MenuStyle(),
+                Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#D4D0C8"))
+            };
+
+            // VB6 usa una lista plana con niveles. Primero convertimos o iteramos por nivel 0.
+            // Asumiendo que MenuModel tiene 'Level' (0 = Top Level)
+            var topLevelItems = menuItems.Where(m => m.Level == 0).ToList();
+
+            foreach (var itemModel in topLevelItems)
+            {
+                mainMenu.Items.Add(CreateWpfMenuItem(itemModel, menuItems));
+            }
+
+            MenuArea.Children.Add(mainMenu);
+        }
+
+        private Control CreateWpfMenuItem(MenuModel model, List<MenuModel> allItems)
+        {
+            // Si el caption es "-", en VB6 es un separador
+            if (model.Caption == "-")
+            {
+                return new Separator();
+            }
+
+            MenuItem wpfItem = new MenuItem
+            {
+                Header = model.Caption.Replace("&", "_"), // VB6 usa & para mnemónicos, WPF usa _
+                IsEnabled = model.Enabled,
+                // Usamos Visibility.Collapsed si model.Visible es false para que no ocupe espacio
+                Visibility = model.Visible ? Visibility.Visible : Visibility.Collapsed
+            };
+
+            // Buscar hijos: son los elementos que siguen al actual en la lista y tienen Level > actual
+            // hasta encontrar uno con Level <= actual.
+            int currentIndex = allItems.IndexOf(model);
+            for (int i = currentIndex + 1; i < allItems.Count; i++)
+            {
+                var possibleChild = allItems[i];
+                if (possibleChild.Level <= model.Level) break; // Fin de la rama
+
+                // Solo agregamos como hijo directo si es exactamente 1 nivel superior
+                if (possibleChild.Level == model.Level + 1)
+                {
+                    wpfItem.Items.Add(CreateWpfMenuItem(possibleChild, allItems));
+                }
+            }
+
+            return wpfItem;
+        }
 
 
 

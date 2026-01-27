@@ -2,7 +2,8 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using System.Text.RegularExpressions;
+using System.Linq;
+using System.Text;
 using System.Windows;
 using VB6VisualMockupDesigner.Models;
 
@@ -19,16 +20,70 @@ namespace VB6VisualMockupDesigner.Helpers
                 string line;
                 VbControlModel root = null;
                 Stack<VbControlModel> stack = new Stack<VbControlModel>();
+                List<MenuModel> tempMenuList = new List<MenuModel>();
 
                 while ((line = reader.ReadLine()) != null)
                 {
-                    line = line.Trim();
-                    if (string.IsNullOrEmpty(line) || line.StartsWith("'") || line.StartsWith("Attribute") || line.StartsWith("VERSION")) continue;
+                    string trimmedLine = line.Trim();
+                    if (string.IsNullOrEmpty(trimmedLine) || trimmedLine.StartsWith("'") || trimmedLine.StartsWith("Attribute") || trimmedLine.StartsWith("VERSION")) continue;
 
-                    // 1. INICIO DE CONTROL (Evitamos confundirnos con BeginProperty)
-                    if (line.StartsWith("Begin ") && !line.StartsWith("BeginProperty"))
+                    // =========================================================
+                    // 1. PROCESAR MENÚS (Begin VB.Menu)
+                    // =========================================================
+                    if (trimmedLine.StartsWith("Begin VB.Menu"))
                     {
-                        var parts = line.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                        var parts = trimmedLine.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+
+                        // Calculamos el nivel basándonos en la indentación (espacios iniciales)
+                        // En VB6, cada nivel de profundidad suele tener 3 o 6 espacios de diferencia.
+                        int leadingSpaces = line.TakeWhile(char.IsWhiteSpace).Count();
+                        int level = leadingSpaces > 0 ? (leadingSpaces / 3) - 1 : 0;
+                        if (level < 0) level = 0;
+
+                        var menu = new MenuModel
+                        {
+                            Name = parts.Length > 2 ? parts[2] : "mnuUnknown",
+                            Level = level
+                        };
+
+                        // Leer propiedades del menú hasta encontrar su "End"
+                        while ((line = reader.ReadLine()) != null)
+                        {
+                            string mLine = line.Trim();
+                            if (mLine == "End") break;
+
+                            if (mLine.Contains("="))
+                            {
+                                var p = mLine.Split(new char[] { '=' }, 2);
+                                string key = p[0].Trim();
+                                string val = p[1].Trim().Replace("\"", "");
+
+                                // Quitar comentarios al final de la línea si existen
+                                if (val.Contains("'")) val = val.Split('\'')[0].Trim();
+
+                                switch (key)
+                                {
+                                    case "Caption": menu.Caption = val; break;
+                                    case "Shortcut": menu.Shortcut = val; break;
+                                    case "Checked": menu.Checked = val == "-1" || val.ToLower() == "true"; break;
+                                    case "Enabled": menu.Enabled = val != "0" && val.ToLower() != "false"; break;
+                                    case "Visible": menu.Visible = val != "0" && val.ToLower() != "false"; break;
+                                    case "Index":
+                                        if (int.TryParse(val, out int idx)) /* logic for array if needed */;
+                                        break;
+                                }
+                            }
+                        }
+                        tempMenuList.Add(menu);
+                        continue;
+                    }
+
+                    // =========================================================
+                    // 2. INICIO DE CONTROL (Begin VB.Control o Sheridan)
+                    // =========================================================
+                    if (trimmedLine.StartsWith("Begin ") && !trimmedLine.StartsWith("BeginProperty"))
+                    {
+                        var parts = trimmedLine.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
                         if (parts.Length >= 2)
                         {
                             var newCtrl = new VbControlModel
@@ -43,35 +98,25 @@ namespace VB6VisualMockupDesigner.Helpers
                             stack.Push(newCtrl);
                         }
                     }
-                    // 2. FIN DE CONTROL
-                    else if (line == "End")
+                    // 3. FIN DE CONTROL
+                    else if (trimmedLine == "End")
                     {
                         if (stack.Count > 0) stack.Pop();
                     }
-                    // =========================================================
-                    // 3. BLOQUE DE FUENTE (ESTO ES LO QUE TE FALTA)
-                    // =========================================================
-                    else if (line.StartsWith("BeginProperty Font"))
+                    // 4. BLOQUE DE FUENTE
+                    else if (trimmedLine.StartsWith("BeginProperty Font"))
                     {
                         if (stack.Count > 0)
                         {
-
-                            // Leemos las líneas internas del bloque
                             var fontProps = ReadPropertyBlock(reader);
-
-                            // Creamos el string "file:///...; 12pt; Bold"
                             string compiledFont = BuildFontString(fontProps);
-
-                            // Lo inyectamos en el control
                             stack.Peek().Properties["Font"] = compiledFont;
                         }
                     }
-                    // =========================================================
-
-                    // 4. PROPIEDADES NORMALES
-                    else if (line.Contains("="))
+                    // 5. PROPIEDADES NORMALES
+                    else if (trimmedLine.Contains("="))
                     {
-                        var parts = line.Split(new char[] { '=' }, 2);
+                        var parts = trimmedLine.Split(new char[] { '=' }, 2);
                         if (parts.Length == 2 && stack.Count > 0)
                         {
                             string key = parts[0].Trim();
@@ -84,11 +129,17 @@ namespace VB6VisualMockupDesigner.Helpers
                         }
                     }
                 }
+
+                // Inyectamos los menús encontrados en el modelo raíz (el Form)
+                if (root != null)
+                {
+                    root.Menus = tempMenuList;
+                }
+
                 return root;
             }
         }
 
-        // --- HELPER CRÍTICO QUE TE FALTA ---
         private static Dictionary<string, string> ReadPropertyBlock(StringReader reader)
         {
             var props = new Dictionary<string, string>();
@@ -96,7 +147,7 @@ namespace VB6VisualMockupDesigner.Helpers
             while ((line = reader.ReadLine()) != null)
             {
                 line = line.Trim();
-                if (line == "EndProperty") break; // Salir al terminar bloque
+                if (line == "EndProperty") break;
 
                 if (line.Contains("="))
                 {
@@ -105,10 +156,8 @@ namespace VB6VisualMockupDesigner.Helpers
                     {
                         string key = parts[0].Trim();
                         string val = parts[1].Trim();
-
                         if (val.Contains("'")) val = val.Split('\'')[0].Trim();
                         if (val.StartsWith("\"") && val.EndsWith("\"")) val = val.Substring(1, val.Length - 2);
-
                         props[key] = val;
                     }
                 }
@@ -116,7 +165,6 @@ namespace VB6VisualMockupDesigner.Helpers
             return props;
         }
 
-        // --- CONSTRUCTOR DE STRING DE FUENTE ---
         private static string BuildFontString(Dictionary<string, string> fontProps)
         {
             string name = "Microsoft Sans Serif";

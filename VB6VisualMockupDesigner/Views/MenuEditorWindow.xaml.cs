@@ -22,11 +22,13 @@ namespace VB6VisualMockupDesigner.Views
             LstMenu.ItemsSource = MenuItems;
 
             // Agregar un ítem inicial vacío si la lista está vacía
-            if (MenuItems.Count == 0)
-            {
-                MenuItems.Add(new MenuModel { Caption = "", Name = "" });
+            this.Loaded += (s, e) => {
+                if (MenuItems.Count == 0)
+                {
+                    MenuItems.Add(new MenuModel { Caption = "", Name = "" });
+                }
                 LstMenu.SelectedIndex = 0;
-            }
+            };
         }
 
         // =========================================================

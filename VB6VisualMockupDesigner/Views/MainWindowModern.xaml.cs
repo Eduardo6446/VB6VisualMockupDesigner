@@ -299,7 +299,13 @@ namespace VB6VisualMockupDesigner.Views
                     try
                     {
                         string fileContent = System.IO.File.ReadAllText(fullPath);
+                        VbControlModel rootModel = Vb6Helpers.ParseVb6Form(fileContent);
                         designer.LoadForm(fileContent);
+
+                        if (rootModel.Menus != null && rootModel.Menus.Count > 0)
+                        {
+                            designer.RenderMenus(rootModel.Menus);
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -882,8 +888,7 @@ namespace VB6VisualMockupDesigner.Views
             }
 
             // 2. Generar el código VB6
-            string vbCode = Vb6Generator.GenerateFrmCode(designer.GetDesignSurface(), designer.FormTitle);
-
+            string vbCode = Vb6Generator.GenerateFrmCode(designer.GetDesignSurface(), designer.FormTitle, designer.CurrentMenus);
             // 3. Determinar la ruta destino
             string currentPath = tab.Tag as string;
             string targetPath = currentPath;
@@ -1397,29 +1402,54 @@ namespace VB6VisualMockupDesigner.Views
             }
         }
 
+
+
+        public List<MenuModel> CurrentMenus { get; set; } = new List<MenuModel>();
+
         private void BtnMenuEditor_Click(object sender, RoutedEventArgs e)
         {
             // Solo abrir si hay un diseñador activo
             if (MainTabControl.SelectedItem is TabItem tab && tab.Content is DesignerCanvas designer)
             {
                 // 1. Crear la ventana
+
                 var editor = new MenuEditorWindow();
-
-                // (Opcional) Aquí podrías pasarle los menús existentes si ya hubiera creados
-                // editor.LoadMenus(designer.CurrentMenus); 
-
                 editor.Owner = this; // Para que se centre sobre la ventana principal
+
+
+                if (designer.CurrentMenus != null && designer.CurrentMenus.Count > 0)
+                {
+                    foreach (var m in designer.CurrentMenus)
+                    {
+                        editor.MenuItems.Add(new MenuModel
+                        {
+                            Caption = m.Caption,
+                            Name = m.Name,
+                            Level = m.Level,
+                            Enabled = m.Enabled,
+                            Visible = m.Visible,
+                            Checked = m.Checked,
+                            Shortcut = m.Shortcut
+                        });
+                    }
+                }
+                else
+                {
+                    // Si no hay nada, asegurar que haya al menos un item vacío como antes
+                    editor.MenuItems.Add(new MenuModel { Caption = "", Name = "" });
+                }
+
+
 
                 // 2. Mostrar como Modal (bloquea la ventana de atrás)
                 if (editor.ShowDialog() == true)
                 {
-                    // 3. Si el usuario dio "Aceptar", obtenemos la lista creada
-                    var newMenus = editor.MenuItems;
+                    // 2. ACTUALIZAR Y RENDERIZAR
+                    var newMenus = editor.MenuItems.ToList();
+                    designer.RenderMenus(newMenus);
 
-                    // 4. Mandar a construir el menú en el Designer (Próximo paso en el roadmap)
-                    // designer.RenderMenus(newMenus); 
-
-                    MessageBox.Show($"Se crearon {newMenus.Count} ítems de menú. (Renderizado pendiente)");
+                    // Marcar como sucio para el guardado
+                    designer.SaveUndoSnapshot();
                 }
             }
         }
@@ -1441,6 +1471,6 @@ namespace VB6VisualMockupDesigner.Views
             }
         }
 
-
+        
     }
 }
