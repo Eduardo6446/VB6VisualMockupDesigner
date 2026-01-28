@@ -192,12 +192,7 @@ namespace VB6VisualMockupDesigner.Views
                         MnuCloseFolder.Header = "Cerrar Carpeta";
                         MnuCloseFolder.IsEnabled = false;
                     }
-                    if (BtnToolbarCloseFolder != null)
-                    {
-                        BtnToolbarCloseFolder.ToolTip = "Cerrar Carpeta";
-                        BtnToolbarCloseFolder.IsEnabled = false;
-                        // Opcional: Ocultarlo si prefieres: Visibility.Collapsed
-                    }
+                    
                     break;
 
                 case AppMode.Folder:
@@ -207,11 +202,7 @@ namespace VB6VisualMockupDesigner.Views
                         MnuCloseFolder.Header = "Cerrar Carpeta";
                         MnuCloseFolder.IsEnabled = true;
                     }
-                    if (BtnToolbarCloseFolder != null)
-                    {
-                        BtnToolbarCloseFolder.ToolTip = "Cerrar Carpeta";
-                        BtnToolbarCloseFolder.IsEnabled = true;
-                    }
+                    
                     break;
 
                 case AppMode.ProjectVbp:
@@ -221,11 +212,7 @@ namespace VB6VisualMockupDesigner.Views
                         MnuCloseFolder.Header = "Cerrar Proyecto"; // <--- Cambio dinámico de texto
                         MnuCloseFolder.IsEnabled = true;
                     }
-                    if (BtnToolbarCloseFolder != null)
-                    {
-                        BtnToolbarCloseFolder.ToolTip = "Cerrar Proyecto";
-                        BtnToolbarCloseFolder.IsEnabled = true;
-                    }
+                    
                     break;
             }
         }
