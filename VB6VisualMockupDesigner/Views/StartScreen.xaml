@@ -64,9 +64,7 @@
                         <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}" Margin="0,0,0,5">
                             <StackPanel>
                                 <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="Medium"/>
-
                                 <TextBlock Text="{Binding FullPath}" FontSize="11" Foreground="{DynamicResource SecondaryText}" TextTrimming="CharacterEllipsis"/>
-
                                 <TextBlock Text="{Binding LastAccess, StringFormat='{}{0:dd/MM/yyyy HH:mm}'}" FontSize="11" Foreground="{DynamicResource SecondaryText}" Opacity="0.7"/>
                             </StackPanel>
                         </Border>
@@ -105,7 +103,6 @@
                  Background="Transparent" BorderThickness="0" 
                  ItemContainerStyle="{StaticResource RecentItemStyle}"
                  SelectionChanged="RecentProjectsList_SelectionChanged">
-
             </ListBox>
 
             <StackPanel Grid.Row="2" x:Name="EmptyRecentState" 
@@ -148,28 +145,29 @@
                         Margin="0,0,0,10"/>
 
                 <Button Style="{StaticResource ActionButtonStyle}" 
-                        Content="Abrir archivo .frm" 
-                        ToolTip="Importar ingeniería inversa desde VB6"
+                        Content="Abrir archivo .frm / .vbp" 
+                        ToolTip="Carga un formulario o proyecto específico"
                         Tag="&#xE8E5;" 
                         Click="BtnOpen_Click"
                         Margin="0,0,0,10"/>
 
                 <Button Style="{StaticResource ActionButtonStyle}" 
-                        Content="Abrir carpeta de proyecto" 
-                        ToolTip="Escanear múltiples formularios"
+                        Content="Abrir Carpeta de Trabajo" 
+                        ToolTip="Escanea un directorio como en VS Code"
                         Tag="&#xE8B7;" 
+                        Click="BtnOpenFolder_Click"
                         Margin="0,0,0,10"/>
 
                 <TextBlock x:Name="TxtVersionTitle" 
                            Text="Novedades" 
                            FontSize="16" FontWeight="Bold" 
-                           Foreground="{DynamicResource PrimaryText}" Margin="0,0,0,10"/>
+                           Foreground="{DynamicResource PrimaryText}" Margin="0,20,0,10"/>
 
                 <TextBlock Text="• Jerarquía de Contenedores (Parenting)" Foreground="{DynamicResource SecondaryText}" Margin="0,0,0,5"/>
                 <TextBlock Text="• Guías de Alineación Inteligentes (Smart Snap)" Foreground="{DynamicResource SecondaryText}" Margin="0,0,0,5"/>
-                <TextBlock Text="• Arrastre Fantasma (Ghost Dragging)" Foreground="{DynamicResource SecondaryText}" Margin="0,0,0,5"/>
                 <TextBlock Text="• Historial de Deshacer/Rehacer Robusto" Foreground="{DynamicResource SecondaryText}" Margin="0,0,0,5"/>
                 <TextBlock Text="• Soporte de 'Copy &amp; Paste' Anidado" Foreground="{DynamicResource SecondaryText}" Margin="0,0,0,5"/>
+                <TextBlock Text="• Explorador de Carpetas Híbrido" Foreground="{DynamicResource SecondaryText}" Margin="0,0,0,5"/>
 
             </StackPanel>
         </Border>

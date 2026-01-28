@@ -271,13 +271,20 @@
                 <Menu Style="{StaticResource TopMenuStyle}" Background="Transparent">
                     <MenuItem Header="Archivo">
                         <MenuItem Header="Nuevo Proyecto..." Click="BtnNew_Click"/>
-                        <MenuItem Header="Abrir..." Click="BtnOpen_Click"/>
+                        <MenuItem Header="Abrir Archivo..." Click="BtnOpen_Click"/>
+
+                        <MenuItem Header="Abrir Carpeta..." Click="BtnOpenFolder_Click"/>
+
                         <Separator/>
                         <MenuItem Header="Guardar" InputGestureText="Ctrl+S" Click="MnuSave_Click"/>
                         <MenuItem Header="Guardar como..." Click="MnuSaveAs_Click"/>
                         <MenuItem Header="Exportar a Imagen" Click="MnuExportPng_Click"/>
                         <Separator/>
+
                         <MenuItem Header="Cerrar Pestaña" Click="BtnCloseProject_Click"/>
+
+                        <MenuItem x:Name="MnuCloseFolder" Header="Cerrar Carpeta" Click="BtnCloseFolder_Click" IsEnabled="False"/>
+
                         <Separator/>
                         <MenuItem Header="Preferencias..." Click="MnuPreferences_Click"/>
                         <MenuItem Header="Salir" Click="BtnClose_Click"/>
@@ -430,6 +437,8 @@
 
         <Border Grid.Row="1" Background="{DynamicResource AppBackground}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1">
             <StackPanel Orientation="Horizontal" Margin="5,0" VerticalAlignment="Center">
+
+                
 
                 <Button Style="{StaticResource ToolbarBtnStyle}" ToolTip="Guardar (Ctrl+S)" Click="MnuSave_Click">
                     <TextBlock Text="&#xE74E;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>

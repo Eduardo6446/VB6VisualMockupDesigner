@@ -5,11 +5,14 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
-using static VB6VisualMockupDesigner.Controls.DesignerCanvas;
-using VB6VisualMockupDesigner.Models; // Requiere .NET Core 3.1 o superior (o NuGet en .NET Framework)
-using VB6VisualMockupDesigner.Helpers;
+using System.Windows.Shapes;
 using VB6VisualMockupDesigner.Controls;
+using VB6VisualMockupDesigner.Helpers;
+using VB6VisualMockupDesigner.Models; // Requiere .NET Core 3.1 o superior (o NuGet en .NET Framework)
 using VB6VisualMockupDesigner.Services;
+using VB6VisualMockupDesigner.Views;
+
+using static VB6VisualMockupDesigner.Controls.DesignerCanvas;
 
 
 
@@ -19,8 +22,17 @@ namespace VB6VisualMockupDesigner.Views
     /// <summary>
     /// Interaction logic for MainWindowModern.xaml
     /// </summary>
+    public enum AppMode
+    {
+        Empty,          // Nada abierto (Pantalla vacía)
+        SingleFile,     // Solo un .frm suelto
+        Folder,         // Carpeta completa abierta
+        ProjectVbp      // Proyecto .vbp abierto
+    }
+
     public partial class MainWindowModern : Window
     {
+        private AppMode _currentMode = AppMode.Empty;
         private ToolboxView _toolboxView; // Instancia única para no recrearla siempre
         private ProjectExplorerView _explorerView; // Nueva referencia
 
@@ -167,6 +179,57 @@ namespace VB6VisualMockupDesigner.Views
 
         }
 
+
+        private void UpdateUIContext()
+        {
+            switch (_currentMode)
+            {
+                case AppMode.Empty:
+                case AppMode.SingleFile:
+                    // En modo archivo suelto o vacío, NO tiene sentido cerrar carpeta/proyecto
+                    if (MnuCloseFolder != null)
+                    {
+                        MnuCloseFolder.Header = "Cerrar Carpeta";
+                        MnuCloseFolder.IsEnabled = false;
+                    }
+                    if (BtnToolbarCloseFolder != null)
+                    {
+                        BtnToolbarCloseFolder.ToolTip = "Cerrar Carpeta";
+                        BtnToolbarCloseFolder.IsEnabled = false;
+                        // Opcional: Ocultarlo si prefieres: Visibility.Collapsed
+                    }
+                    break;
+
+                case AppMode.Folder:
+                    // Modo Carpeta estilo VS Code
+                    if (MnuCloseFolder != null)
+                    {
+                        MnuCloseFolder.Header = "Cerrar Carpeta";
+                        MnuCloseFolder.IsEnabled = true;
+                    }
+                    if (BtnToolbarCloseFolder != null)
+                    {
+                        BtnToolbarCloseFolder.ToolTip = "Cerrar Carpeta";
+                        BtnToolbarCloseFolder.IsEnabled = true;
+                    }
+                    break;
+
+                case AppMode.ProjectVbp:
+                    // Modo Proyecto VB6 clásico
+                    if (MnuCloseFolder != null)
+                    {
+                        MnuCloseFolder.Header = "Cerrar Proyecto"; // <--- Cambio dinámico de texto
+                        MnuCloseFolder.IsEnabled = true;
+                    }
+                    if (BtnToolbarCloseFolder != null)
+                    {
+                        BtnToolbarCloseFolder.ToolTip = "Cerrar Proyecto";
+                        BtnToolbarCloseFolder.IsEnabled = true;
+                    }
+                    break;
+            }
+        }
+
         private void RefreshDocumentOutline()
         {
             if (SecondaryPanel.Visibility == Visibility.Visible &&
@@ -225,35 +288,40 @@ namespace VB6VisualMockupDesigner.Views
             }
         }
 
-        public void LoadProject(string fullPath)
+        public void LoadProject(string path)
         {
-            if (string.IsNullOrEmpty(fullPath)) return;
+            if (string.IsNullOrEmpty(path)) return;
 
-            // Detectar si es un proyecto (.vbp) o un formulario suelto (.frm)
-            string ext = System.IO.Path.GetExtension(fullPath).ToLower();
-
-            if (ext == ".vbp")
+            if (Directory.Exists(path))
             {
-                // CASO 1: Cargar Proyecto Completo
-                _explorerView.LoadProjectStructure(fullPath);
-
-                // Opcional: Expandir el explorador automáticamente
+                _currentMode = AppMode.Folder; // <--- SET MODE
+                _explorerView?.LoadFolderContents(path);
                 OpenSideBar("Explorer");
             }
             else
             {
-                // CASO 2: Archivo suelto (.frm)
-                // Lo abrimos directo en pestaña
-                string fileName = System.IO.Path.GetFileName(fullPath);
-                OpenFileTab(fullPath);
+                string ext = System.IO.Path.GetExtension(path).ToLower();
+                if (ext == ".vbp")
+                {
+                    _currentMode = AppMode.ProjectVbp; // <--- SET MODE
+                    _explorerView?.LoadProjectStructure(path);
+                    OpenSideBar("Explorer");
+                }
+                else
+                {
+                    // Si ya estamos en modo Folder o Project, NO cambiamos a SingleFile
+                    // solo porque abrimos un archivo. Mantenemos el contexto.
+                    if (_currentMode == AppMode.Empty)
+                    {
+                        _currentMode = AppMode.SingleFile; // <--- SET MODE
+                    }
 
-                // Y lo agregamos al explorador como un archivo único (modo simple)
-                // Para esto podrías crear un método "AddSingleFile" en ExplorerView si quisieras
-                // O simplemente dejar que el explorador se quede vacío si no hay proyecto.
+                    OpenFileTab(path);
+                }
             }
 
-            // Registrar en recientes
-            RecentFilesManager.AddToRecents(fullPath);
+            RecentFilesManager.AddToRecents(path);
+            UpdateUIContext(); // <--- ACTUALIZAR BOTONES
         }
 
         // ============================================
@@ -402,6 +470,8 @@ namespace VB6VisualMockupDesigner.Views
 
         private void UpdateTabVisibility()
         {
+            bool hasTabs = MainTabControl.Items.Count > 0;
+
             if (MainTabControl.Items.Count > 0)
             {
                 MainTabControl.Visibility = Visibility.Visible;
@@ -420,6 +490,12 @@ namespace VB6VisualMockupDesigner.Views
 
                 // NO HAY PESTAÑAS -> DESHABILITAR TOTALMENTE
                 UpdateToolboxState(false);
+            }
+
+            if (!hasTabs && _currentMode == AppMode.SingleFile)
+            {
+                _currentMode = AppMode.Empty;
+                UpdateUIContext();
             }
         }
 
@@ -1471,6 +1547,72 @@ namespace VB6VisualMockupDesigner.Views
             }
         }
 
-        
+        private void BtnOpenFolder_Click(object sender, RoutedEventArgs e)
+        {
+            // Si ya hay una carpeta abierta, preguntamos si cerrar primero
+            if (MainTabControl.Items.Count > 0 || (_explorerView != null && _explorerView.HasContent)) // HasContent es opcional, puedes chequear ItemsSource != null
+            {
+                if (!CloseAllTabsAndFolder()) return; // Si el usuario cancela, no abrimos la nueva
+            }
+
+            var dialog = new Microsoft.Win32.OpenFileDialog
+            {
+                ValidateNames = false,
+                CheckFileExists = false,
+                CheckPathExists = true,
+                FileName = "Seleccionar carpeta actual",
+                Title = "Abrir Carpeta de Proyecto",
+                Filter = "Carpetas|*.folder"
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                string folderPath = System.IO.Path.GetDirectoryName(dialog.FileName);
+                if (!string.IsNullOrEmpty(folderPath))
+                {
+                    LoadProject(folderPath);
+                }
+            }
+        }
+
+        // 2. NUEVO: MENÚ CERRAR CARPETA
+        private void BtnCloseFolder_Click(object sender, RoutedEventArgs e)
+        {
+            CloseAllTabsAndFolder();
+        }
+
+        // 3. HELPER: CIERRA TODO Y LIMPIA
+        private bool CloseAllTabsAndFolder()
+        {
+            // ... (Tu lógica de cerrar pestañas igual que antes) ...
+            var tabs = MainTabControl.Items.Cast<TabItem>().ToList();
+            foreach (var tab in tabs)
+            {
+                // ... lógica de guardado ...
+                MainTabControl.SelectedItem = tab;
+                if (tab.Content is DesignerCanvas designer && designer.IsDirty)
+                {
+                    // ... MessageBox ...
+                    // si cancela return false;
+                }
+                MainTabControl.Items.Remove(tab);
+            }
+
+            // LIMPIEZA FINAL
+            _explorerView.Clear();
+            CloseSideBar();
+            _activeSideBarButton = null;
+            if (BtnToolboxToggle != null) BtnToolboxToggle.IsChecked = false;
+
+            UpdateTabVisibility();
+
+            // RESETEAR MODO
+            _currentMode = AppMode.Empty;
+            UpdateUIContext(); // <--- Deshabilita los botones de nuevo
+
+            return true;
+        }
+
+
     }
 }

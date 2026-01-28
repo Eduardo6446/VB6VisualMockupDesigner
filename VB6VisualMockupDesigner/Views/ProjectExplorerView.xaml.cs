@@ -744,6 +744,45 @@ Attribute VB_Exposed = False
             }
         }
 
+        // Dentro de ProjectExplorerView.xaml.cs
+
+        public void LoadFolderContents(string folderPath)
+        {
+            try
+            {
+                if (!Directory.Exists(folderPath)) return;
+
+                // Limpiar para evitar duplicados si ya había algo cargado
+                ProjectTree.ItemsSource = null;
+
+                string folderName = System.IO.Path.GetFileName(folderPath);
+                if (string.IsNullOrEmpty(folderName)) folderName = folderPath;
+
+                var rootItem = new ExplorerItem
+                {
+                    Name = folderName,
+                    FullPath = folderPath,
+                    Type = ExplorerItemType.Folder,
+                    IsExpanded = true,
+                    Children = new ObservableCollection<ExplorerItem>()
+                };
+
+                // Escaneamos el disco físicamente
+                BuildFileSystemTree(folderPath, rootItem.Children);
+
+                ProjectTree.ItemsSource = new ObservableCollection<ExplorerItem> { rootItem };
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error al cargar la carpeta: " + ex.Message);
+            }
+        }
+
+        public void Clear()
+        {
+            ProjectTree.ItemsSource = null;
+        }
+
     }
 
     public static class SimpleInputBox
