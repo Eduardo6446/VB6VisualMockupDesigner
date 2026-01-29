@@ -182,6 +182,36 @@ namespace VB6VisualMockupDesigner.Helpers
                 });
             }
 
+            if (ctrl is ListBox || ctrl is ComboBox)
+            {
+                // 1. Extraer ítems actuales a una lista de strings
+                var itemsList = new List<string>();
+                System.Collections.IEnumerable currentItems = null;
+
+                if (ctrl is ListBox lb) currentItems = lb.Items;
+                else if (ctrl is ComboBox cb) currentItems = cb.Items;
+
+                if (currentItems != null)
+                {
+                    foreach (var item in currentItems)
+                    {
+                        itemsList.Add(item.ToString());
+                    }
+                }
+
+                // 2. Unirlos con saltos de línea para el editor
+                string itemsStr = string.Join("\r\n", itemsList);
+
+                list.Add(new PropertyItem
+                {
+                    Name = "List",
+                    Value = itemsStr,
+                    Category = "Data",
+                    Type = PropertyType.StringList,
+                    Description = "Devuelve o establece los elementos contenidos en la lista."
+                });
+            }
+
             // Font
             if (ctrl is Control cFont)
             {
@@ -334,6 +364,39 @@ namespace VB6VisualMockupDesigner.Helpers
                         }
                     }
                     break;
+                case "List":
+                    // 1. Obtener la colección de ítems del control WPF
+                    System.Collections.IList itemsCollection = null;
+
+                    if (ctrl is ListBox lb) itemsCollection = lb.Items;
+                    else if (ctrl is ComboBox cb) itemsCollection = cb.Items;
+
+                    if (itemsCollection != null)
+                    {
+                        // 2. Limpiar lista actual
+                        itemsCollection.Clear();
+
+                        // 3. Separar el string que viene del editor y rellenar
+                        if (!string.IsNullOrEmpty(val))
+                        {
+                            // Normalizar saltos de línea y separar
+                            var lines = val.Replace("\r\n", "\n").Split('\n');
+
+                            foreach (var line in lines)
+                            {
+                                // Opcional: Ignorar líneas vacías si lo deseas, VB6 permite vacías.
+                                itemsCollection.Add(line); // Agregamos tal cual string
+                            }
+                        }
+
+                        // ComboBox Hack: Si es un ComboBox y tenía texto seleccionado,
+                        // intentar restaurar o seleccionar el primero.
+                        if (ctrl is ComboBox combo && combo.Items.Count > 0 && string.IsNullOrEmpty(combo.Text))
+                        {
+                            combo.SelectedIndex = 0;
+                        }
+                    }
+                    break;
 
                 // --- APPEARANCE ---
                 case "Appearance":
@@ -407,6 +470,8 @@ namespace VB6VisualMockupDesigner.Helpers
                     else if (int.TryParse(val, out int i)) VB6Data.SetIndex(ctrl, i);
                     break;
             }
+
+
         }
 
         // ==========================================

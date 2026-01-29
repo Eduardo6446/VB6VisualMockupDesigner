@@ -1,0 +1,112 @@
+﻿<Window x:Class="VB6VisualMockupDesigner.Views.StringListEditorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Editor de Lista de Cadenas" 
+        Height="350" Width="450"
+        WindowStartupLocation="CenterOwner" 
+        ResizeMode="NoResize" 
+        WindowStyle="None" 
+        Background="{DynamicResource PanelBackground}"
+        BorderBrush="{DynamicResource BorderBrush}"
+        BorderThickness="1">
+
+    <Window.Resources>
+        <Style x:Key="WindowCloseButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource SecondaryText}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Width" Value="32"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}">
+                            <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" 
+                                       FontSize="10" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#C42B1C"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="32"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" 
+                Background="{DynamicResource HeaderBackground}" 
+                MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+            <Grid>
+                <TextBlock Text="Editor de Lista de Cadenas" 
+                           Foreground="{DynamicResource PrimaryText}" 
+                           VerticalAlignment="Center" 
+                           Margin="10,0,0,0" 
+                           FontSize="12"/>
+
+                <Button HorizontalAlignment="Right" 
+                        Style="{StaticResource WindowCloseButtonStyle}"
+                        Click="BtnCancel_Click"/>
+            </Grid>
+        </Border>
+
+        <StackPanel Grid.Row="1" Margin="15,15,15,5">
+            <TextBlock Text="Escribe las cadenas de la colección (una por línea):" 
+                       Foreground="{DynamicResource PrimaryText}" 
+                       FontWeight="SemiBold"
+                       Margin="0,0,0,5"/>
+            <TextBlock Text="Presiona Enter para agregar un nuevo elemento." 
+                       Foreground="{DynamicResource SecondaryText}" 
+                       FontSize="11"/>
+        </StackPanel>
+
+        <Border Grid.Row="2" 
+                Margin="15,5,15,0"
+                BorderBrush="{DynamicResource BorderBrush}" 
+                BorderThickness="1" 
+                Background="{DynamicResource HeaderBackground}">
+            <TextBox x:Name="TxtContent"
+                     AcceptsReturn="True" 
+                     VerticalScrollBarVisibility="Auto"
+                     HorizontalScrollBarVisibility="Auto"
+                     FontFamily="Consolas" 
+                     FontSize="13" 
+                     Padding="5"
+                     Background="Transparent"
+                     Foreground="{DynamicResource PrimaryText}"
+                     CaretBrush="{DynamicResource PrimaryText}"
+                     BorderThickness="0"/>
+        </Border>
+
+        <Grid Grid.Row="3" Margin="15,15,15,15">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Text="0 líneas" x:Name="LblLineCount" 
+                       VerticalAlignment="Center" 
+                       Foreground="{DynamicResource SecondaryText}" 
+                       FontSize="11"/>
+
+            <Button Content="Aceptar" Click="BtnOk_Click" 
+                    Width="90" Height="26" Margin="0,0,10,0" 
+                    Grid.Column="1" IsDefault="True"/>
+
+            <Button Content="Cancelar" Click="BtnCancel_Click" 
+                    Width="90" Height="26" 
+                    Grid.Column="2" IsCancel="True"/>
+        </Grid>
+    </Grid>
+</Window>

@@ -15,7 +15,7 @@
     <UserControl.Resources>
 
         <converters:FontStringConverter x:Key="FontStringCleanConverter"/>
-
+        
         <Style x:Key="ToolHeaderButtonStyle" TargetType="Button">
             <Setter Property="Width" Value="22"/>
             <Setter Property="Height" Value="22"/>
@@ -124,6 +124,22 @@
             </Grid>
         </DataTemplate>
 
+
+        <DataTemplate x:Key="StringListEditorTemplate">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="25"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="(Lista)" VerticalAlignment="Center" Margin="5,0" 
+               Foreground="{DynamicResource SecondaryText}" FontStyle="Italic"/>
+
+                <Button Grid.Column="1" Content="..." FontWeight="Bold" Padding="0,-2,0,0" Margin="0,1,1,1" Background="{DynamicResource HeaderBackground}" Foreground="{DynamicResource PrimaryText}" 
+                        BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" 
+            Click="OnDialogButtonClick"/>
+            </Grid>
+        </DataTemplate>
+        
         <DataTemplate x:Key="FontEditorTemplate">
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -175,6 +191,9 @@
                             </DataTrigger>
                             <DataTrigger Binding="{Binding Type}" Value="Color">
                                 <Setter Property="ContentTemplate" Value="{StaticResource ColorEditorTemplate}"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding Type}" Value="StringList">
+                                <Setter Property="ContentTemplate" Value="{StaticResource StringListEditorTemplate}"/>
                             </DataTrigger>
                             <DataTrigger Binding="{Binding Type}" Value="File">
                                 <Setter Property="ContentTemplate" Value="{StaticResource DialogEditorTemplate}"/>

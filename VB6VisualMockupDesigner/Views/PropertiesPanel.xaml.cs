@@ -272,8 +272,29 @@ namespace VB6VisualMockupDesigner.Views
             {
                 if (item.Type == PropertyType.File) HandleFilePicker(item);
                 else if (item.Type == PropertyType.Font) HandleFontPicker(item);
+                else if (item.Type == PropertyType.StringList) HandleStringListEditor(item); // <--- NUEVO
+
             }
         }
+
+
+        private void HandleStringListEditor(PropertyItem item)
+        {
+            // 1. Obtener valor actual (string separado por saltos de línea)
+            string currentVal = item.Value?.ToString() ?? "";
+
+            // 2. Abrir editor
+            var editor = new StringListEditorWindow(currentVal);
+            editor.Owner = Application.Current.MainWindow;
+
+            if (editor.ShowDialog() == true)
+            {
+                // 3. Aplicar cambios
+                item.Value = editor.ResultText;
+                // El binding disparará automáticamente ApplyProperty en PropertyManager
+            }
+        }
+
 
         private void HandleFilePicker(PropertyItem item)
         {

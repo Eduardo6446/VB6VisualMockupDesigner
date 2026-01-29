@@ -14,7 +14,8 @@ namespace VB6VisualMockupDesigner.Models
         Color,      // Texto hexadecimal + Previsualización de color
         ReadOnly,    // Solo lectura (ej: (Name) en ciertos casos)
         File,       // <--- NUEVO: Para imágenes (Picture, Icon)
-        Font        // <--- NUEVO: Para fuentes (Font)
+        Font,        // <--- NUEVO: Para fuentes (Font)
+        StringList
     }
 
     public class PropertyItem : INotifyPropertyChanged
