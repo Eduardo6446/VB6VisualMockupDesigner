@@ -113,5 +113,45 @@ namespace VB6VisualMockupDesigner.Views
             UpdateLineCount();
             TxtContent.Focus();
         }
+
+        private void InsertAlphabet_Click(object sender, RoutedEventArgs e)
+        {
+            var sb = new StringBuilder();
+            // Generar caracteres ASCII de A a Z
+            for (char c = 'A'; c <= 'Z'; c++)
+            {
+                sb.AppendLine(c.ToString());
+            }
+            AppendText(sb.ToString().TrimEnd());
+        }
+
+        // OPCIÓN 2: Carga Dinámica desde TXT
+        private void LoadFromFile_Click(object sender, RoutedEventArgs e)
+        {
+            var dlg = new Microsoft.Win32.OpenFileDialog
+            {
+                Title = "Importar lista de texto",
+                Filter = "Archivos de Texto (*.txt)|*.txt|Todos los archivos (*.*)|*.*",
+                CheckFileExists = true
+            };
+
+            if (dlg.ShowDialog() == true)
+            {
+                try
+                {
+                    // Leer el archivo con la codificación por defecto (UTF-8 suele funcionar bien)
+                    string fileContent = System.IO.File.ReadAllText(dlg.FileName);
+
+                    // Opcional: Limpiar retornos de carro extraños si vienen de sistemas viejos
+                    fileContent = fileContent.Replace("\r\n", "\n").Replace("\n", Environment.NewLine);
+
+                    AppendText(fileContent);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"No se pudo cargar el archivo:\n{ex.Message}", "Error de Importación", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
     }
 }

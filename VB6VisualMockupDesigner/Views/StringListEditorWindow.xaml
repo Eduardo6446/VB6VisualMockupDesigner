@@ -120,8 +120,12 @@
                             <MenuItem Header="Días de la Semana" Click="InsertDays_Click"/>
                             <MenuItem Header="Meses del Año" Click="InsertMonths_Click"/>
                             <Separator/>
+                            <MenuItem Header="Alfabeto (A-Z)" Click="InsertAlphabet_Click"/>
+                            <Separator/>
                             <MenuItem Header="Números (1-10)" Click="InsertNumbers10_Click"/>
                             <MenuItem Header="Números (0-9)" Click="InsertNumbers09_Click"/>
+                            <Separator/>
+                            <MenuItem Header="Cargar desde Archivo..." Click="LoadFromFile_Click"/>
                             <Separator/>
                             <MenuItem Header="Limpiar Todo" Click="Clear_Click"/>
                         </ContextMenu>
