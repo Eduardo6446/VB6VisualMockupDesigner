@@ -153,7 +153,7 @@
 
                 <Button Style="{StaticResource ActionButtonStyle}" 
                         Content="Abrir Carpeta de Trabajo" 
-                        ToolTip="Escanea un directorio como en VS Code"
+                        ToolTip="Escanea un directorio"
                         Tag="&#xE8B7;" 
                         Click="BtnOpenFolder_Click"
                         Margin="0,0,0,10"/>
@@ -163,11 +163,10 @@
                            FontSize="16" FontWeight="Bold" 
                            Foreground="{DynamicResource PrimaryText}" Margin="0,20,0,10"/>
 
-                <TextBlock Text="• Jerarquía de Contenedores (Parenting)" Foreground="{DynamicResource SecondaryText}" Margin="0,0,0,5"/>
-                <TextBlock Text="• Guías de Alineación Inteligentes (Smart Snap)" Foreground="{DynamicResource SecondaryText}" Margin="0,0,0,5"/>
-                <TextBlock Text="• Historial de Deshacer/Rehacer Robusto" Foreground="{DynamicResource SecondaryText}" Margin="0,0,0,5"/>
-                <TextBlock Text="• Soporte de 'Copy &amp; Paste' Anidado" Foreground="{DynamicResource SecondaryText}" Margin="0,0,0,5"/>
-                <TextBlock Text="• Explorador de Carpetas Híbrido" Foreground="{DynamicResource SecondaryText}" Margin="0,0,0,5"/>
+                <TextBlock Text="• Nuevos Controles Retro SSTab (Sheridan Tabbed Dialog)" Foreground="{DynamicResource SecondaryText}" Margin="0,0,0,5"/>
+                <TextBlock Text="• Nuevo Editor de Listas (StringListEditor)" Foreground="{DynamicResource SecondaryText}" Margin="0,0,0,5"/>
+                <TextBlock Text="• Mejoras de UI/UX y Temas (Dark Mode)" Foreground="{DynamicResource SecondaryText}" Margin="0,0,0,5"/>
+                <TextBlock Text="• Estabilidad y Core" Foreground="{DynamicResource SecondaryText}" Margin="0,0,0,5"/>
 
             </StackPanel>
         </Border>

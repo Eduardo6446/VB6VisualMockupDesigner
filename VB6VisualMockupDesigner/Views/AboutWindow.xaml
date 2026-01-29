@@ -81,7 +81,7 @@
                            FontFamily="Segoe UI Light"
                            Margin="0,0,0,5"/>
 
-                <TextBlock Text="Versión 0.9.15 (Build 2026)" 
+                <TextBlock Text="Versión 0.8.15 (Build 2026)" 
                            Foreground="{DynamicResource BrandColor}" 
                            FontSize="14" 
                            FontWeight="SemiBold"
