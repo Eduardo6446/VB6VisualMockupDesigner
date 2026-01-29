@@ -1,8 +1,10 @@
-﻿using System.Text;
+﻿using System.Globalization;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Globalization;
+using VB6VisualMockupDesigner.Controls;
+using VB6VisualMockupDesigner.Helpers;
 
 namespace VB6VisualMockupDesigner.Views
 {
@@ -26,6 +28,7 @@ namespace VB6VisualMockupDesigner.Views
                 TxtContent.Focus();
                 UpdateLineCount();
             };
+            RefreshUserPresetsMenu();
         }
 
         private void UpdateLineCount()
@@ -151,6 +154,72 @@ namespace VB6VisualMockupDesigner.Views
                 {
                     MessageBox.Show($"No se pudo cargar el archivo:\n{ex.Message}", "Error de Importación", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
+            }
+        }
+
+
+        private void BtnSavePreset_Click(object sender, RoutedEventArgs e)
+        {
+            string content = TxtContent.Text.Trim();
+            if (string.IsNullOrEmpty(content))
+            {
+                MessageBox.Show("No hay texto para guardar.", "Aviso", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            // Usamos tu diálogo existente
+            var dialog = new SimpleInputDialog("Nombre del nuevo Preset:", "Mi Lista");
+            dialog.Owner = this; // Centrar sobre esta ventana
+
+            if (dialog.ShowDialog() == true)
+            {
+                string name = dialog.Answer;
+                if (!string.IsNullOrWhiteSpace(name))
+                {
+                    try
+                    {
+                        PresetManager.SavePreset(name, content);
+                        RefreshUserPresetsMenu(); // Recargar menú
+                        MessageBox.Show($"Preset '{name}' guardado correctamente.", "Éxito");
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Error al guardar: {ex.Message}", "Error");
+                    }
+                }
+            }
+        }
+
+        private void RefreshUserPresetsMenu()
+        {
+            MnuUserPresets.Items.Clear();
+
+            var presets = PresetManager.LoadPresets();
+
+            if (presets.Count == 0)
+            {
+                MnuUserPresets.Items.Add(new MenuItem { Header = "(Vacío)", IsEnabled = false });
+            }
+            else
+            {
+                foreach (var p in presets)
+                {
+                    var item = new MenuItem { Header = p.Name, Tag = p.Content };
+                    item.Click += UserPresetItem_Click;
+
+                    // Opcional: Agregar botón de borrar con clic derecho o submenú
+                    // Por ahora lo mantenemos simple: Clic izquierdo inserta.
+
+                    MnuUserPresets.Items.Add(item);
+                }
+            }
+        }
+
+        private void UserPresetItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem item && item.Tag is string content)
+            {
+                AppendText(content);
             }
         }
     }
