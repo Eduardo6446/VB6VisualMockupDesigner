@@ -420,6 +420,33 @@ namespace VB6VisualMockupDesigner.Controls
                         FontSize = 9
                     };
                     break;
+                case "SSTab":
+                    var tabControl = new TabControl
+                    {
+                        Width = 240,
+                        Height = 180,
+                        Style = RetroStyles.GetSSTabStyle()
+                    };
+
+                    // Crear 3 pestañas por defecto simulando el comportamiento de VB6
+                    for (int i = 0; i < 3; i++)
+                    {
+                        var tab = new TabItem
+                        {
+                            Header = $"Tab {i}"
+                        };
+
+                        // ¡CRUCIAL! Cada pestaña tiene su propio Canvas para recibir controles
+                        tab.Content = CreateChildCanvas();
+
+                        tabControl.Items.Add(tab);
+                    }
+
+                    // Seleccionar la primera por defecto
+                    tabControl.SelectedIndex = 0;
+
+                    element = tabControl;
+                    break;
 
                 // -----------------------------------------------------
                 // GRID32.OCX

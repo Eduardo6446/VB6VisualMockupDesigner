@@ -717,7 +717,119 @@ namespace VB6VisualMockupDesigner.Controls
             return _vb6MenuStyle;
         }
 
+        // Dentro de la clase RetroStyles :
 
+        private static Style _ssTabStyle;
+
+        public static Style GetSSTabStyle()
+        {
+            if (_ssTabStyle != null) return _ssTabStyle;
+
+            string xaml = @"
+    <ResourceDictionary 
+        xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'
+        xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml'>
+
+        <SolidColorBrush x:Key='Face' Color='#D4D0C8'/>
+        <SolidColorBrush x:Key='Shadow' Color='#808080'/>
+        <SolidColorBrush x:Key='Light' Color='White'/>
+        <SolidColorBrush x:Key='Dark' Color='Black'/>
+
+        <Style x:Key='SSTabItem' TargetType='TabItem'>
+            <Setter Property='Template'>
+                <Setter.Value>
+                    <ControlTemplate TargetType='TabItem'>
+                        <Grid>
+                            <Border x:Name='Bd' 
+                                    Background='{StaticResource Face}'
+                                    BorderBrush='{StaticResource Shadow}' 
+                                    BorderThickness='1,1,1,0' 
+                                    Margin='0,0,2,0'
+                                    Padding='6,2'>
+                                <ContentPresenter x:Name='Content' 
+                                                ContentSource='Header' 
+                                                HorizontalAlignment='Center' 
+                                                VerticalAlignment='Center'
+                                                RecognizesAccessKey='True'/>
+                            </Border>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property='IsSelected' Value='True'>
+                                <Setter TargetName='Bd' Property='Margin' Value='-2,-2,0,-1'/>
+                                <Setter TargetName='Bd' Property='Padding' Value='8,4'/>
+                                <Setter Property='Panel.ZIndex' Value='100'/>
+                                <Setter TargetName='Bd' Property='BorderBrush' Value='{StaticResource Shadow}'/>
+                                <Setter TargetName='Bd' Property='BorderThickness' Value='1,1,2,0'/>
+                            </Trigger>
+                            <Trigger Property='IsSelected' Value='False'>
+                                <Setter TargetName='Bd' Property='Background' Value='#C0C0C0'/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Setter Property='Header' Value='Tab'/>
+            <Setter Property='FontFamily' Value='Microsoft Sans Serif'/>
+            <Setter Property='FontSize' Value='11'/>
+        </Style>
+
+        <Style x:Key='SSTabControl' TargetType='TabControl'>
+            <Setter Property='Background' Value='{StaticResource Face}'/>
+            <Setter Property='BorderThickness' Value='1'/>
+            <Setter Property='BorderBrush' Value='{StaticResource Shadow}'/>
+            <Setter Property='ItemContainerStyle' Value='{StaticResource SSTabItem}'/>
+            <Setter Property='Template'>
+                <Setter.Value>
+                    <ControlTemplate TargetType='TabControl'>
+                        <Grid ClipToBounds='True' SnapsToDevicePixels='true' KeyboardNavigation.TabNavigation='Local'>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height='Auto'/>
+                                <RowDefinition Height='*'/>
+                            </Grid.RowDefinitions>
+                            
+                            <TabPanel x:Name='HeaderPanel' 
+                                      Grid.Row='0' 
+                                      Panel.ZIndex='1' 
+                                      Margin='2,2,2,0' 
+                                      IsItemsHost='true'
+                                      KeyboardNavigation.TabIndex='1' 
+                                      Background='Transparent'/>
+
+                            <Border x:Name='Border' 
+                                    Grid.Row='1' 
+                                    Background='{TemplateBinding Background}' 
+                                    BorderBrush='{TemplateBinding BorderBrush}' 
+                                    BorderThickness='1'>
+                                    
+                                    <Border BorderThickness='1' BorderBrush='White'>
+                                        <ContentPresenter x:Name='PART_SelectedContentHost' 
+                                                        ContentSource='SelectedContent' 
+                                                        Margin='2'/>
+                                    </Border>
+                            </Border>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </ResourceDictionary>";
+
+            try
+            {
+                using (var stream = new MemoryStream(Encoding.UTF8.GetBytes(xaml)))
+                {
+                    var resources = (ResourceDictionary)XamlReader.Load(stream);
+                    _ssTabStyle = (Style)resources["SSTabControl"];
+                }
+            }
+            catch (System.Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("Error parsing SSTab Style: " + ex.Message);
+                _ssTabStyle = new Style(typeof(TabControl));
+            }
+
+            return _ssTabStyle;
+        }
 
 
     }

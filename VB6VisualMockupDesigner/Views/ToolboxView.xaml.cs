@@ -256,6 +256,15 @@ namespace VB6VisualMockupDesigner.Views
                 IconData = Geometry.Parse("M2,2 H18 V18 H2 Z M4,4 L16,16 M4,16 L16,4")
             });
 
+            tools.Add(new ToolboxItem
+            {
+                Name = "SSTab",
+                Category = cat3d,
+                Type = "SSTab",
+                // Icono tipo carpeta con pestañas
+                IconData = Geometry.Parse("M2,4 L6,4 L8,6 L18,6 L18,16 L2,16 Z M2,6 L18,6")
+            });
+
             // --- GRUPO: ActiveX / Otros ---
             string catActiveX = "ActiveX / Otros";
 

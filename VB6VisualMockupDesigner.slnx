@@ -1,4 +1,6 @@
 <Solution>
-  <Project Path="InstaladorVB6Designer/InstaladorVB6Designer.vdproj" Type="Installer" />
+  <Project Path="InstaladorVB6Designer/InstaladorVB6Designer.vdproj" Type="Installer">
+    <Build />
+  </Project>
   <Project Path="VB6VisualMockupDesigner/VB6VisualMockupDesigner.csproj" />
 </Solution>

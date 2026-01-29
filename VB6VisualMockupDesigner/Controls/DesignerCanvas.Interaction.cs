@@ -136,6 +136,33 @@ namespace VB6VisualMockupDesigner.Controls
 
             control.Focus();
 
+            if (control is TabControl)
+            {
+                // Revisamos qué tocamos exactamente dentro del TabControl
+                DependencyObject clickedObject = e.OriginalSource as DependencyObject;
+
+                // Subimos por el árbol visual desde el objeto clicado
+                while (clickedObject != null && clickedObject != control)
+                {
+                    // Si encontramos un TabItem en el camino, significa que clicamos una Pestaña (Header)
+                    if (clickedObject is TabItem)
+                    {
+                        // 1. Seleccionamos visualmente el control (para que aparezcan los bordes azules)
+                        if (!_selectedControls.Contains(control))
+                        {
+                            ClearSelection();
+                            AddToSelection(control);
+                        }
+
+                        // 2. ¡IMPORTANTE! NO marcamos e.Handled = true.
+                        // Salimos inmediatamente para dejar que el evento llegue al TabItem y cambie la pestaña.
+                        return;
+                    }
+                    clickedObject = VisualTreeHelper.GetParent(clickedObject);
+                }
+            }
+
+
             // ================================================================
             // SOLUCIÓN DEFINITIVA: FILTRO INTELIGENTE DE PADRES/HIJOS
             // ================================================================
@@ -1675,7 +1702,8 @@ namespace VB6VisualMockupDesigner.Controls
                             // LISTA BLANCA DE CONTENEDORES
                             // Si el objeto tiene uno de estos Tags, es un padre válido
                             if (typeTag == "Frame" || typeTag == "SSFrame" ||
-                                typeTag == "PictureBox" || typeTag == "SSPanel")
+                                typeTag == "PictureBox" || typeTag == "SSPanel"
+                                || typeTag == "SSTab")
                             {
                                 foundContainer = fe;
                                 return HitTestResultBehavior.Stop; // ¡Encontrado!
@@ -1868,6 +1896,16 @@ namespace VB6VisualMockupDesigner.Controls
         private Canvas GetInnerCanvas(FrameworkElement container)
         {
             if (container == null) return null;
+
+            // CASO NUEVO: SSTab (TabControl)
+            if (container is TabControl tc)
+            {
+                // Retornamos el contenido de la pestaña ACTIVA (que es un Canvas gracias al Factory)
+                if (tc.SelectedContent is Canvas tabCanvas)
+                {
+                    return tabCanvas;
+                }
+            }
 
             // CASO 1: Frame / SSFrame (GroupBox)
             if (container is GroupBox gb)
