@@ -754,17 +754,20 @@ namespace VB6VisualMockupDesigner.Controls
                             </Border>
                         </Grid>
                         <ControlTemplate.Triggers>
-                            <Trigger Property='IsSelected' Value='True'>
-                                <Setter TargetName='Bd' Property='Margin' Value='-2,-2,0,-1'/>
-                                <Setter TargetName='Bd' Property='Padding' Value='8,4'/>
-                                <Setter Property='Panel.ZIndex' Value='100'/>
-                                <Setter TargetName='Bd' Property='BorderBrush' Value='{StaticResource Shadow}'/>
-                                <Setter TargetName='Bd' Property='BorderThickness' Value='1,1,2,0'/>
-                            </Trigger>
-                            <Trigger Property='IsSelected' Value='False'>
-                                <Setter TargetName='Bd' Property='Background' Value='#C0C0C0'/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
+        <Trigger Property='IsSelected' Value='True'>
+            <Setter TargetName='Bd' Property='Margin' Value='-2,-2,0,-1'/>
+            <Setter TargetName='Bd' Property='Padding' Value='8,4'/>
+            <Setter Property='Panel.ZIndex' Value='100'/>
+            <Setter TargetName='Bd' Property='BorderBrush' Value='{StaticResource Shadow}'/>
+            <Setter TargetName='Bd' Property='BorderThickness' Value='1,1,2,0'/>
+        </Trigger>
+        <Trigger Property='IsSelected' Value='False'>
+            <Setter TargetName='Bd' Property='Background' Value='#C0C0C0'/>
+        </Trigger>
+        
+        <Trigger Property='IsEnabled' Value='False'>
+            <Setter Property='Foreground' Value='{StaticResource Shadow}'/> </Trigger>
+    </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>

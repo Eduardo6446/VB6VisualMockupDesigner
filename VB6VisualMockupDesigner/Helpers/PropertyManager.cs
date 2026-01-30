@@ -19,6 +19,7 @@ namespace VB6VisualMockupDesigner.Helpers
         private static List<string> BorderStyleOptions = new List<string> { "0 - None", "1 - Fixed Single" };
         private static List<string> BackStyleOptions = new List<string> { "0 - Transparent", "1 - Opaque" };
         private static List<string> AppearanceOptions = new List<string> { "0 - Flat", "1 - 3D" };
+        private static List<string> SSTabStyleOptions = new List<string> { "0 - Tabbed Dialog", "1 - Property Page" };
 
         // NUEVO: Opciones para ScrollBars (TextBox)
         private static List<string> ScrollBarOptions = new List<string> { "0 - None", "1 - Horizontal", "2 - Vertical", "3 - Both" };
@@ -220,6 +221,38 @@ namespace VB6VisualMockupDesigner.Helpers
                 });
             }
 
+            if (ctrl is TabControl tc)
+            {
+                // Propiedad: Tabs (Cantidad)
+                list.Add(new PropertyItem { Name = "Tabs", Value = tc.Items.Count, Category = "Behavior", Type = PropertyType.Number, Description = "Número total de pestañas." });
+
+                // Propiedad: Tab (Selección actual)
+                list.Add(new PropertyItem { Name = "Tab", Value = tc.SelectedIndex, Category = "Behavior", Type = PropertyType.Number, Description = "Índice de la pestaña actual (empieza en 0)." });
+
+                // Propiedad: TabsPerRow (Guardada en VB6Data porque WPF lo maneja diferente)
+                // Usamos el helper SetTag/GetTag o creamos uno nuevo en VB6Data si prefieres ser estricto. 
+                // Por simplicidad, usaremos un valor por defecto o leido de VB6Data si existe.
+                string tabsPerRow = VB6Data.GetTag(tc) ?? "3"; // Usaremos Tag temporalmente para esto o VB6Data
+                                                               // NOTA: Para hacerlo bien, deberías agregar TabsPerRowProperty en VB6Data.cs igual que PasswordChar.
+                                                               // Asumiremos que existe o usaremos un valor dummy por ahora.
+                list.Add(new PropertyItem { Name = "TabsPerRow", Value = 3, Category = "Appearance", Type = PropertyType.Number });
+
+                // Propiedad: Style
+                // Mapeamos visualmente: Si tiene borde grueso es Dialog, si es plano es PropertyPage (simulado)
+                list.Add(new PropertyItem { Name = "Style", Value = SSTabStyleOptions[0], Category = "Appearance", Type = PropertyType.Enum, Options = SSTabStyleOptions });
+
+                // Propiedad: TabHeight
+                // En WPF, esto se puede mapear a ItemContainerStyle -> Height, pero es complejo leerlo. 
+                // Devolveremos un estimado visual.
+                list.Add(new PropertyItem { Name = "TabHeight", Value = 20, Category = "Appearance", Type = PropertyType.Number });
+
+                if (tc.SelectedItem is TabItem currentTab)
+                {
+                    list.Add(new PropertyItem { Name = "TabCaption", Value = currentTab.Header, Category = "Appearance" });
+                    list.Add(new PropertyItem { Name = "TabEnabled", Value = currentTab.IsEnabled.ToString(), Category = "Behavior", Type = PropertyType.Boolean, Options = BoolOptions, Description = "Habilita o deshabilita la pestaña actual." });
+                }
+            }
+
             // --- LIST & COMBOS ---
             if (ctrl is ListBox || ctrl is ComboBox)
             {
@@ -406,11 +439,14 @@ namespace VB6VisualMockupDesigner.Helpers
                 case "Style":
                     if (ctrl is ComboBox cbo)
                     {
-                        // 0 - Dropdown Combo (Editable)
-                        // 1 - Simple Combo (Editable)
-                        // 2 - Dropdown List (Solo lectura)
                         if (val.Contains("2")) cbo.IsEditable = false; // Dropdown List
                         else cbo.IsEditable = true; // Dropdown Combo
+                    }
+                    else if (ctrl is TabControl tcStyle)
+                    {
+                        // Lógica para SSTab Style (Visualmente no hacemos mucho en WPF por ahora, pero guardamos el dato)
+                        // Podrías cambiar el Template si tuvieras estilos diferentes definidos.
+
                     }
                     break;
 
@@ -459,6 +495,90 @@ namespace VB6VisualMockupDesigner.Helpers
                             cBorder.BorderThickness = new Thickness(0);
                             cBorder.Padding = new Thickness(0);
                         }
+                    }
+                    break;
+
+                case "Tabs":
+                    if (ctrl is TabControl tcTabs)
+                    {
+                        int newCount = (int)ParseDouble(val);
+                        newCount = Math.Max(1, newCount); // Mínimo 1 pestaña
+
+                        int currentCount = tcTabs.Items.Count;
+
+                        if (newCount > currentCount)
+                        {
+                            // AGREGAR PESTAÑAS
+                            for (int i = currentCount; i < newCount; i++)
+                            {
+                                var newTab = new TabItem
+                                {
+                                    Header = $"Tab {i}",
+                                    // IMPORTANTE: Crear el Canvas interno para que reciba Drop
+                                    Content = new Canvas
+                                    {
+                                        HorizontalAlignment = HorizontalAlignment.Stretch,
+                                        VerticalAlignment = VerticalAlignment.Stretch,
+                                        Background = Brushes.Transparent,
+                                        ClipToBounds = true,
+                                        MinWidth = 10,
+                                        MinHeight = 10
+                                    }
+                                };
+                                tcTabs.Items.Add(newTab);
+                            }
+                        }
+                        else if (newCount < currentCount)
+                        {
+                            // ELIMINAR PESTAÑAS (Desde la última)
+                            for (int i = currentCount - 1; i >= newCount; i--)
+                            {
+                                tcTabs.Items.RemoveAt(i);
+                            }
+                        }
+                    }
+                    break;
+
+                case "TabCaption":
+                    if (ctrl is TabControl tc && tc.SelectedItem is TabItem tItem)
+                    {
+                        tItem.Header = val;
+                    }
+                    break;
+
+                case "Tab": // Cambiar pestaña activa
+                    if (ctrl is TabControl tcSel)
+                    {
+                        int idx = (int)ParseDouble(val);
+                        if (idx >= 0 && idx < tcSel.Items.Count)
+                        {
+                            tcSel.SelectedIndex = idx;
+                        }
+                    }
+                    break;
+
+                case "TabHeight":
+                    if (ctrl is TabControl tcHeight)
+                    {
+                        double h = ParseDouble(val);
+                        // En WPF cambiar la altura de los headers requiere estilo. 
+                        // Si tienes un estilo dinámico podrías hacer:
+                        // tcHeight.Resources["TabItemHeight"] = h; 
+                        // Por ahora, lo guardamos para el generador de código sin efecto visual inmediato
+                        // o podrías iterar los TabItems y fijar Height (si no lo bloquea el estilo).
+                    }
+                    break;
+
+                case "TabsPerRow":
+                    // VB6 organiza pestañas en filas. WPF TabControl hace Wrap automático si tiene ancho fijo.
+                    // Solo guardamos el dato para la exportación.
+                    VB6Data.SetTag(ctrl, $"TabsPerRow:{val}");
+                    break;
+
+                case "TabEnabled":
+                    if (ctrl is TabControl tcEn && tcEn.SelectedItem is TabItem tItemEn)
+                    {
+                        tItemEn.IsEnabled = (val == "True");
                     }
                     break;
 
