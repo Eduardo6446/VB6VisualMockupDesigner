@@ -20,12 +20,19 @@ namespace VB6VisualMockupDesigner.Helpers
         private static List<string> BackStyleOptions = new List<string> { "0 - Transparent", "1 - Opaque" };
         private static List<string> AppearanceOptions = new List<string> { "0 - Flat", "1 - 3D" };
 
+        // NUEVO: Opciones para ScrollBars (TextBox)
+        private static List<string> ScrollBarOptions = new List<string> { "0 - None", "1 - Horizontal", "2 - Vertical", "3 - Both" };
+
+        // NUEVO: Opciones para ComboBox Style
+        private static List<string> ComboStyleOptions = new List<string> { "0 - Dropdown Combo", "1 - Simple Combo", "2 - Dropdown List" };
+
         // ==========================================
         // 1. OBTENER PROPIEDADES (LECTURA)
         // ==========================================
         public static List<PropertyItem> GetPropertiesFor(FrameworkElement ctrl)
         {
             var list = new List<PropertyItem>();
+            string passChar = VB6Data.GetPasswordChar(ctrl) ?? "";
 
             if (ctrl == null) return list;
 
@@ -54,6 +61,37 @@ namespace VB6VisualMockupDesigner.Helpers
             else if (ctrl is TextBox tb)
             {
                 list.Add(new PropertyItem { Name = "Text", Value = tb.Text, Category = "Appearance", Description = "Texto contenido en el control." });
+
+                // NUEVO: Propiedades Específicas de TextBox
+                list.Add(new PropertyItem { Name = "MaxLength", Value = tb.MaxLength, Category = "Behavior", Type = PropertyType.Number, Description = "Número máximo de caracteres." });
+
+                list.Add(new PropertyItem
+                {
+                    Name = "MultiLine",
+                    Value = (tb.AcceptsReturn).ToString(),
+                    Category = "Behavior",
+                    Type = PropertyType.Boolean,
+                    Options = BoolOptions,
+                    Description = "Permite múltiples líneas de texto."
+                });
+
+                list.Add(new PropertyItem { Name = "PasswordChar", Value = passChar, Category = "Behavior", Description = "Carácter para ocultar contraseña (ej: *)." });
+
+                // ScrollBars
+                string currentScroll = "0 - None";
+                if (tb.VerticalScrollBarVisibility == ScrollBarVisibility.Visible && tb.HorizontalScrollBarVisibility == ScrollBarVisibility.Visible) currentScroll = ScrollBarOptions[3];
+                else if (tb.VerticalScrollBarVisibility == ScrollBarVisibility.Visible) currentScroll = ScrollBarOptions[2];
+                else if (tb.HorizontalScrollBarVisibility == ScrollBarVisibility.Visible) currentScroll = ScrollBarOptions[1];
+
+                list.Add(new PropertyItem
+                {
+                    Name = "ScrollBars",
+                    Value = currentScroll,
+                    Category = "Appearance",
+                    Type = PropertyType.Enum,
+                    Options = ScrollBarOptions,
+                    Description = "Indica si el control tiene barras de desplazamiento."
+                });
             }
             // Agregamos soporte de lectura para TextBlocks (Timer, SSPanel, etc.)
             else if (ctrl is TextBlock txt)
@@ -104,11 +142,11 @@ namespace VB6VisualMockupDesigner.Helpers
                 string colorHex = "#FFFFFF";
                 if (c.Background is SolidColorBrush sb) colorHex = sb.Color.ToString();
 
-                list.Add(new PropertyItem 
-                { 
-                    Name = "BackColor", 
-                    Value = colorHex, 
-                    Category = "Appearance", 
+                list.Add(new PropertyItem
+                {
+                    Name = "BackColor",
+                    Value = colorHex,
+                    Category = "Appearance",
                     Type = PropertyType.Color,
                     Description = "Color de fondo."
                 });
@@ -116,11 +154,11 @@ namespace VB6VisualMockupDesigner.Helpers
                 string foreHex = "#000000";
                 if (c.Foreground is SolidColorBrush sf) foreHex = sf.Color.ToString();
 
-                list.Add(new PropertyItem 
-                { 
-                    Name = "ForeColor", 
-                    Value = foreHex, 
-                    Category = "Appearance", 
+                list.Add(new PropertyItem
+                {
+                    Name = "ForeColor",
+                    Value = foreHex,
+                    Category = "Appearance",
                     Type = PropertyType.Color,
                     Description = "Color del texto."
                 });
@@ -182,21 +220,16 @@ namespace VB6VisualMockupDesigner.Helpers
                 });
             }
 
+            // --- LIST & COMBOS ---
             if (ctrl is ListBox || ctrl is ComboBox)
             {
                 // 1. Extraer ítems actuales a una lista de strings
                 var itemsList = new List<string>();
-                System.Collections.IEnumerable currentItems = null;
+                System.Collections.IEnumerable currentItems = (ctrl as ItemsControl).Items; // Usamos ItemsControl para cubrir ambos
 
-                if (ctrl is ListBox lb) currentItems = lb.Items;
-                else if (ctrl is ComboBox cb) currentItems = cb.Items;
-
-                if (currentItems != null)
+                foreach (var item in currentItems)
                 {
-                    foreach (var item in currentItems)
-                    {
-                        itemsList.Add(item.ToString());
-                    }
+                    itemsList.Add(item.ToString());
                 }
 
                 // 2. Unirlos con saltos de línea para el editor
@@ -210,6 +243,22 @@ namespace VB6VisualMockupDesigner.Helpers
                     Type = PropertyType.StringList,
                     Description = "Devuelve o establece los elementos contenidos en la lista."
                 });
+
+                // NUEVO: ComboBox Style
+                if (ctrl is ComboBox combo)
+                {
+                    // Mapeo simple: Editable = Dropdown(0), No Editable = DropdownList(2)
+                    string styleVal = combo.IsEditable ? ComboStyleOptions[0] : ComboStyleOptions[2];
+                    list.Add(new PropertyItem
+                    {
+                        Name = "Style",
+                        Value = styleVal,
+                        Category = "Appearance",
+                        Type = PropertyType.Enum,
+                        Options = ComboStyleOptions,
+                        Description = "Devuelve o establece un valor que indica el tipo de visualización y comportamiento del control."
+                    });
+                }
             }
 
             // Font
@@ -227,9 +276,14 @@ namespace VB6VisualMockupDesigner.Helpers
                     Description = "Fuente del texto."
                 });
             }
+            else if (ctrl is TextBlock tbFont) // TextBlock suelto
+            {
+                string fontInfo = $"{tbFont.FontFamily}; {tbFont.FontSize}pt";
+                list.Add(new PropertyItem { Name = "Font", Value = fontInfo, Category = "Appearance", Type = PropertyType.Font, Description = "Fuente del texto." });
+            }
 
             // Picture
-            if (ctrl is Image img)
+            if (ctrl is Image img || (ctrl is Border && (ctrl as Border).Child is Canvas)) // PictureBox mock
             {
                 list.Add(new PropertyItem
                 {
@@ -310,11 +364,54 @@ namespace VB6VisualMockupDesigner.Helpers
 
                 case "Text":
                     if (ctrl is TextBox t) t.Text = val;
+                    if (ctrl is ComboBox cb) cb.Text = val; // ComboBox también tiene Text
+                    break;
+
+                // --- NUEVO: TEXTBOX PROPERTIES ---
+                case "MaxLength":
+                    if (ctrl is TextBox tbMax) tbMax.MaxLength = (int)ParseDouble(val);
+                    break;
+
+                case "MultiLine":
+                    if (ctrl is TextBox tbMulti)
+                    {
+                        bool isMulti = (val == "True");
+                        tbMulti.AcceptsReturn = isMulti;
+                        tbMulti.TextWrapping = isMulti ? TextWrapping.Wrap : TextWrapping.NoWrap;
+                    }
+                    break;
+
+                case "PasswordChar":
+                    // Solo guardamos el valor (no funcional visualmente en TextBox estándar)
+                    VB6Data.SetPasswordChar(ctrl, val);
+                    break;
+
+                case "ScrollBars":
+                    if (ctrl is TextBox tbScroll)
+                    {
+                        // "0 - None", "1 - Horizontal", "2 - Vertical", "3 - Both"
+                        if (val.Contains("0")) { tbScroll.HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden; tbScroll.VerticalScrollBarVisibility = ScrollBarVisibility.Hidden; }
+                        else if (val.Contains("1")) { tbScroll.HorizontalScrollBarVisibility = ScrollBarVisibility.Auto; tbScroll.VerticalScrollBarVisibility = ScrollBarVisibility.Hidden; }
+                        else if (val.Contains("2")) { tbScroll.HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden; tbScroll.VerticalScrollBarVisibility = ScrollBarVisibility.Auto; }
+                        else if (val.Contains("3")) { tbScroll.HorizontalScrollBarVisibility = ScrollBarVisibility.Auto; tbScroll.VerticalScrollBarVisibility = ScrollBarVisibility.Auto; }
+                    }
                     break;
 
                 // --- ALIGNMENT ---
                 case "Alignment":
                     ApplyAlignment(ctrl, val);
+                    break;
+
+                // --- NUEVO: COMBOBOX STYLE ---
+                case "Style":
+                    if (ctrl is ComboBox cbo)
+                    {
+                        // 0 - Dropdown Combo (Editable)
+                        // 1 - Simple Combo (Editable)
+                        // 2 - Dropdown List (Solo lectura)
+                        if (val.Contains("2")) cbo.IsEditable = false; // Dropdown List
+                        else cbo.IsEditable = true; // Dropdown Combo
+                    }
                     break;
 
                 // --- BACKSTYLE (Label Transparent vs Opaque) ---
@@ -364,12 +461,13 @@ namespace VB6VisualMockupDesigner.Helpers
                         }
                     }
                     break;
+
                 case "List":
                     // 1. Obtener la colección de ítems del control WPF
                     System.Collections.IList itemsCollection = null;
 
                     if (ctrl is ListBox lb) itemsCollection = lb.Items;
-                    else if (ctrl is ComboBox cb) itemsCollection = cb.Items;
+                    else if (ctrl is ComboBox cbx) itemsCollection = cbx.Items;
 
                     if (itemsCollection != null)
                     {
@@ -470,8 +568,6 @@ namespace VB6VisualMockupDesigner.Helpers
                     else if (int.TryParse(val, out int i)) VB6Data.SetIndex(ctrl, i);
                     break;
             }
-
-
         }
 
         // ==========================================
@@ -482,43 +578,26 @@ namespace VB6VisualMockupDesigner.Helpers
         {
             try
             {
-                // DEBUG 1: Ver qué llega realmente desde el archivo
-                // MessageBox.Show($"[DEBUG 1] Valor recibido:\n{val}", "Diagnóstico Fuente");
-
                 var parts = val.Split(';');
                 if (parts.Length == 0) return;
 
                 string fullString = parts[0].Trim();
 
-                // CASO 1: Es una ruta importada (tiene #)
                 if (fullString.Contains("#"))
                 {
-                    // Limpieza manual del protocolo
                     string rawPath = fullString.Replace("file:///", "").Replace("file://", "");
-
-                    // Decodificar %20
                     string cleanPath = Uri.UnescapeDataString(rawPath);
-
-                    // Separar archivo y familia
                     string[] fontInfo = cleanPath.Split('#');
                     string filePath = fontInfo[0];
                     string familyName = fontInfo[1];
-
-                    // DEBUG 2: Ver ruta procesada
-                    // MessageBox.Show($"[DEBUG 2] Ruta procesada:\n'{filePath}'\n\nFamilia:\n'{familyName}'", "Diagnóstico Fuente");
 
                     if (System.IO.File.Exists(filePath))
                     {
                         try
                         {
-                            // Construcción Base + Relativa
                             string directory = System.IO.Path.GetDirectoryName(filePath);
                             string fileName = System.IO.Path.GetFileName(filePath);
                             Uri folderUri = new Uri(directory + "\\");
-
-                            // DEBUG 3: Intentando cargar
-                            // MessageBox.Show($"[DEBUG 3] Intentando cargar con:\nUri: {folderUri}\nString: ./{fileName}#{familyName}", "Diagnóstico Fuente");
-
                             f.FontFamily = new FontFamily(folderUri, "./" + fileName + "#" + familyName);
                         }
                         catch (Exception ex)
@@ -528,19 +607,14 @@ namespace VB6VisualMockupDesigner.Helpers
                     }
                     else
                     {
-                        // AQUÍ ES DONDE SOSPECHO QUE FALLA
-                        MessageBox.Show($"[ERROR ARCHIVO] El sistema dice que el archivo NO EXISTE en:\n'{filePath}'", "Archivo no encontrado");
-
                         f.FontFamily = new FontFamily("Microsoft Sans Serif");
                     }
                 }
                 else
                 {
-                    // CASO 2: Fuente de sistema normal
                     try { f.FontFamily = new FontFamily(fullString); } catch { }
                 }
 
-                // TAMAÑO
                 if (parts.Length > 1)
                 {
                     string sizeStr = parts[1].ToLower().Replace("pt", "").Trim();
@@ -550,7 +624,6 @@ namespace VB6VisualMockupDesigner.Helpers
                     }
                 }
 
-                // ESTILOS
                 f.FontWeight = FontWeights.Normal;
                 f.FontStyle = FontStyles.Normal;
                 string styleString = val.ToLower();
@@ -578,7 +651,6 @@ namespace VB6VisualMockupDesigner.Helpers
                 f.FontWeight = val.Contains("Bold") ? FontWeights.Bold : FontWeights.Normal;
                 f.FontStyle = val.Contains("Italic") ? FontStyles.Italic : FontStyles.Normal;
 
-                // TextDecorations
                 var decos = new TextDecorationCollection();
                 if (val.Contains("Underline")) decos.Add(TextDecorations.Underline);
                 if (val.Contains("Strikethrough") || val.Contains("Strikeout")) decos.Add(TextDecorations.Strikethrough);
@@ -634,14 +706,11 @@ namespace VB6VisualMockupDesigner.Helpers
 
         public static void ApplyProperty(FrameworkElement control, string propName, string value)
         {
-            // 1. Adaptamos los datos crudos del Parser a tu modelo PropertyItem
             var tempItem = new PropertyItem
             {
                 Name = propName,
                 Value = value
             };
-
-            // 2. Llamamos a tu método existente que ya sabe qué hacer
             ApplyProperty(control, tempItem);
         }
     }

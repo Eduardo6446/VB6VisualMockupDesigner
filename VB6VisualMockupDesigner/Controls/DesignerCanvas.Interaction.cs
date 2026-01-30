@@ -31,6 +31,17 @@ namespace VB6VisualMockupDesigner.Controls
 
         public static void SetIsLocked(DependencyObject element, bool value) => element.SetValue(IsLockedProperty, value);
         public static bool GetIsLocked(DependencyObject element) => (bool)element.GetValue(IsLockedProperty);
+
+        public static readonly DependencyProperty TagProperty =
+    DependencyProperty.RegisterAttached("Tag", typeof(string), typeof(VB6Data), new PropertyMetadata(null));
+        public static void SetTag(DependencyObject element, string value) => element.SetValue(TagProperty, value);
+        public static string GetTag(DependencyObject element) => (string)element.GetValue(TagProperty);
+
+        public static readonly DependencyProperty PasswordCharProperty =
+        DependencyProperty.RegisterAttached("PasswordChar", typeof(string), typeof(VB6Data), new PropertyMetadata(""));
+
+        public static void SetPasswordChar(DependencyObject element, string value) => element.SetValue(PasswordCharProperty, value);
+        public static string GetPasswordChar(DependencyObject element) => (string)element.GetValue(PasswordCharProperty);
     }
 
     public enum ResizeDirection { None, TopLeft, Top, TopRight, Right, BottomRight, Bottom, BottomLeft, Left }
