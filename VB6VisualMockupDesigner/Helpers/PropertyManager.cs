@@ -20,6 +20,7 @@ namespace VB6VisualMockupDesigner.Helpers
         private static List<string> BackStyleOptions = new List<string> { "0 - Transparent", "1 - Opaque" };
         private static List<string> AppearanceOptions = new List<string> { "0 - Flat", "1 - 3D" };
         private static List<string> SSTabStyleOptions = new List<string> { "0 - Tabbed Dialog", "1 - Property Page" };
+        private static List<string> SSTabOrientationOptions = new List<string> { "0 - Top", "1 - Bottom", "2 - Left", "3 - Right" };
 
         // NUEVO: Opciones para ScrollBars (TextBox)
         private static List<string> ScrollBarOptions = new List<string> { "0 - None", "1 - Horizontal", "2 - Vertical", "3 - Both" };
@@ -223,6 +224,16 @@ namespace VB6VisualMockupDesigner.Helpers
 
             if (ctrl is TabControl tc)
             {
+
+                string currentOrient = SSTabOrientationOptions[0];
+                switch (tc.TabStripPlacement)
+                {
+                    case Dock.Bottom: currentOrient = SSTabOrientationOptions[1]; break;
+                    case Dock.Left: currentOrient = SSTabOrientationOptions[2]; break;
+                    case Dock.Right: currentOrient = SSTabOrientationOptions[3]; break;
+                }
+                list.Add(new PropertyItem { Name = "Orientation", Value = currentOrient, Category = "Appearance", Type = PropertyType.Enum, Options = SSTabOrientationOptions });
+
                 // Propiedad: Tabs (Cantidad)
                 list.Add(new PropertyItem { Name = "Tabs", Value = tc.Items.Count, Category = "Behavior", Type = PropertyType.Number, Description = "Número total de pestañas." });
 
@@ -249,7 +260,13 @@ namespace VB6VisualMockupDesigner.Helpers
                 if (tc.SelectedItem is TabItem currentTab)
                 {
                     list.Add(new PropertyItem { Name = "TabCaption", Value = currentTab.Header, Category = "Appearance" });
-                    list.Add(new PropertyItem { Name = "TabEnabled", Value = currentTab.IsEnabled.ToString(), Category = "Behavior", Type = PropertyType.Boolean, Options = BoolOptions, Description = "Habilita o deshabilita la pestaña actual." });
+
+                    // LEER DE LA MEMORIA (VB6Data), NO DE LA UI
+                    bool isEnabled = VB6Data.GetTabEnabled(currentTab);
+                    list.Add(new PropertyItem { Name = "TabEnabled", Value = isEnabled.ToString(), Category = "Behavior", Type = PropertyType.Boolean, Options = BoolOptions });
+
+                    bool isVisible = VB6Data.GetTabVisible(currentTab);
+                    list.Add(new PropertyItem { Name = "TabVisible", Value = isVisible.ToString(), Category = "Behavior", Type = PropertyType.Boolean, Options = BoolOptions });
                 }
             }
 
@@ -330,14 +347,7 @@ namespace VB6VisualMockupDesigner.Helpers
 
             // --- CATEGORÍA: BEHAVIOR ---
 
-            list.Add(new PropertyItem
-            {
-                Name = "Visible",
-                Value = (ctrl.Visibility == Visibility.Visible).ToString(),
-                Category = "Behavior",
-                Type = PropertyType.Boolean,
-                Options = BoolOptions
-            });
+            list.Add(new PropertyItem { Name = "Visible", Value = (ctrl.Opacity > 0.5).ToString(), Category = "Behavior", Type = PropertyType.Boolean, Options = BoolOptions });
 
             // LÓGICA ENABLED (Simulación visual)
             bool isLogicallyEnabled = ctrl.Opacity > 0.9;
@@ -525,6 +535,10 @@ namespace VB6VisualMockupDesigner.Helpers
                                         MinHeight = 10
                                     }
                                 };
+
+                                VB6Data.SetTabEnabled(newTab, true);
+                                VB6Data.SetTabVisible(newTab, true);
+
                                 tcTabs.Items.Add(newTab);
                             }
                         }
@@ -578,10 +592,53 @@ namespace VB6VisualMockupDesigner.Helpers
                 case "TabEnabled":
                     if (ctrl is TabControl tcEn && tcEn.SelectedItem is TabItem tItemEn)
                     {
-                        tItemEn.IsEnabled = (val == "True");
+                        bool enable = (val == "True");
+
+                        // 1. Persistencia: Guardamos el dato real
+                        VB6Data.SetTabEnabled(tItemEn, enable);
+
+                        // 2. Feedback Visual Inmediato:
+                        // NO usamos tItemEn.IsEnabled = false porque eso impediría seleccionarla de nuevo.
+                        // En su lugar, cambiamos el color del texto manualmente para simularlo.
+
+                        if (enable)
+                        {
+                            // Restaurar color normal (asumiendo negro o el de tu tema)
+                            tItemEn.ClearValue(Control.ForegroundProperty);
+                        }
+                        else
+                        {
+                            // Poner gris ("Inhabilitado")
+                            tItemEn.Foreground = Brushes.Gray;
+                        }
                     }
                     break;
 
+                case "Orientation":
+                    if (ctrl is TabControl tcOrient)
+                    {
+                        // 0 - Top, 1 - Bottom, 2 - Left, 3 - Right
+                        if (val.Contains("0")) tcOrient.TabStripPlacement = Dock.Top;
+                        else if (val.Contains("1")) tcOrient.TabStripPlacement = Dock.Bottom;
+                        else if (val.Contains("2")) tcOrient.TabStripPlacement = Dock.Left;
+                        else if (val.Contains("3")) tcOrient.TabStripPlacement = Dock.Right;
+                    }
+                    break;
+
+                case "TabVisible":
+                    if (ctrl is TabControl tcVis && tcVis.SelectedItem is TabItem tItemVis)
+                    {
+                        bool visible = (val == "True");
+
+                        // 1. Persistencia
+                        VB6Data.SetTabVisible(tItemVis, visible);
+
+                        // 2. Feedback Visual Inmediato:
+                        // Usamos Opacidad para "Modo Fantasma". 
+                        // 1.0 = Visible, 0.4 = Oculto (pero seleccionable)
+                        tItemVis.Opacity = visible ? 1.0 : 0.4;
+                    }
+                    break;
                 case "List":
                     // 1. Obtener la colección de ítems del control WPF
                     System.Collections.IList itemsCollection = null;
@@ -659,20 +716,12 @@ namespace VB6VisualMockupDesigner.Helpers
 
                 // --- BEHAVIOR ---
                 case "Visible":
-                    ctrl.Visibility = (val == "True") ? Visibility.Visible : Visibility.Hidden;
-                    break;
+                    ctrl.Opacity = (val == "True") ? 1.0 : 0.4;
+                   break;
 
                 case "Enabled":
                     // Simulación visual de Enabled
-                    bool enableState = (val == "True");
-                    if (enableState)
-                    {
-                        ctrl.Opacity = 1.0;
-                    }
-                    else
-                    {
-                        ctrl.Opacity = 0.5;
-                    }
+                    ctrl.IsEnabled = (val == "True");
                     break;
 
                 case "TabIndex":

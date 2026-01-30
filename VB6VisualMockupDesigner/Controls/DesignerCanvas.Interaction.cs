@@ -42,6 +42,19 @@ namespace VB6VisualMockupDesigner.Controls
 
         public static void SetPasswordChar(DependencyObject element, string value) => element.SetValue(PasswordCharProperty, value);
         public static string GetPasswordChar(DependencyObject element) => (string)element.GetValue(PasswordCharProperty);
+
+        public static readonly DependencyProperty TabEnabledProperty =
+        DependencyProperty.RegisterAttached("TabEnabled", typeof(bool), typeof(VB6Data), new PropertyMetadata(true));
+
+        public static void SetTabEnabled(DependencyObject element, bool value) => element.SetValue(TabEnabledProperty, value);
+        public static bool GetTabEnabled(DependencyObject element) => (bool)element.GetValue(TabEnabledProperty);
+
+        // 2. Memoria para TAB VISIBLE
+        public static readonly DependencyProperty TabVisibleProperty =
+            DependencyProperty.RegisterAttached("TabVisible", typeof(bool), typeof(VB6Data), new PropertyMetadata(true));
+
+        public static void SetTabVisible(DependencyObject element, bool value) => element.SetValue(TabVisibleProperty, value);
+        public static bool GetTabVisible(DependencyObject element) => (bool)element.GetValue(TabVisibleProperty);
     }
 
     public enum ResizeDirection { None, TopLeft, Top, TopRight, Right, BottomRight, Bottom, BottomLeft, Left }
