@@ -536,15 +536,21 @@ namespace VB6VisualMockupDesigner.Helpers
                                     }
                                 };
 
+                                // 1. Inicializar Datos Lógicos (Persistencia en VB6Data)
                                 VB6Data.SetTabEnabled(newTab, true);
                                 VB6Data.SetTabVisible(newTab, true);
+
+                                // 2. Inicializar Estado Visual (Feedback inmediato)
+                                // Aseguramos que NO nazca gris ni transparente
+                                newTab.ClearValue(Control.ForegroundProperty);
+                                newTab.Opacity = 1.0;
 
                                 tcTabs.Items.Add(newTab);
                             }
                         }
                         else if (newCount < currentCount)
                         {
-                            // ELIMINAR PESTAÑAS (Desde la última)
+                            // ELIMINAR PESTAÑAS (Desde la última hacia atrás)
                             for (int i = currentCount - 1; i >= newCount; i--)
                             {
                                 tcTabs.Items.RemoveAt(i);
