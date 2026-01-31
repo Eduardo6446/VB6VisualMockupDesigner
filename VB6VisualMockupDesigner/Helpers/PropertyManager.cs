@@ -21,12 +21,13 @@ namespace VB6VisualMockupDesigner.Helpers
         private static List<string> AppearanceOptions = new List<string> { "0 - Flat", "1 - 3D" };
         private static List<string> SSTabStyleOptions = new List<string> { "0 - Tabbed Dialog", "1 - Property Page" };
         private static List<string> SSTabOrientationOptions = new List<string> { "0 - Top", "1 - Bottom", "2 - Left", "3 - Right" };
-
-        // NUEVO: Opciones para ScrollBars (TextBox)
         private static List<string> ScrollBarOptions = new List<string> { "0 - None", "1 - Horizontal", "2 - Vertical", "3 - Both" };
-
-        // NUEVO: Opciones para ComboBox Style
         private static List<string> ComboStyleOptions = new List<string> { "0 - Dropdown Combo", "1 - Simple Combo", "2 - Dropdown List" };
+        private static List<string> CheckValueOptions = new List<string> { "0 - Unchecked", "1 - Checked", "2 - Grayed" };
+        private static List<string> ShapeTypeOptions = new List<string> { "0 - Rectangle", "1 - Square", "2 - Oval", "3 - Circle", "4 - Rounded Rectangle", "5 - Rounded Square"};
+        private static List<string> FillStyleOptions = new List<string> { "0 - Solid", "1 - Transparent" }; 
+        private static List<string> BorderStyleDashOptions = new List<string> { "0 - Transparent", "1 - Solid", "2 - Dash", "3 - Dot", "4 - Dash-Dot", "5 - Dash-Dot-Dot" };
+        private static List<string> ButtonStyleOptions = new List<string> { "0 - Standard", "1 - Graphical" };
 
         // ==========================================
         // 1. OBTENER PROPIEDADES (LECTURA)
@@ -345,6 +346,85 @@ namespace VB6VisualMockupDesigner.Helpers
                 });
             }
 
+
+            if (ctrl is System.Windows.Shapes.Line ln)
+            {
+                // Propiedades visuales básicas
+                list.Add(new PropertyItem { Name = "BorderColor", Value = GetColorHex(ln.Stroke), Category = "Appearance", Type = PropertyType.Color, Description = "Color del contorno." });
+                list.Add(new PropertyItem { Name = "BorderWidth", Value = ln.StrokeThickness, Category = "Appearance", Type = PropertyType.Number, Description = "Grosor del contorno." });
+
+                // BorderStyle (Mapeo de DashArray a Enum de VB6)
+                string currentStyle = BorderStyleDashOptions[1]; // Default Solid
+                if (ln.Stroke == null || ln.Stroke == Brushes.Transparent) currentStyle = BorderStyleDashOptions[0]; // Transparent
+                else if (ln.StrokeDashArray == null || ln.StrokeDashArray.Count == 0) currentStyle = BorderStyleDashOptions[1]; // Solid
+                else if (ln.StrokeDashArray[0] == 4 && ln.StrokeDashArray[1] == 2) currentStyle = BorderStyleDashOptions[2]; // Dash aprox
+                else if (ln.StrokeDashArray[0] == 1 && ln.StrokeDashArray[1] == 2) currentStyle = BorderStyleDashOptions[3]; // Dot aprox
+                                                                                                                             // (Se pueden agregar más mapeos para DashDot, etc.)
+
+                list.Add(new PropertyItem { Name = "BorderStyle", Value = currentStyle, Category = "Appearance", Type = PropertyType.Enum, Options = BorderStyleDashOptions });
+
+                // NOTA SOBRE COORDENADAS:
+                // VB6 usaba X1,Y1,X2,Y2. En el diseñador actual usamos Left/Top/Width/Height.
+                // Para v1.0, mantener Left/Top/Width/Height es más fácil para el motor de arrastre.
+                // Si quisieras X1-Y2 reales, requeriría un cambio mayor en el DesignerCanvas.
+            }
+
+            // --- SHAPE (System.Windows.Shapes.Path) ---
+            else if (ctrl is System.Windows.Shapes.Path pathShape)
+            {
+                // 1. Shape Type (Forma Geométrica)
+                // Leemos el Tag donde guardaremos el tipo actual (ej: "0 - Rectangle")
+                string currentShapeType = VB6Data.GetTag(pathShape) ?? ShapeTypeOptions[0];
+                list.Add(new PropertyItem { Name = "Shape", Value = currentShapeType, Category = "Appearance", Type = PropertyType.Enum, Options = ShapeTypeOptions, Description = "Tipo de forma geométrica." });
+
+                // 2. Relleno (FillColor y FillStyle)
+                string fillColorHex = GetColorHex(pathShape.Fill);
+                list.Add(new PropertyItem { Name = "FillColor", Value = fillColorHex, Category = "Appearance", Type = PropertyType.Color, Description = "Color de relleno." });
+
+                string currentFillStyle = (pathShape.Fill == null || pathShape.Fill == Brushes.Transparent) ? FillStyleOptions[1] : FillStyleOptions[0];
+                list.Add(new PropertyItem { Name = "FillStyle", Value = currentFillStyle, Category = "Appearance", Type = PropertyType.Enum, Options = FillStyleOptions, Description = "Estilo de relleno (Sólido o Transparente)." });
+
+                // 3. Borde (BorderColor, BorderWidth, BorderStyle)
+                // Usamos la misma lógica que la Línea para los bordes
+                list.Add(new PropertyItem { Name = "BorderColor", Value = GetColorHex(pathShape.Stroke), Category = "Appearance", Type = PropertyType.Color });
+                list.Add(new PropertyItem { Name = "BorderWidth", Value = pathShape.StrokeThickness, Category = "Appearance", Type = PropertyType.Number });
+
+                string currentBorderStyle = BorderStyleDashOptions[1]; // Default Solid
+                if (pathShape.Stroke == null || pathShape.Stroke == Brushes.Transparent) currentBorderStyle = BorderStyleDashOptions[0];
+                else if (pathShape.StrokeDashArray == null || pathShape.StrokeDashArray.Count == 0) currentBorderStyle = BorderStyleDashOptions[1];
+                // (Aquí irían los mismos 'else if' para Dash/Dot que pusimos en Line)
+
+                list.Add(new PropertyItem { Name = "BorderStyle", Value = currentBorderStyle, Category = "Appearance", Type = PropertyType.Enum, Options = BorderStyleDashOptions });
+            }
+
+            else if (ctrl is CheckBox chk)
+            {
+                list.Add(new PropertyItem { Name = "Caption", Value = chk.Content, Category = "Appearance" });
+
+                // Value: 0, 1, 2
+                string val = CheckValueOptions[0];
+                if (chk.IsChecked == true) val = CheckValueOptions[1];
+                else if (chk.IsChecked == null) val = CheckValueOptions[2];
+                list.Add(new PropertyItem { Name = "Value", Value = val, Category = "Behavior", Type = PropertyType.Enum, Options = CheckValueOptions });
+
+                list.Add(new PropertyItem { Name = "Alignment", Value = GetAlignFromControl(ctrl), Category = "Appearance", Type = PropertyType.Enum, Options = AlignOptions });
+
+                // Style (Standard vs Graphical - Simulado visualmente en WPF es complejo, lo guardamos como dato)
+                string currentStyle = VB6Data.GetTag(chk)?.StartsWith("Style:1") == true ? ButtonStyleOptions[1] : ButtonStyleOptions[0];
+                list.Add(new PropertyItem { Name = "Style", Value = currentStyle, Category = "Appearance", Type = PropertyType.Enum, Options = ButtonStyleOptions });
+            }
+            else if (ctrl is RadioButton opt)
+            {
+                list.Add(new PropertyItem { Name = "Caption", Value = opt.Content, Category = "Appearance" });
+                // Value: True/False
+                list.Add(new PropertyItem { Name = "Value", Value = (opt.IsChecked == true).ToString(), Category = "Behavior", Type = PropertyType.Boolean, Options = BoolOptions });
+
+                list.Add(new PropertyItem { Name = "Alignment", Value = GetAlignFromControl(ctrl), Category = "Appearance", Type = PropertyType.Enum, Options = AlignOptions });
+
+                string currentStyle = VB6Data.GetTag(opt)?.StartsWith("Style:1") == true ? ButtonStyleOptions[1] : ButtonStyleOptions[0];
+                list.Add(new PropertyItem { Name = "Style", Value = currentStyle, Category = "Appearance", Type = PropertyType.Enum, Options = ButtonStyleOptions });
+            }
+
             // --- CATEGORÍA: BEHAVIOR ---
 
             list.Add(new PropertyItem { Name = "Visible", Value = (ctrl.Opacity > 0.5).ToString(), Category = "Behavior", Type = PropertyType.Boolean, Options = BoolOptions });
@@ -378,6 +458,8 @@ namespace VB6VisualMockupDesigner.Helpers
                 Description = "Indica el índice en una matriz de controles."
             });
 
+            // 6. CHECKBOX
+            
             return list;
         }
 
@@ -506,6 +588,25 @@ namespace VB6VisualMockupDesigner.Helpers
                             cBorder.Padding = new Thickness(0);
                         }
                     }
+                    if (ctrl is System.Windows.Shapes.Shape shStyle)
+                    {
+                        // Mapeo inverso simplificado para v1
+                        if (val.Contains("0")) shStyle.Stroke = Brushes.Transparent; // Transparent
+                        else
+                        {
+                            // Asegurar que tenga color si no es transparente
+                            if (shStyle.Stroke == null || shStyle.Stroke == Brushes.Transparent) shStyle.Stroke = Brushes.Black;
+
+                            var dashes = new DoubleCollection();
+                            if (val.Contains("1")) { /* Solid - lista vacía */ }
+                            else if (val.Contains("2")) { dashes.Add(4); dashes.Add(2); } // Dash
+                            else if (val.Contains("3")) { dashes.Add(1); dashes.Add(2); } // Dot
+                                                                                          // (Agregar más patrones aquí)
+
+                            shStyle.StrokeDashArray = dashes;
+                        }
+                    }
+                    break;
                     break;
 
                 case "Tabs":
@@ -742,12 +843,131 @@ namespace VB6VisualMockupDesigner.Helpers
                     if (string.IsNullOrWhiteSpace(val)) VB6Data.SetIndex(ctrl, null);
                     else if (int.TryParse(val, out int i)) VB6Data.SetIndex(ctrl, i);
                     break;
+
+                case "Value":
+                    if (ctrl is CheckBox chkVal)
+                    {
+                        // 0 - Unchecked, 1 - Checked, 2 - Grayed
+                        if (val.Contains("1")) chkVal.IsChecked = true;
+                        else if (val.Contains("2")) chkVal.IsChecked = null;
+                        else chkVal.IsChecked = false;
+                    }
+                    else if (ctrl is RadioButton optVal)
+                    {
+                        optVal.IsChecked = (val == "True");
+                    }
+                    break;
+
+
+                // Dentro del switch(item.Name) en ApplyProperty
+
+                // --- PROPIEDADES COMUNES DE SHAPE/LINE ---
+                case "BorderColor":
+                    if (ctrl is System.Windows.Shapes.Shape sh) sh.Stroke = ParseColor(val);
+                    break;
+
+                case "BorderWidth":
+                    if (ctrl is System.Windows.Shapes.Shape shW) shW.StrokeThickness = Math.Max(1, ParseDouble(val));
+                    break;
+                    
+
+                // --- PROPIEDADES ESPECÍFICAS DE SHAPE ---
+                case "FillColor":
+                    // En VB6, FillColor solo se aplica si FillStyle es Sólido.
+                    // Aquí lo aplicamos directamente al Fill de WPF.
+                    // Al cambiar FillStyle manejaremos la transparencia.
+                    if (ctrl is System.Windows.Shapes.Path pFill)
+                    {
+                        // Guardamos el color deseado en Tag por si cambiamos a Transparente y volvemos a Sólido
+                        VB6Data.SetTag(pFill, $"LastFill:{val}");
+                        pFill.Fill = ParseColor(val);
+                    }
+                    break;
+
+                case "FillStyle":
+                    if (ctrl is System.Windows.Shapes.Path pStyle)
+                    {
+                        if (val.Contains("1")) // Transparent
+                        {
+                            pStyle.Fill = Brushes.Transparent;
+                        }
+                        else // Solid
+                        {
+                            // Intentar recuperar el último color usado, o negro por defecto
+                            string lastColor = "#000000";
+                            string tagData = VB6Data.GetTag(pStyle);
+                            if (tagData != null && tagData.StartsWith("LastFill:")) lastColor = tagData.Substring(9);
+
+                            pStyle.Fill = ParseColor(lastColor);
+                        }
+                    }
+                    break;
+
+                case "Shape":
+                    if (ctrl is System.Windows.Shapes.Path pathShape)
+                    {
+                        // 1. Guardar la selección actual en el Tag para poder leerla después
+                        VB6Data.SetTag(pathShape, val);
+
+                        // 2. Llamar al helper mágico que redibuja el control
+                        UpdateShapeGeometry(pathShape, val, ctrl.Width, ctrl.Height);
+                    }
+                    break;
+
+                
+
+
             }
         }
 
         // ==========================================
         // HELPERS PRIVADOS
         // ==========================================
+
+        private static string GetColorHex(Brush b)
+        {
+            if (b is SolidColorBrush sb) return sb.Color.ToString();
+            return "#000000";
+        }
+
+        // ==========================================
+        // HELPER PARA DIBUJAR SHAPES (GEOMETRÍA)
+        // ==========================================
+        private static void UpdateShapeGeometry(System.Windows.Shapes.Path path, string shapeTypeEnum, double w, double h)
+        {
+            if (path == null || w <= 0 || h <= 0) return;
+
+            // Asegurar que el Path se estire para llenar su contenedor
+            path.Stretch = Stretch.Fill;
+
+            // "0 - Rectangle", "1 - Square", "2 - Oval", "3 - Circle", "4 - Rounded Rect", "5 - Rounded Square"
+
+            if (shapeTypeEnum.Contains("0") || shapeTypeEnum.Contains("1")) // Rectangle / Square
+            {
+                // Para cuadrado, forzamos el aspecto 1:1 visualmente en el designer? 
+                // VB6 lo hace. Si es Square, usa el lado más corto.
+                if (shapeTypeEnum.Contains("1"))
+                {
+                    double side = Math.Min(w, h);
+                    w = side; h = side;
+                    // Nota: Esto cambia el tamaño real del control en el designer, puede ser brusco.
+                    // Alternativa: Dibujar un cuadrado centrado dentro del área rectangular.
+                    // Por simplicidad v1, dejamos que el usuario ajuste el tamaño manualmente.
+                }
+                path.Data = new RectangleGeometry(new Rect(0, 0, w, h));
+            }
+            else if (shapeTypeEnum.Contains("2") || shapeTypeEnum.Contains("3")) // Oval / Circle
+            {
+                // EllipseGeometry se define por centro y radios X/Y
+                path.Data = new EllipseGeometry(new Point(w / 2, h / 2), w / 2, h / 2);
+            }
+            else if (shapeTypeEnum.Contains("4") || shapeTypeEnum.Contains("5")) // Rounded Rect / Square
+            {
+                // Radio de esquina fijo similar a VB6 (ej: 20% del lado menor o un fijo 15px)
+                double radius = Math.Min(w, h) * 0.20;
+                path.Data = new RectangleGeometry(new Rect(0, 0, w, h), radius, radius);
+            }
+        }
 
         private static void ApplyFontToControl(Control f, string val)
         {
