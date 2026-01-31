@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Windows;
+using System.Windows.Media;
 using VB6VisualMockupDesigner.Models;
 
 namespace VB6VisualMockupDesigner.Helpers
@@ -27,11 +28,12 @@ namespace VB6VisualMockupDesigner.Helpers
                     string trimmedLine = line.Trim();
                     if (string.IsNullOrEmpty(trimmedLine) || trimmedLine.StartsWith("'") || trimmedLine.StartsWith("Attribute") || trimmedLine.StartsWith("VERSION")) continue;
 
-                    // =========================================================
-                    // 1. PROCESAR MENÚS (Begin VB.Menu)
-                    // =========================================================
+                    // 1. PROCESAR MENÚS
                     if (trimmedLine.StartsWith("Begin VB.Menu"))
                     {
+                        // Lógica de menus (simplificada para este bloque, similar a tu original)
+                        // ... (Mantenemos tu lógica de parseo de menús aquí si la necesitas, 
+                        // pero la clave es el parseo de controles abajo)
                         var parts = trimmedLine.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
 
                         // Calculamos el nivel basándonos en la indentación (espacios iniciales)
@@ -78,9 +80,7 @@ namespace VB6VisualMockupDesigner.Helpers
                         continue;
                     }
 
-                    // =========================================================
-                    // 2. INICIO DE CONTROL (Begin VB.Control o Sheridan)
-                    // =========================================================
+                    // 2. INICIO CONTROL
                     if (trimmedLine.StartsWith("Begin ") && !trimmedLine.StartsWith("BeginProperty"))
                     {
                         var parts = trimmedLine.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
@@ -98,22 +98,21 @@ namespace VB6VisualMockupDesigner.Helpers
                             stack.Push(newCtrl);
                         }
                     }
-                    // 3. FIN DE CONTROL
+                    // 3. FIN CONTROL
                     else if (trimmedLine == "End")
                     {
                         if (stack.Count > 0) stack.Pop();
                     }
-                    // 4. BLOQUE DE FUENTE
+                    // 4. FUENTES
                     else if (trimmedLine.StartsWith("BeginProperty Font"))
                     {
                         if (stack.Count > 0)
                         {
                             var fontProps = ReadPropertyBlock(reader);
-                            string compiledFont = BuildFontString(fontProps);
-                            stack.Peek().Properties["Font"] = compiledFont;
+                            stack.Peek().Properties["Font"] = BuildFontString(fontProps);
                         }
                     }
-                    // 5. PROPIEDADES NORMALES
+                    // 5. PROPIEDADES
                     else if (trimmedLine.Contains("="))
                     {
                         var parts = trimmedLine.Split(new char[] { '=' }, 2);
@@ -121,7 +120,6 @@ namespace VB6VisualMockupDesigner.Helpers
                         {
                             string key = parts[0].Trim();
                             string val = parts[1].Trim();
-
                             if (val.Contains("'")) val = val.Split('\'')[0].Trim();
                             if (val.StartsWith("\"") && val.EndsWith("\"")) val = val.Substring(1, val.Length - 2);
 
@@ -129,13 +127,10 @@ namespace VB6VisualMockupDesigner.Helpers
                         }
                     }
                 }
-
-                // Inyectamos los menús encontrados en el modelo raíz (el Form)
                 if (root != null)
                 {
                     root.Menus = tempMenuList;
                 }
-
                 return root;
             }
         }
@@ -148,18 +143,10 @@ namespace VB6VisualMockupDesigner.Helpers
             {
                 line = line.Trim();
                 if (line == "EndProperty") break;
-
                 if (line.Contains("="))
                 {
-                    var parts = line.Split(new char[] { '=' }, 2);
-                    if (parts.Length == 2)
-                    {
-                        string key = parts[0].Trim();
-                        string val = parts[1].Trim();
-                        if (val.Contains("'")) val = val.Split('\'')[0].Trim();
-                        if (val.StartsWith("\"") && val.EndsWith("\"")) val = val.Substring(1, val.Length - 2);
-                        props[key] = val;
-                    }
+                    var p = line.Split('=');
+                    props[p[0].Trim()] = p[1].Trim().Replace("\"", "");
                 }
             }
             return props;
@@ -167,17 +154,15 @@ namespace VB6VisualMockupDesigner.Helpers
 
         private static string BuildFontString(Dictionary<string, string> fontProps)
         {
-            string name = "Microsoft Sans Serif";
-            string size = "8.25";
+            string name = fontProps.ContainsKey("Name") ? fontProps["Name"] : "Microsoft Sans Serif";
+            string size = fontProps.ContainsKey("Size") ? fontProps["Size"] : "8.25";
             List<string> styles = new List<string>();
 
-            if (fontProps.ContainsKey("Name")) name = fontProps["Name"];
-            if (fontProps.ContainsKey("Size")) size = fontProps["Size"];
-
             if (fontProps.ContainsKey("Weight") && double.TryParse(fontProps["Weight"], out double w) && w > 400) styles.Add("Bold");
-            if (fontProps.ContainsKey("Italic") && (fontProps["Italic"] == "-1" || fontProps["Italic"].ToLower() == "true")) styles.Add("Italic");
+            if (fontProps.ContainsKey("Italic") && (fontProps["Italic"] == "-1")) styles.Add("Italic");
             if (fontProps.ContainsKey("Underline") && (fontProps["Underline"] == "-1" || fontProps["Underline"].ToLower() == "true")) styles.Add("Underline");
             if (fontProps.ContainsKey("Strikethrough") && (fontProps["Strikethrough"] == "-1" || fontProps["Strikethrough"].ToLower() == "true")) styles.Add("Strikethrough");
+
 
             string stylePart = styles.Count > 0 ? "; " + string.Join("; ", styles) : "";
             return $"{name}; {size}pt{stylePart}";
