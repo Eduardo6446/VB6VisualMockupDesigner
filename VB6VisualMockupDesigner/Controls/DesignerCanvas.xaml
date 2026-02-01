@@ -8,12 +8,13 @@
 
     <UserControl.Resources>
 
-        <DrawingBrush x:Key="GridPatternBrush" Viewport="0,0,15,15" ViewportUnits="Absolute" TileMode="Tile">
+        <DrawingBrush x:Key="GridPatternBrush" Viewport="0,0,8,8" ViewportUnits="Absolute" TileMode="Tile">
             <DrawingBrush.Drawing>
-                <GeometryDrawing Brush="{DynamicResource CanvasGridColor}">
+                <GeometryDrawing Brush="Transparent">
                     <GeometryDrawing.Geometry>
                         <GeometryGroup>
-                            <RectangleGeometry Rect="0,0,1,1" />
+                            <RectangleGeometry Rect="0,0,8,0.5" />
+                            <RectangleGeometry Rect="0,0,0.5,8" />
                         </GeometryGroup>
                     </GeometryDrawing.Geometry>
                 </GeometryDrawing>
@@ -109,6 +110,7 @@
                       VerticalAlignment="Top" 
                       HorizontalAlignment="Left"
                       Panel.ZIndex="1">
+
                     <Border x:Name="RetroFormContainer"
                             HorizontalAlignment="Stretch" 
                             VerticalAlignment="Stretch"
@@ -121,7 +123,6 @@
                         </Border.Effect>
 
                         <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,2,2">
-
                             <Grid>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="24"/>
@@ -134,7 +135,6 @@
                                         MouseLeftButtonUp="FormTitle_MouseUp"
                                         MouseMove="FormTitle_MouseMove"
                                         Background="{DynamicResource AccentColor}">
-
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto"/>
@@ -163,10 +163,7 @@
                                     </Grid>
                                 </Border>
 
-                                <StackPanel x:Name="MenuArea" 
-                                            Grid.Row="1" 
-                                            Background="{DynamicResource PanelBackground}" 
-                                            Visibility="Collapsed"/>
+                                <StackPanel x:Name="MenuArea" Grid.Row="1" Background="{DynamicResource PanelBackground}" Visibility="Collapsed"/>
 
                                 <Grid Grid.Row="2" Margin="2">
                                     <Canvas x:Name="DesignSurface" 
@@ -181,50 +178,27 @@
                                             ContextMenu="{StaticResource ControlContextMenu}">
 
                                         <Rectangle x:Name="SelectionRect"
-                                                   Stroke="{DynamicResource AccentColor}"
-                                                   StrokeThickness="1"
+                                                   Stroke="{DynamicResource AccentColor}" StrokeThickness="1"
                                                    Fill="{DynamicResource SelectionFill}"
-                                                   Visibility="Collapsed"
-                                                   IsHitTestVisible="False"
-                                                   Panel.ZIndex="9999"/>
+                                                   Visibility="Collapsed" IsHitTestVisible="False" Panel.ZIndex="9999"/>
 
                                         <TextBox x:Name="QuickEditBox"
-                                                 Visibility="Collapsed"
-                                                 Panel.ZIndex="999999"
+                                                 Visibility="Collapsed" Panel.ZIndex="999999"
                                                  Background="{DynamicResource PanelBackground}"
                                                  Foreground="{DynamicResource PrimaryText}"
-                                                 BorderBrush="{DynamicResource AccentColor}"
-                                                 BorderThickness="1"
-                                                 Padding="2"
-                                                 AcceptsReturn="True" 
+                                                 BorderBrush="{DynamicResource AccentColor}" BorderThickness="1"
+                                                 Padding="2" AcceptsReturn="True" 
                                                  LostFocus="QuickEditBox_LostFocus"
                                                  PreviewKeyDown="QuickEditBox_PreviewKeyDown"/>
 
-                                        <Popup x:Name="InfoTip" 
-                                               Placement="Relative"
-                                               AllowsTransparency="True"
-                                               IsHitTestVisible="False">
-                                            <Border Background="{DynamicResource PanelBackground}" 
-                                                    BorderBrush="{DynamicResource BorderBrush}" 
-                                                    BorderThickness="1" 
-                                                    Padding="4,2"
-                                                    CornerRadius="2">
-                                                <Border.Effect>
-                                                    <DropShadowEffect ShadowDepth="2" Opacity="0.3" BlurRadius="5"/>
-                                                </Border.Effect>
-                                                <TextBlock x:Name="InfoTipText" 
-                                                           Text="X: 0, Y: 0" 
-                                                           FontSize="11" 
-                                                           FontFamily="Consolas"
-                                                           Foreground="{DynamicResource PrimaryText}"/>
+                                        <Popup x:Name="InfoTip" Placement="Relative" AllowsTransparency="True" IsHitTestVisible="False">
+                                            <Border Background="{DynamicResource PanelBackground}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Padding="4,2" CornerRadius="2">
+                                                <TextBlock x:Name="InfoTipText" Text="X: 0, Y: 0" FontSize="11" FontFamily="Consolas" Foreground="{DynamicResource PrimaryText}"/>
                                             </Border>
                                         </Popup>
                                     </Canvas>
 
-                                    <Canvas x:Name="SnapLineOverlay" 
-                                            IsHitTestVisible="False" 
-                                            Background="Transparent"
-                                            ClipToBounds="True"/>
+                                    <Canvas x:Name="SnapLineOverlay" IsHitTestVisible="False" Background="Transparent" ClipToBounds="True"/>
                                 </Grid>
                             </Grid>
                         </Border>
