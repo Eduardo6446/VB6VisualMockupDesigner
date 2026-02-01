@@ -44,17 +44,17 @@ namespace VB6VisualMockupDesigner
 
         private void Application_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
         {
-            // ESTO EVITA QUE LA APP SE CIERRE Y MUESTRA EL ERROR
-            string errorMsg = $"Ocurrió un error inesperado:\n\n{e.Exception.Message}";
+            string errorMsg = $"Error Crítico:\n{e.Exception.Message}\n\nLa aplicación se cerrará.";
 
-            if (e.Exception.InnerException != null)
-            {
-                errorMsg += $"\n\nDetalle interno: {e.Exception.InnerException.Message}";
-            }
+            // 1. Mostrar el error al usuario
+            MessageBox.Show(errorMsg, "Fatal Error", MessageBoxButton.OK, MessageBoxImage.Error);
 
-            MessageBox.Show(errorMsg, "Error Fatal", MessageBoxButton.OK, MessageBoxImage.Error);
+            // 2. EVITAR QUE EL PROCESO QUEDE ZOMBIE
+            // Environment.Exit(1) mata el proceso actual y devuelve código de error 1 al sistema.
+            Environment.Exit(1);
 
-            e.Handled = true; // Evita el cierre inmediato si es posible recuperarse
+            // (Opcional) Si Environment.Exit no funciona porque hay hilos rebeldes, usa esto:
+            // System.Diagnostics.Process.GetCurrentProcess().Kill();
         }
 
     }
