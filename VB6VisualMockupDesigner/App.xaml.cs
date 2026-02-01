@@ -13,6 +13,10 @@ namespace VB6VisualMockupDesigner
 
         protected override void OnStartup(StartupEventArgs e)
         {
+            string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            string rutaEsperada = System.IO.Path.Combine(appData, "VB6VisualMockupDesigner", "Logs");
+            Logger.Log("=== INICIO DE SESIÓN - CARPETA CREADA ===");
+
             base.OnStartup(e);
 
             Logger.Log("=== INICIO DE APLICACIÓN ===");
