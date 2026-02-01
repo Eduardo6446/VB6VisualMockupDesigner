@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:VB6VisualMockupDesigner"
              StartupUri="Views/StartScreen.xaml"
-             ShutdownMode="OnMainWindowClose"
+            
              >
     <Application.Resources>
         <ResourceDictionary>

@@ -303,10 +303,11 @@ namespace VB6VisualMockupDesigner.Views
                     }
                 }
             }
-            catch
+            catch (Exception ex)
             {
                 // Si falla (por "itself", por "not shown", etc.), 
                 // simplemente dejamos editor.Owner como null y seguimos.
+                Logger.Log($"No se pudo asignar Owner al editor de listas. Razón: {ex.Message}", "WARN");
                 editor.Owner = null;
             }
 
@@ -353,9 +354,10 @@ namespace VB6VisualMockupDesigner.Views
                     }
                 }
             }
-            catch
+            catch (Exception ex)
             {
                 // Si falla, ignoramos el error y abrimos sin dueño.
+                Logger.Log($"No se pudo asignar Owner al editor de Fuentes. Razón: {ex.Message}", "WARN");
                 picker.Owner = null;
             }
 

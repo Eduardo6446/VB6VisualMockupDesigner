@@ -15,6 +15,18 @@ namespace VB6VisualMockupDesigner
         {
             base.OnStartup(e);
 
+            Logger.Log("=== INICIO DE APLICACIÓN ===");
+
+            // 2. Atrapar errores de la UI (Botones, Ventanas)
+            this.DispatcherUnhandledException += App_DispatcherUnhandledException;
+
+            // 3. Atrapar errores de Hilos/Tasks (Background)
+            TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException;
+
+            // 4. Atrapar errores graves del dominio (Crashes puros)
+            AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
+        
+
             // 1. Leer la configuración guardada
             string savedTheme = VB6VisualMockupDesigner.Properties.Settings.Default.AppTheme;
 
@@ -42,20 +54,39 @@ namespace VB6VisualMockupDesigner
             }
         }
 
-        private void Application_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
+        private void App_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
         {
-            string errorMsg = $"Error Crítico:\n{e.Exception.Message}\n\nLa aplicación se cerrará.";
+            Logger.LogError("UI Unhandled", e.Exception);
 
-            // 1. Mostrar el error al usuario
-            MessageBox.Show(errorMsg, "Fatal Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            // Opcional: Mostrar aviso al usuario
+            MessageBox.Show($"Error inesperado:\n{e.Exception.Message}\nRevisa el log.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
 
-            // 2. EVITAR QUE EL PROCESO QUEDE ZOMBIE
-            // Environment.Exit(1) mata el proceso actual y devuelve código de error 1 al sistema.
-            Environment.Exit(1);
-
-            // (Opcional) Si Environment.Exit no funciona porque hay hilos rebeldes, usa esto:
-            // System.Diagnostics.Process.GetCurrentProcess().Kill();
+            e.Handled = true; // Intentamos que no se cierre si es leve
         }
+
+        private void TaskScheduler_UnobservedTaskException(object sender, UnobservedTaskExceptionEventArgs e)
+        {
+            Logger.LogError("Background Task", e.Exception);
+            e.SetObserved(); // Evita que el proceso muera
+        }
+
+        private void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
+        {
+            if (e.ExceptionObject is Exception ex)
+            {
+                Logger.LogError("CRITICAL DOMAIN CRASH", ex);
+                Logger.Log("La aplicación se cerrará forzosamente.", "FATAL");
+            }
+        }
+
+        protected override void OnExit(ExitEventArgs e)
+        {
+            Logger.Log("=== FIN DE APLICACIÓN ===");
+            base.OnExit(e);
+        }
+
+
+
 
     }
 
