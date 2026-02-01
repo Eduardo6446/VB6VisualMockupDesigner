@@ -5,6 +5,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using VB6VisualMockupDesigner.Controls;
 using VB6VisualMockupDesigner.Helpers;
@@ -828,6 +829,13 @@ namespace VB6VisualMockupDesigner.Views
             bool isCtrl = (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control;
             bool isShift = (Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift;
 
+            if (isCtrl && isShift && e.Key == Key.C)
+            {
+                MnuCopyClipboard_Click(null, null);
+                e.Handled = true;
+                return;
+            }
+
             // 1. SUPRIMIR (Delete)
             if (e.Key == Key.Delete || e.Key == Key.Back)
             {
@@ -1034,13 +1042,26 @@ namespace VB6VisualMockupDesigner.Views
                     MessageBox.Show($"Error al exportar imagen: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
-
-
-
-
-
         }
 
+        // ==========================================
+        // NUEVO: COPIAR IMAGEN AL PORTAPAPELES
+        // ==========================================
+        // En Views/MainWindowModern.xaml.cs
+
+        private void MnuCopyClipboard_Click(object sender, RoutedEventArgs e)
+        {
+            // 1. Validar que haya un diseñador activo
+            if (MainTabControl.SelectedItem is TabItem tab && tab.Content is DesignerCanvas designer)
+            {
+                // 2. Llamar al nuevo método del canvas
+                designer.CopyToClipboard();
+
+                // 3. Feedback visual opcional
+                // (Como no tenemos StatusBar message method aun, un MessageBox discreto o nada está bien)
+                // MessageBox.Show("Copiado al portapapeles.", "Información", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
 
         // 1. Evento al escribir texto
         private void TxtGlobalSearch_TextChanged(object sender, TextChangedEventArgs e)

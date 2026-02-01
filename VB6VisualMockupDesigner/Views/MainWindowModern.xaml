@@ -279,6 +279,7 @@
                         <MenuItem Header="Guardar" InputGestureText="Ctrl+S" Click="MnuSave_Click"/>
                         <MenuItem Header="Guardar como..." Click="MnuSaveAs_Click"/>
                         <MenuItem Header="Exportar a Imagen" Click="MnuExportPng_Click"/>
+                        <MenuItem Header="Copiar Imagen al Portapapeles" InputGestureText="Ctrl+Shift+C" Click="MnuCopyClipboard_Click"/>
                         <Separator/>
 
                         <MenuItem Header="Cerrar Pestaña" Click="BtnCloseProject_Click"/>

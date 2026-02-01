@@ -1269,7 +1269,63 @@ namespace VB6VisualMockupDesigner.Controls
             _tabOrderIndicators.Clear();
         }
 
+        // En Controls/DesignerCanvas.cs
 
+        public void CopyToClipboard()
+        {
+            // 1. Guardar selección actual y limpiar (Para que no salgan bordes azules)
+            var currentSelection = _selectedControls.ToList();
+            ClearSelection();
+            this.UpdateLayout();
+
+            // 2. OCULTAR LOS HANDLES DE REDIMENSIÓN DEL FORM
+            if (FormResizeHandles != null) FormResizeHandles.Visibility = Visibility.Collapsed;
+
+            try
+            {
+                // 3. Elemento a capturar (El mismo Grid que usas en SaveAsImage)
+                FrameworkElement elementToCapture = this.WindowResizerGrid;
+
+                if (elementToCapture == null || elementToCapture.ActualWidth == 0 || elementToCapture.ActualHeight == 0)
+                {
+                    MessageBox.Show("El formulario tiene un tamaño inválido o no está inicializado.");
+                    return;
+                }
+
+                // 4. Renderizar (Usamos tu misma lógica de escalado x3 para alta calidad)
+                double scale = 3.0;
+                double dpi = 96d;
+
+                DrawingVisual drawingVisual = new DrawingVisual();
+                using (DrawingContext context = drawingVisual.RenderOpen())
+                {
+                    VisualBrush brush = new VisualBrush(elementToCapture);
+                    context.PushTransform(new ScaleTransform(scale, scale));
+                    context.DrawRectangle(brush, null, new Rect(0, 0, elementToCapture.ActualWidth, elementToCapture.ActualHeight));
+                    context.Pop();
+                }
+
+                RenderTargetBitmap bmp = new RenderTargetBitmap(
+                    (int)(elementToCapture.ActualWidth * scale),
+                    (int)(elementToCapture.ActualHeight * scale),
+                    dpi, dpi, PixelFormats.Pbgra32);
+
+                bmp.Render(drawingVisual);
+
+                // 5. ENVIAR AL PORTAPAPELES
+                Clipboard.SetImage(bmp);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error al copiar al portapapeles: {ex.Message}");
+            }
+            finally
+            {
+                // 6. RESTAURAR VISIBILIDAD Y SELECCIÓN (Siempre, incluso si falla)
+                if (FormResizeHandles != null) FormResizeHandles.Visibility = Visibility.Visible;
+                RestoreSelection(currentSelection);
+            }
+        }
         public void SaveAsImage(string filePath)
         {
             // 1. Guardar selección actual y limpiar
