@@ -26,10 +26,13 @@ namespace VB6VisualMockupDesigner.Views
             InitializeComponent();
 
             // Centrar sobre la ventana principal si es posible
-            if (Application.Current != null && Application.Current.MainWindow != null)
+            if (Application.Current != null &&
+        Application.Current.MainWindow != null &&
+        Application.Current.MainWindow != this) // <--- AGREGAR ESTA CONDICIÓN
             {
                 this.Owner = Application.Current.MainWindow;
             }
+
 
             LoadData();
             ParseCurrentString(currentFontString);

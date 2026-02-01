@@ -280,18 +280,40 @@ namespace VB6VisualMockupDesigner.Views
 
         private void HandleStringListEditor(PropertyItem item)
         {
-            // 1. Obtener valor actual (string separado por saltos de línea)
             string currentVal = item.Value?.ToString() ?? "";
 
-            // 2. Abrir editor
-            var editor = new StringListEditorWindow(currentVal);
-            editor.Owner = Application.Current.MainWindow;
+            // 1. Crear instancia
+            var editor = new VB6VisualMockupDesigner.Views.StringListEditorWindow(currentVal);
 
+            // 2. Configuración para que no se pierda si no tiene dueño
+            editor.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+            editor.Owner = null; // Empezamos sin dueño explícito
+
+            // 3. INTENTO DE ASIGNAR DUEÑO (DENTRO DE TRY-CATCH)
+            try
+            {
+                // Buscamos una ventana que sea visible, activa y no sea la nueva
+                foreach (Window win in Application.Current.Windows)
+                {
+                    if (win.IsVisible && win.WindowState != WindowState.Minimized && win != editor)
+                    {
+                        // Intentamos asignar. Si esto falla, el CATCH lo atrapa.
+                        editor.Owner = win;
+                        break; // Ya encontramos uno, nos salimos
+                    }
+                }
+            }
+            catch
+            {
+                // Si falla (por "itself", por "not shown", etc.), 
+                // simplemente dejamos editor.Owner como null y seguimos.
+                editor.Owner = null;
+            }
+
+            // 4. Abrir
             if (editor.ShowDialog() == true)
             {
-                // 3. Aplicar cambios
                 item.Value = editor.ResultText;
-                // El binding disparará automáticamente ApplyProperty en PropertyManager
             }
         }
 
@@ -310,25 +332,37 @@ namespace VB6VisualMockupDesigner.Views
 
         private void HandleFontPicker(PropertyItem item)
         {
-            // 1. Obtener el valor actual (o un default si es nulo)
             string currentVal = item.Value?.ToString() ?? "Microsoft Sans Serif; 8.25pt";
 
-            // 2. Instanciar nuestra ventana personalizada
-            var picker = new FontPickerWindow(currentVal);
+            // 1. Crear instancia
+            var picker = new VB6VisualMockupDesigner.Views.FontPickerWindow(currentVal);
 
-            // (Opcional) Centrar sobre la ventana principal si tienes acceso a ella,
-            // o simplemente dejar que WindowStartupLocation="CenterScreen" haga el trabajo.
-            picker.Owner = Application.Current.MainWindow;
+            // 2. Configuración segura
+            picker.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+            picker.Owner = null;
 
-            // 3. Mostrar diálogo
+            // 3. INTENTO DE ASIGNAR DUEÑO
+            try
+            {
+                foreach (Window win in Application.Current.Windows)
+                {
+                    if (win.IsVisible && win.WindowState != WindowState.Minimized && win != picker)
+                    {
+                        picker.Owner = win;
+                        break;
+                    }
+                }
+            }
+            catch
+            {
+                // Si falla, ignoramos el error y abrimos sin dueño.
+                picker.Owner = null;
+            }
+
+            // 4. Abrir
             if (picker.ShowDialog() == true)
             {
-                // 4. Aplicar el resultado devuelto por la ventana
                 item.Value = picker.ResultString;
-
-                // ApplyChange se llama automáticamente gracias al binding y OnPropertyItemChanged
-                // pero si quieres forzarlo visualmente aquí:
-                // ApplyChange(item); 
             }
         }
     }

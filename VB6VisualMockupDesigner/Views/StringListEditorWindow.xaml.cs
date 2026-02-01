@@ -10,11 +10,17 @@ namespace VB6VisualMockupDesigner.Views
 {
     public partial class StringListEditorWindow : Window
     {
-        public string ResultText { get; private set; }
 
         public StringListEditorWindow(string currentContent)
         {
             InitializeComponent();
+
+            if (Application.Current != null &&
+        Application.Current.MainWindow != null &&
+        Application.Current.MainWindow != this) // <--- AGREGAR ESTA CONDICIÓN
+            {
+                this.Owner = Application.Current.MainWindow;
+            }
 
             // Asignar texto y colocar cursor al final
             TxtContent.Text = currentContent;
@@ -30,6 +36,9 @@ namespace VB6VisualMockupDesigner.Views
             };
             RefreshUserPresetsMenu();
         }
+
+        public string ResultText { get; private set; }
+
 
         private void UpdateLineCount()
         {

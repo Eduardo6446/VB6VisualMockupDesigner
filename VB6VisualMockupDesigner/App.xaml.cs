@@ -42,6 +42,21 @@ namespace VB6VisualMockupDesigner
             }
         }
 
+        private void Application_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
+        {
+            // ESTO EVITA QUE LA APP SE CIERRE Y MUESTRA EL ERROR
+            string errorMsg = $"Ocurrió un error inesperado:\n\n{e.Exception.Message}";
+
+            if (e.Exception.InnerException != null)
+            {
+                errorMsg += $"\n\nDetalle interno: {e.Exception.InnerException.Message}";
+            }
+
+            MessageBox.Show(errorMsg, "Error Fatal", MessageBoxButton.OK, MessageBoxImage.Error);
+
+            e.Handled = true; // Evita el cierre inmediato si es posible recuperarse
+        }
+
     }
 
 }
