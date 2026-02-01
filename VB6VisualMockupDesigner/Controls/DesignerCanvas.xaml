@@ -7,14 +7,13 @@
              d:DesignHeight="600" d:DesignWidth="800">
 
     <UserControl.Resources>
-        
-        <DrawingBrush x:Key="GridPatternBrush" Viewport="0,0,8,8" ViewportUnits="Absolute" TileMode="Tile">
+
+        <DrawingBrush x:Key="GridPatternBrush" Viewport="0,0,15,15" ViewportUnits="Absolute" TileMode="Tile">
             <DrawingBrush.Drawing>
                 <GeometryDrawing Brush="{DynamicResource CanvasGridColor}">
                     <GeometryDrawing.Geometry>
                         <GeometryGroup>
-                            <RectangleGeometry Rect="0,0,8,0.5" />
-                            <RectangleGeometry Rect="0,0,0.5,8" />
+                            <RectangleGeometry Rect="0,0,1,1" />
                         </GeometryGroup>
                     </GeometryDrawing.Geometry>
                 </GeometryDrawing>
@@ -98,11 +97,18 @@
                     <ScaleTransform x:Name="CanvasScale" ScaleX="1" ScaleY="1"/>
                 </Grid.LayoutTransform>
 
+                <Border x:Name="GridOverlay" 
+                        Background="{StaticResource GridPatternBrush}" 
+                        IsHitTestVisible="False"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Stretch"
+                        Panel.ZIndex="0"/>
+
                 <Grid x:Name="WindowResizerGrid" 
                       Width="480" Height="360"
                       VerticalAlignment="Top" 
-                      HorizontalAlignment="Left">
-
+                      HorizontalAlignment="Left"
+                      Panel.ZIndex="1">
                     <Border x:Name="RetroFormContainer"
                             HorizontalAlignment="Stretch" 
                             VerticalAlignment="Stretch"

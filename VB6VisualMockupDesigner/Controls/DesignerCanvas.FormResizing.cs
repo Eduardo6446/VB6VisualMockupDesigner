@@ -25,6 +25,8 @@ namespace VB6VisualMockupDesigner.Controls
         // ==========================================
         private void FormTitle_MouseDown(object sender, MouseButtonEventArgs e)
         {
+            if (IsRunMode) return;
+
             // Solo si hacemos clic en el borde/titulo, no en los botones de cerrar/min
             if (e.OriginalSource is Button) return;
 
@@ -39,6 +41,7 @@ namespace VB6VisualMockupDesigner.Controls
 
         private void FormTitle_MouseMove(object sender, MouseEventArgs e)
         {
+            if (IsRunMode) return;
             if (_isMovingForm)
             {
                 Point currentPos = e.GetPosition(this);
@@ -55,6 +58,7 @@ namespace VB6VisualMockupDesigner.Controls
 
         private void FormTitle_MouseUp(object sender, MouseButtonEventArgs e)
         {
+            if (IsRunMode) return;
             if (_isMovingForm)
             {
                 _isMovingForm = false;
@@ -67,6 +71,8 @@ namespace VB6VisualMockupDesigner.Controls
         // ==========================================
         private void ResizeForm_MouseDown(object sender, MouseButtonEventArgs e)
         {
+            if (IsRunMode) return;
+
             var rect = sender as System.Windows.Shapes.Rectangle;
             if (rect == null) return;
 
@@ -84,6 +90,8 @@ namespace VB6VisualMockupDesigner.Controls
 
         private void ResizeForm_MouseMove(object sender, MouseEventArgs e)
         {
+            if (IsRunMode) return;
+
             if (_isResizingForm)
             {
                 Point currentPos = e.GetPosition(this);
@@ -143,6 +151,7 @@ namespace VB6VisualMockupDesigner.Controls
 
         private void ResizeForm_MouseUp(object sender, MouseButtonEventArgs e)
         {
+
             if (_isResizingForm)
             {
                 _isResizingForm = false;

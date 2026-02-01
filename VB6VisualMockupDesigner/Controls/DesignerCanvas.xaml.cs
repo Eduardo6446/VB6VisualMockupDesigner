@@ -20,6 +20,8 @@ namespace VB6VisualMockupDesigner.Controls
     {
 
         public event EventHandler IsDirtyChanged;
+        public bool IsRunMode { get; private set; } = false;
+        private Visibility _previousGridVisibility;
 
         // Identificador de la versión actual en pantalla
         private Guid _currentVersionId = Guid.NewGuid();
@@ -331,7 +333,50 @@ namespace VB6VisualMockupDesigner.Controls
         }
 
 
+        public void ToggleRunMode()
+        {
+            IsRunMode = !IsRunMode;
 
+            if (IsRunMode)
+            {
+                // === ENTRAR AL MODO EJECUCIÓN ===
+
+                // a) Limpiar selección para quitar bordes azules
+                ClearSelection();
+
+                // b) Ocultar superposiciones de diseño
+                SelectionRect.Visibility = Visibility.Collapsed;
+                SnapLineOverlay.Visibility = Visibility.Collapsed;
+                if (FormResizeHandles != null) FormResizeHandles.Visibility = Visibility.Collapsed;
+                if (QuickEditBox != null) QuickEditBox.Visibility = Visibility.Collapsed;
+
+                // c) Ocultar la Grilla (asumiendo que DesignGrid es el control de fondo)
+                if (GridOverlay != null)
+                {
+                    _previousGridVisibility = GridOverlay.Visibility; // Recordar estado
+                    GridOverlay.Visibility = Visibility.Collapsed;
+                }
+
+                // d) Cambiar cursor para indicar que estamos "vivos"
+                this.Cursor = Cursors.Arrow;
+            }
+            else
+            {
+                // === VOLVER AL MODO DISEÑO ===
+
+                // a) Restaurar Grilla
+                if (GridOverlay != null)
+                {
+                    GridOverlay.Visibility = _previousGridVisibility;
+                }
+
+                // b) Restaurar Handles del Form
+                if (FormResizeHandles != null) FormResizeHandles.Visibility = Visibility.Visible;
+
+                // c) Asegurarnos de que el SelectionRect esté listo (aunque oculto hasta seleccionar)
+                SelectionRect.Visibility = Visibility.Collapsed;
+            }
+        }
     }
 
 

@@ -101,6 +101,12 @@ namespace VB6VisualMockupDesigner.Controls
             return _selectedControls.OfType<FrameworkElement>().ToList();
         }
 
+
+
+
+
+
+
         // ==========================================
         // NUEVOS MÉTODOS DE BLOQUEO
         // ==========================================
@@ -154,6 +160,10 @@ namespace VB6VisualMockupDesigner.Controls
 
         private void Control_PreviewMouseDown(object sender, MouseButtonEventArgs e)
         {
+
+            if (IsRunMode) return;
+
+
             // 1. Convertir sender a FrameworkElement
             var control = sender as FrameworkElement;
             if (control == null) return;
@@ -276,6 +286,8 @@ namespace VB6VisualMockupDesigner.Controls
 
         private void Control_PreviewMouseMove(object sender, MouseEventArgs e)
         {
+            if (IsRunMode) return;
+
             if (_isDragging && _selectedControls.Count > 0)
             {
                 // 1. Limpiar líneas rojas del frame anterior
@@ -473,6 +485,7 @@ namespace VB6VisualMockupDesigner.Controls
 
         private void DesignSurface_MouseDown(object sender, MouseButtonEventArgs e)
         {
+            if (IsRunMode) return;
             // Si hacemos clic directo en el fondo
             if (e.Source == DesignSurface)
             {
@@ -495,6 +508,8 @@ namespace VB6VisualMockupDesigner.Controls
 
         private void DesignSurface_MouseMove(object sender, MouseEventArgs e)
         {
+            if (IsRunMode) return;
+
             if (_isSelectingArea)
             {
                 Point currentPos = e.GetPosition(DesignSurface);
@@ -513,6 +528,8 @@ namespace VB6VisualMockupDesigner.Controls
 
         private void DesignSurface_MouseUp(object sender, MouseButtonEventArgs e)
         {
+            if (IsRunMode) return;
+
             if (_isSelectingArea)
             {
                 _isSelectingArea = false;
@@ -857,6 +874,13 @@ namespace VB6VisualMockupDesigner.Controls
 
         private void DesignSurface_DragOver(object sender, DragEventArgs e)
         {
+            if (IsRunMode)
+            {
+                e.Effects = DragDropEffects.None;
+                e.Handled = true;
+                return;
+            }
+
             // Validar si el dato es válido
             if (e.Data.GetDataPresent("ControlToolboxItem"))
             {
@@ -1583,13 +1607,20 @@ namespace VB6VisualMockupDesigner.Controls
         // Evento inteligente: Se ejecuta justo antes de mostrar el menú
         private void ContextMenu_Opened(object sender, RoutedEventArgs e)
         {
+
+            if (IsRunMode)
+            {
+                var menuRm = sender as ContextMenu;
+                if (menuRm != null)
+                {
+                    menuRm.IsOpen = false;
+                    e.Handled = true;
+                }
+            }
+
             var menu = sender as ContextMenu;
             if (menu == null) return;
 
-            // 1. Gestionar opción de Bloqueo/Desbloqueo
-            // Buscamos el item por nombre (definido en XAML como x:Name="MnuLockItem")
-            // Nota: En WPF a veces es difícil acceder por nombre dentro de templates, 
-            // así que lo buscamos en la colección de items.
 
             foreach (var item in menu.Items)
             {

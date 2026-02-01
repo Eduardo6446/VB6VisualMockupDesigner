@@ -439,7 +439,54 @@
         <Border Grid.Row="1" Background="{DynamicResource AppBackground}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1">
             <StackPanel Orientation="Horizontal" Margin="5,0" VerticalAlignment="Center">
 
-                
+
+                <ToggleButton x:Name="BtnRunMode"
+              Style="{StaticResource ToolbarToggleBtnStyle}"
+              ToolTip="Modo Ejecución (F5)"
+              Click="BtnRunMode_Click"
+              Foreground="{DynamicResource SuccessText}">
+                    <Grid>
+                        <Path x:Name="IconPlay" 
+              Data="M0,0 L12,6 L0,12 Z" 
+              Fill="{DynamicResource SuccessText}" 
+              Height="12" Width="12" Stretch="Uniform"
+              Visibility="Visible"/>
+
+                        <Rectangle x:Name="IconStop"
+                   Width="10" Height="10"
+                   Fill="#E81123"
+                   Visibility="Collapsed"/>
+                    </Grid>
+
+                    <ToggleButton.Triggers>
+                        <EventTrigger RoutedEvent="ToggleButton.Checked">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <ObjectAnimationUsingKeyFrames Storyboard.TargetName="IconPlay" Storyboard.TargetProperty="Visibility">
+                                        <DiscreteObjectKeyFrame KeyTime="0" Value="{x:Static Visibility.Collapsed}"/>
+                                    </ObjectAnimationUsingKeyFrames>
+                                    <ObjectAnimationUsingKeyFrames Storyboard.TargetName="IconStop" Storyboard.TargetProperty="Visibility">
+                                        <DiscreteObjectKeyFrame KeyTime="0" Value="{x:Static Visibility.Visible}"/>
+                                    </ObjectAnimationUsingKeyFrames>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+                        <EventTrigger RoutedEvent="ToggleButton.Unchecked">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <ObjectAnimationUsingKeyFrames Storyboard.TargetName="IconPlay" Storyboard.TargetProperty="Visibility">
+                                        <DiscreteObjectKeyFrame KeyTime="0" Value="{x:Static Visibility.Visible}"/>
+                                    </ObjectAnimationUsingKeyFrames>
+                                    <ObjectAnimationUsingKeyFrames Storyboard.TargetName="IconStop" Storyboard.TargetProperty="Visibility">
+                                        <DiscreteObjectKeyFrame KeyTime="0" Value="{x:Static Visibility.Collapsed}"/>
+                                    </ObjectAnimationUsingKeyFrames>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+                    </ToggleButton.Triggers>
+                </ToggleButton>
+
+                <Border Style="{StaticResource ToolbarSeparator}"/>
 
                 <Button Style="{StaticResource ToolbarBtnStyle}" ToolTip="Guardar (Ctrl+S)" Click="MnuSave_Click">
                     <TextBlock Text="&#xE74E;" FontFamily="Segoe MDL2 Assets" FontSize="14"/>

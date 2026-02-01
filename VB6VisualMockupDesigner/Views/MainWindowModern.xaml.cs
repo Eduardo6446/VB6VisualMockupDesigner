@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel.Design;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -243,9 +244,14 @@ namespace VB6VisualMockupDesigner.Views
 
                 // LÓGICA DE ACTIVACIÓN CORREGIDA
                 // Solo habilitamos el botón si es un DesignerCanvas
-                if (selectedTab.Content is DesignerCanvas)
+                if (selectedTab.Content is DesignerCanvas designer)
                 {
                     UpdateToolboxState(true);
+
+                    if (BtnRunMode != null)
+                    {
+                        BtnRunMode.IsChecked = designer.IsRunMode;
+                    }
                 }
                 else
                 {
@@ -835,6 +841,25 @@ namespace VB6VisualMockupDesigner.Views
                 e.Handled = true;
                 return;
             }
+
+            if (e.Key == Key.F5)
+            {
+                // Simular clic en el botón para aprovechar la lógica visual
+                BtnRunMode.IsChecked = !BtnRunMode.IsChecked;
+                BtnRunMode_Click(BtnRunMode, null);
+                e.Handled = true;
+                return;
+            }
+
+            // IMPORTANTE: Si estamos en Modo Run, BLOQUEAR los atajos de edición
+            if (designer.IsRunMode)
+            {
+                // Si intenta borrar, copiar o mover con flechas, lo ignoramos
+                e.Handled = true;
+                return;
+            }
+
+
 
             // 1. SUPRIMIR (Delete)
             if (e.Key == Key.Delete || e.Key == Key.Back)
@@ -1620,6 +1645,46 @@ namespace VB6VisualMockupDesigner.Views
 
             return true;
         }
+
+
+        private void BtnRunMode_Click(object sender, RoutedEventArgs e)
+        {
+            // Validar que hay designer activo
+            if (MainTabControl.SelectedItem is TabItem tab && tab.Content is DesignerCanvas designer)
+            {
+                // Ejecutar el toggle en el designer
+                designer.ToggleRunMode();
+
+                // Sincronizar estado visual del botón (por si se llamó desde código)
+                BtnRunMode.IsChecked = designer.IsRunMode;
+
+                // Deshabilitar/Habilitar paneles laterales para dar foco total
+                if (designer.IsRunMode)
+                {
+                    // Ocultar toolbox y propiedades para experiencia inmersiva
+                    if (PropertiesPanel.Visibility == Visibility.Visible) TogglePanel(PropertiesPanel, false);
+                    if (SecondaryPanel.Visibility == Visibility.Visible) TogglePanel(SecondaryPanel, false);
+                    // UpdateToolboxState(false); // Opcional
+                }
+                else
+                {
+                    // Restaurar paneles (opcional, o dejar que el usuario los abra)
+                    TogglePanel(PropertiesPanel, true);
+                }
+            }
+            else
+            {
+                // Si no hay designer, desactivar el botón
+                BtnRunMode.IsChecked = false;
+            }
+        }
+
+
+
+
+
+
+
 
 
     }
