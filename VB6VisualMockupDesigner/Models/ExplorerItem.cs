@@ -7,12 +7,25 @@ using System.Text;
 
 namespace VB6VisualMockupDesigner.Models
 {
-
+    /// <summary>
+    /// Defines the type of explorer item (Project, Folder, or File).
+    /// </summary>
     public enum ExplorerItemType { Project, Folder, File }
+    
+    /// <summary>
+    /// Represents an item in the project explorer tree.
+    /// </summary>
     public class ExplorerItem : INotifyPropertyChanged
     {
+        /// <summary>
+        /// Gets or sets the display name of the item.
+        /// </summary>
         public string Name { get; set; }
         private string _fullPath;
+        
+        /// <summary>
+        /// Gets or sets the full file path of the item.
+        /// </summary>
         public string FullPath
         {
             get => _fullPath;
@@ -28,9 +41,20 @@ namespace VB6VisualMockupDesigner.Models
                 }
             }
         }
+        
+        /// <summary>
+        /// Gets or sets the type of explorer item.
+        /// </summary>
         public ExplorerItemType Type { get; set; }
+        
+        /// <summary>
+        /// Gets or sets the collection of child items.
+        /// </summary>
         public ObservableCollection<ExplorerItem> Children { get; set; } = new ObservableCollection<ExplorerItem>();
 
+        /// <summary>
+        /// Gets the icon code based on the item type and file extension.
+        /// </summary>
         // En VB6VisualMockupDesigner.Models.ExplorerItem.cs
 
         public string IconCode
@@ -57,6 +81,10 @@ namespace VB6VisualMockupDesigner.Models
         }
 
         private bool _isExpanded = true;
+        
+        /// <summary>
+        /// Gets or sets whether the tree item is expanded.
+        /// </summary>
         public bool IsExpanded
         {
             get { return _isExpanded; }
@@ -71,6 +99,10 @@ namespace VB6VisualMockupDesigner.Models
         }
 
         private bool _isSelected;
+        
+        /// <summary>
+        /// Gets or sets whether the tree item is selected.
+        /// </summary>
         public bool IsSelected
         {
             get { return _isSelected; }
