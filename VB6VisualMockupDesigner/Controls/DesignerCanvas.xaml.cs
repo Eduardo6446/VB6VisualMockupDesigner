@@ -18,8 +18,14 @@ namespace VB6VisualMockupDesigner.Controls
     /// </summary>
     public partial class DesignerCanvas : UserControl
     {
-
+        /// <summary>
+        /// Raised when the IsDirty state changes.
+        /// </summary>
         public event EventHandler IsDirtyChanged;
+        
+        /// <summary>
+        /// Gets a value indicating whether the designer is in run mode.
+        /// </summary>
         public bool IsRunMode { get; private set; } = false;
         private Visibility _previousGridVisibility;
 
@@ -40,14 +46,23 @@ namespace VB6VisualMockupDesigner.Controls
 
         }
 
+        /// <summary>
+        /// Raised when a control is selected in the designer.
+        /// </summary>
         public event EventHandler<FrameworkElement> ControlSelected;
 
+        /// <summary>
+        /// Gets or sets the form title.
+        /// </summary>
         public string FormTitle
         {
             get { return FormTitleText.Text; }
             set { FormTitleText.Text = value; }
         }
 
+        /// <summary>
+        /// Gets the design surface canvas.
+        /// </summary>
         public Canvas GetDesignSurface()
         {
             return DesignSurface;
@@ -62,6 +77,9 @@ namespace VB6VisualMockupDesigner.Controls
             MainScrollViewer.ScrollToVerticalOffset(vOff);
         }
 
+        /// <summary>
+        /// Centers the form on the canvas by adjusting scroll position.
+        /// </summary>
         // ============================
         // LÓGICA DE CENTRADO (NUEVO)
         // ============================
@@ -108,16 +126,19 @@ namespace VB6VisualMockupDesigner.Controls
         // CONTROL DE ESTADO (DIRTY)
         // ============================
 
-        
-
         private bool _isDirty;
+        
+        /// <summary>
+        /// Gets a value indicating whether the canvas has unsaved changes.
+        /// </summary>
         public bool IsDirty
         {
             get { return _currentVersionId != _savedVersionId; }
         }
 
-
-
+        /// <summary>
+        /// Marks the canvas as clean (no unsaved changes).
+        /// </summary>
         public void MarkAsClean()
         {
             _currentVersionId = Guid.NewGuid(); // Generamos identidad inicial
@@ -137,6 +158,9 @@ namespace VB6VisualMockupDesigner.Controls
             CheckDirtyStatus();
         }
 
+        /// <summary>
+        /// Clears all controls from the canvas.
+        /// </summary>
         public void ClearCanvas()
         {
             // 1. Limpiar hijos visuales
@@ -260,8 +284,15 @@ namespace VB6VisualMockupDesigner.Controls
             }
         }
 
+        /// <summary>
+        /// Gets or sets the current menu items.
+        /// </summary>
         public List<MenuModel> CurrentMenus { get; set; } = new List<MenuModel>();
 
+        /// <summary>
+        /// Renders the VB6 menu items in the menu area.
+        /// </summary>
+        /// <param name="menuItems">The list of menu items to render.</param>
         public void RenderMenus(List<MenuModel> menuItems)
         {
             this.CurrentMenus = menuItems;
@@ -333,6 +364,9 @@ namespace VB6VisualMockupDesigner.Controls
         }
 
 
+        /// <summary>
+        /// Toggles between design mode and run mode.
+        /// </summary>
         public void ToggleRunMode()
         {
             IsRunMode = !IsRunMode;

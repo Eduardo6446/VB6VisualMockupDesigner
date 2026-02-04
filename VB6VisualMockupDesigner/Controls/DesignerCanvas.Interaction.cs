@@ -15,48 +15,113 @@ using System;
 
 namespace VB6VisualMockupDesigner.Controls
 {
-
+    /// <summary>
+    /// Provides attached properties for VB6-specific control data.
+    /// </summary>
     public static class VB6Data
     {
+        /// <summary>
+        /// Dependency property for control array index.
+        /// </summary>
         public static readonly DependencyProperty IndexProperty =
             DependencyProperty.RegisterAttached("Index", typeof(int?), typeof(VB6Data), new PropertyMetadata(null));
 
+        /// <summary>
+        /// Sets the control array index.
+        /// </summary>
         public static void SetIndex(DependencyObject element, int? value) => element.SetValue(IndexProperty, value);
 
+        /// <summary>
+        /// Gets the control array index.
+        /// </summary>
         public static int? GetIndex(DependencyObject element) => (int?)element.GetValue(IndexProperty);
 
 
+        /// <summary>
+        /// Dependency property for locked state.
+        /// </summary>
         public static readonly DependencyProperty IsLockedProperty =
             DependencyProperty.RegisterAttached("IsLocked", typeof(bool), typeof(VB6Data), new PropertyMetadata(false));
 
+        /// <summary>
+        /// Sets whether the control is locked.
+        /// </summary>
         public static void SetIsLocked(DependencyObject element, bool value) => element.SetValue(IsLockedProperty, value);
+        
+        /// <summary>
+        /// Gets whether the control is locked.
+        /// </summary>
         public static bool GetIsLocked(DependencyObject element) => (bool)element.GetValue(IsLockedProperty);
 
+        /// <summary>
+        /// Dependency property for custom tag value.
+        /// </summary>
         public static readonly DependencyProperty TagProperty =
     DependencyProperty.RegisterAttached("Tag", typeof(string), typeof(VB6Data), new PropertyMetadata(null));
+        
+        /// <summary>
+        /// Sets the custom tag value.
+        /// </summary>
         public static void SetTag(DependencyObject element, string value) => element.SetValue(TagProperty, value);
+        
+        /// <summary>
+        /// Gets the custom tag value.
+        /// </summary>
         public static string GetTag(DependencyObject element) => (string)element.GetValue(TagProperty);
 
+        /// <summary>
+        /// Dependency property for password character.
+        /// </summary>
         public static readonly DependencyProperty PasswordCharProperty =
         DependencyProperty.RegisterAttached("PasswordChar", typeof(string), typeof(VB6Data), new PropertyMetadata(""));
 
+        /// <summary>
+        /// Sets the password character.
+        /// </summary>
         public static void SetPasswordChar(DependencyObject element, string value) => element.SetValue(PasswordCharProperty, value);
+        
+        /// <summary>
+        /// Gets the password character.
+        /// </summary>
         public static string GetPasswordChar(DependencyObject element) => (string)element.GetValue(PasswordCharProperty);
 
+        /// <summary>
+        /// Dependency property for tab enabled state.
+        /// </summary>
         public static readonly DependencyProperty TabEnabledProperty =
         DependencyProperty.RegisterAttached("TabEnabled", typeof(bool), typeof(VB6Data), new PropertyMetadata(true));
 
+        /// <summary>
+        /// Sets whether the tab is enabled.
+        /// </summary>
         public static void SetTabEnabled(DependencyObject element, bool value) => element.SetValue(TabEnabledProperty, value);
+        
+        /// <summary>
+        /// Gets whether the tab is enabled.
+        /// </summary>
         public static bool GetTabEnabled(DependencyObject element) => (bool)element.GetValue(TabEnabledProperty);
 
+        /// <summary>
+        /// Dependency property for tab visible state.
+        /// </summary>
         // 2. Memoria para TAB VISIBLE
         public static readonly DependencyProperty TabVisibleProperty =
             DependencyProperty.RegisterAttached("TabVisible", typeof(bool), typeof(VB6Data), new PropertyMetadata(true));
 
+        /// <summary>
+        /// Sets whether the tab is visible.
+        /// </summary>
         public static void SetTabVisible(DependencyObject element, bool value) => element.SetValue(TabVisibleProperty, value);
+        
+        /// <summary>
+        /// Gets whether the tab is visible.
+        /// </summary>
         public static bool GetTabVisible(DependencyObject element) => (bool)element.GetValue(TabVisibleProperty);
     }
 
+    /// <summary>
+    /// Defines the resize directions for control resizing.
+    /// </summary>
     public enum ResizeDirection { None, TopLeft, Top, TopRight, Right, BottomRight, Bottom, BottomLeft, Left }
 
 
