@@ -11,10 +11,16 @@ using VB6VisualMockupDesigner.Services;
 
 namespace VB6VisualMockupDesigner.Helpers
 {
-    
-
+    /// <summary>
+    /// Parses VB6 project files (.vbp) and creates a project tree structure.
+    /// </summary>
     public static class VbpParser
     {
+        /// <summary>
+        /// Parses a VB6 project file and creates an explorer item tree.
+        /// </summary>
+        /// <param name="vbpPath">The path to the .vbp file.</param>
+        /// <returns>An ExplorerItem representing the project structure, or null if the file is invalid.</returns>
         public static ExplorerItem ParseProject(string vbpPath)
         {
             // 1. Validación básica para evitar crash por ruta nula o inexistente

@@ -11,6 +11,10 @@ namespace VB6VisualMockupDesigner.Converters
     // =========================================================
     // CONVERTER 1: Para el ListBox de la Ventana (Maneja objetos FontFamily)
     // =========================================================
+    
+    /// <summary>
+    /// Converts a FontFamily object to its display name.
+    /// </summary>
     public class FontFamilyToNameConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
@@ -45,6 +49,10 @@ namespace VB6VisualMockupDesigner.Converters
     // =========================================================
     // CONVERTER 2: Para el Panel de Propiedades (Maneja Strings)
     // =========================================================
+    
+    /// <summary>
+    /// Converts a font string to its display format.
+    /// </summary>
     public class FontStringConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)

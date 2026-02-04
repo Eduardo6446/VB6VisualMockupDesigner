@@ -12,13 +12,18 @@ using VB6VisualMockupDesigner.Views;
 
 namespace VB6VisualMockupDesigner.Services
 {
+    /// <summary>
+    /// Manages recent files list for the application, storing them in a JSON file.
+    /// </summary>
     public static class RecentFilesManager
     {
         private const string AppName = "VB6VisualMockupDesigner";
         private const string FileName = "recent_files.json";
         private const int MaxRecentFiles = 10;
 
-        // Obtiene la ruta: C:\Users\Usuario\AppData\Roaming\VB6VisualMockupDesigner\recent_files.json
+        /// <summary>
+        /// Obtiene la ruta: C:\Users\Usuario\AppData\Roaming\VB6VisualMockupDesigner\recent_files.json
+        /// </summary>
         private static string GetFilePath()
         {
             string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
@@ -32,6 +37,10 @@ namespace VB6VisualMockupDesigner.Services
             return Path.Combine(folder, FileName);
         }
 
+        /// <summary>
+        /// Loads the list of recent files from the JSON storage file.
+        /// </summary>
+        /// <returns>A list of recent files, or an empty list if the file doesn't exist or is corrupted.</returns>
         public static List<RecentFile> LoadRecents()
         {
             string path = GetFilePath();
@@ -49,6 +58,10 @@ namespace VB6VisualMockupDesigner.Services
             }
         }
 
+        /// <summary>
+        /// Adds a file to the recent files list. If the file already exists, it's moved to the top.
+        /// </summary>
+        /// <param name="fullPath">The full path of the file to add to the recent files list.</param>
         public static void AddToRecents(string fullPath)
         {
             if (string.IsNullOrWhiteSpace(fullPath) || !File.Exists(fullPath)) return;

@@ -9,6 +9,9 @@ using VB6VisualMockupDesigner.Controls; // Necesario para VB6Data
 
 namespace VB6VisualMockupDesigner.Helpers
 {
+    /// <summary>
+    /// Manages property grids and property items for VB6 controls.
+    /// </summary>
     public static class PropertyManager
     {
         // ==========================================
@@ -32,6 +35,12 @@ namespace VB6VisualMockupDesigner.Helpers
         // ==========================================
         // 1. OBTENER PROPIEDADES (LECTURA)
         // ==========================================
+        
+        /// <summary>
+        /// Gets a list of property items for a given control.
+        /// </summary>
+        /// <param name="ctrl">The control to get properties for.</param>
+        /// <returns>A list of PropertyItem objects representing the control's properties.</returns>
         public static List<PropertyItem> GetPropertiesFor(FrameworkElement ctrl)
         {
             var list = new List<PropertyItem>();
@@ -466,6 +475,12 @@ namespace VB6VisualMockupDesigner.Helpers
         // ==========================================
         // 2. APLICAR PROPIEDADES (ESCRITURA)
         // ==========================================
+        
+        /// <summary>
+        /// Applies a property value to a control based on a PropertyItem.
+        /// </summary>
+        /// <param name="ctrl">The control to apply the property to.</param>
+        /// <param name="item">The property item containing the property name and value.</param>
         public static void ApplyProperty(FrameworkElement ctrl, PropertyItem item)
         {
             string val = item.Value?.ToString();
@@ -1099,6 +1114,12 @@ namespace VB6VisualMockupDesigner.Helpers
             }
         }
 
+        /// <summary>
+        /// Applies a property value to a control by name.
+        /// </summary>
+        /// <param name="control">The control to apply the property to.</param>
+        /// <param name="propName">The name of the property.</param>
+        /// <param name="value">The value to apply.</param>
         public static void ApplyProperty(FrameworkElement control, string propName, string value)
         {
             var tempItem = new PropertyItem
