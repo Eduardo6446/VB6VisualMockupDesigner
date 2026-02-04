@@ -250,7 +250,7 @@ namespace VB6VisualMockupDesigner.Helpers
         }
 
         /// <summary>
-        /// Helper para leer settings de forma segura
+        /// Helper method to safely read settings.
         /// </summary>
         private static string GetSetting(string key, string defaultHex)
         {
