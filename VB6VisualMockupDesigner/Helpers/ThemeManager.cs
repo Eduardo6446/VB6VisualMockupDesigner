@@ -3,8 +3,14 @@ using System.Windows.Media;
 
 namespace VB6VisualMockupDesigner.Helpers
 {
+    /// <summary>
+    /// Manages application themes and color schemes.
+    /// </summary>
     public static class ThemeManager
     {
+        /// <summary>
+        /// Defines available theme types for the application.
+        /// </summary>
         public enum ThemeType
         {
             Dark,
@@ -16,8 +22,15 @@ namespace VB6VisualMockupDesigner.Helpers
             Blueprint
         }
 
+        /// <summary>
+        /// Gets the currently active theme.
+        /// </summary>
         public static ThemeType CurrentTheme { get; private set; } = ThemeType.Dark;
 
+        /// <summary>
+        /// Applies the specified theme to the application.
+        /// </summary>
+        /// <param name="theme">The theme to apply.</param>
         public static void ApplyTheme(ThemeType theme)
         {
             CurrentTheme = theme;
@@ -236,7 +249,9 @@ namespace VB6VisualMockupDesigner.Helpers
             }
         }
 
-        // Helper para leer settings de forma segura
+        /// <summary>
+        /// Helper method to safely read settings.
+        /// </summary>
         private static string GetSetting(string key, string defaultHex)
         {
             try
@@ -260,6 +275,11 @@ namespace VB6VisualMockupDesigner.Helpers
             }
         }
 
+        /// <summary>
+        /// Updates a single color resource in the application.
+        /// </summary>
+        /// <param name="resourceKey">The resource key to update.</param>
+        /// <param name="hexColor">The hex color value.</param>
         public static void UpdateSingleColor(string resourceKey, string hexColor)
         {
             try

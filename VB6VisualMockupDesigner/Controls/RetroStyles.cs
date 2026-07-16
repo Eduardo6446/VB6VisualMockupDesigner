@@ -8,10 +8,18 @@ using System.Windows.Media;
 
 namespace VB6VisualMockupDesigner.Controls
 {
+    /// <summary>
+    /// Provides retro VB6-style control templates and styles.
+    /// </summary>
     internal class RetroStyles
     {
 
         private static Style _threed32ButtonStyle;
+        
+        /// <summary>
+        /// Gets the Threed32 (3D) button style.
+        /// </summary>
+        /// <returns>A Style object for Threed32 buttons.</returns>
         public static Style GetCustomThreed32Style()
         {
             if (_threed32ButtonStyle != null) return _threed32ButtonStyle;
@@ -106,6 +114,10 @@ namespace VB6VisualMockupDesigner.Controls
 
         private static Style _threed32CheckStyle;
 
+        /// <summary>
+        /// Gets the Threed32 (3D) checkbox style.
+        /// </summary>
+        /// <returns>A Style object for Threed32 checkboxes.</returns>
         public static Style GetCustomThreed32CheckStyle()
         {
             if (_threed32CheckStyle != null) return _threed32CheckStyle;
@@ -193,7 +205,11 @@ namespace VB6VisualMockupDesigner.Controls
         }
 
         private static Style _threed32OptionStyle;
-
+        
+        /// <summary>
+        /// Gets the Threed32 (3D) option button (radio button) style.
+        /// </summary>
+        /// <returns>A Style object for Threed32 option buttons.</returns>
         public static Style GetCustomThreed32OptionStyle()
         {
             if (_threed32OptionStyle != null) return _threed32OptionStyle;
@@ -286,7 +302,11 @@ namespace VB6VisualMockupDesigner.Controls
         }
 
         private static Style _vb6TextBoxStyle;
-
+        
+        /// <summary>
+        /// Gets the VB6-style TextBox style.
+        /// </summary>
+        /// <returns>A Style object for VB6 TextBox controls.</returns>
         public static Style GetVB6TextBoxStyle()
         {
             if (_vb6TextBoxStyle != null) return _vb6TextBoxStyle;
@@ -535,6 +555,10 @@ namespace VB6VisualMockupDesigner.Controls
 
         private static Style _vb6FixedLabelStyle;
 
+        /// <summary>
+        /// Gets the VB6-style fixed label style with 3D border.
+        /// </summary>
+        /// <returns>A Style object for VB6 fixed labels.</returns>
         public static Style GetVB6FixedLabelStyle()
         {
             if (_vb6FixedLabelStyle != null) return _vb6FixedLabelStyle;
@@ -605,6 +629,10 @@ namespace VB6VisualMockupDesigner.Controls
 
         private static Style _vb6MenuStyle;
 
+        /// <summary>
+        /// Gets the VB6-style menu style.
+        /// </summary>
+        /// <returns>A Style object for VB6 menu items.</returns>
         public static Style GetVB6MenuStyle()
         {
             if (_vb6MenuStyle != null) return _vb6MenuStyle;
@@ -721,6 +749,10 @@ namespace VB6VisualMockupDesigner.Controls
 
         private static Style _ssTabStyle;
 
+        /// <summary>
+        /// Gets the SSTab (Sheridan Tab) control style.
+        /// </summary>
+        /// <returns>A Style object for SSTab controls.</returns>
         public static Style GetSSTabStyle()
         {
             if (_ssTabStyle != null) return _ssTabStyle;

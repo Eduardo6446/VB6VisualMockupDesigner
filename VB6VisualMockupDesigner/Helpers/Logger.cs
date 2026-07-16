@@ -3,6 +3,9 @@ using System.IO;
 
 namespace VB6VisualMockupDesigner.Helpers
 {
+    /// <summary>
+    /// Provides logging functionality for the application, writing logs to daily files.
+    /// </summary>
     public static class Logger
     {
         private static string _logPath;
@@ -22,6 +25,11 @@ namespace VB6VisualMockupDesigner.Helpers
             _logPath = Path.Combine(folder, fileName);
         }
 
+        /// <summary>
+        /// Logs a message to the daily log file with timestamp and type.
+        /// </summary>
+        /// <param name="message">The message to log.</param>
+        /// <param name="type">The type of log message (default: "INFO").</param>
         public static void Log(string message, string type = "INFO")
         {
             try
@@ -40,6 +48,11 @@ namespace VB6VisualMockupDesigner.Helpers
             }
         }
 
+        /// <summary>
+        /// Logs an exception with context information, including stack trace.
+        /// </summary>
+        /// <param name="context">The context where the error occurred.</param>
+        /// <param name="ex">The exception to log.</param>
         public static void LogError(string context, Exception ex)
         {
             string msg = $"ERROR en {context}: {ex.Message}";

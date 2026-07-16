@@ -7,6 +7,9 @@ using System.Windows.Shapes;
 
 namespace VB6VisualMockupDesigner.Controls
 {
+    /// <summary>
+    /// Factory class for creating VB6-style controls with retro styling.
+    /// </summary>
     public static class RetroControlFactory
     {
         // =========================================================
@@ -28,6 +31,12 @@ namespace VB6VisualMockupDesigner.Controls
         // =========================================================
         // MÉTODO PRINCIPAL: FABRICA DE CONTROLES
         // =========================================================
+        
+        /// <summary>
+        /// Creates a VB6-style control of the specified type.
+        /// </summary>
+        /// <param name="type">The type of control to create (e.g., "Label", "TextBox", "CommandButton").</param>
+        /// <returns>A UIElement representing the created control, or null if the type is invalid.</returns>
         public static UIElement Create(string type)
         {
             FrameworkElement element = null;

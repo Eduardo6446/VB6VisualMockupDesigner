@@ -10,10 +10,18 @@ using VB6VisualMockupDesigner.Models;
 
 namespace VB6VisualMockupDesigner.Helpers
 {
+    /// <summary>
+    /// Provides helper methods for parsing and converting VB6 forms and properties.
+    /// </summary>
     public static class Vb6Helpers
     {
         private const double TwipsPerPixel = 15.0;
 
+        /// <summary>
+        /// Parses a VB6 form file content and creates a control model hierarchy.
+        /// </summary>
+        /// <param name="fileContent">The content of the VB6 .frm file.</param>
+        /// <returns>A VbControlModel representing the form and its controls.</returns>
         public static VbControlModel ParseVb6Form(string fileContent)
         {
             using (StringReader reader = new StringReader(fileContent))
@@ -152,6 +160,9 @@ namespace VB6VisualMockupDesigner.Helpers
             return props;
         }
 
+        /// <summary>
+        /// Builds a font string from a dictionary of font properties.
+        /// </summary>
         private static string BuildFontString(Dictionary<string, string> fontProps)
         {
             string name = fontProps.ContainsKey("Name") ? fontProps["Name"] : "Microsoft Sans Serif";
@@ -168,18 +179,34 @@ namespace VB6VisualMockupDesigner.Helpers
             return $"{name}; {size}pt{stylePart}";
         }
 
+        /// <summary>
+        /// Converts twips measurement to pixels.
+        /// </summary>
+        /// <param name="twipsVal">The twips value as a string.</param>
+        /// <returns>The equivalent value in pixels.</returns>
         public static double TwipsToPixels(string twipsVal)
         {
             if (double.TryParse(twipsVal, NumberStyles.Any, CultureInfo.InvariantCulture, out double t)) return t / TwipsPerPixel;
             return 0;
         }
 
+        /// <summary>
+        /// Converts pixels to twips measurement.
+        /// </summary>
+        /// <param name="pixels">The pixel value.</param>
+        /// <returns>The equivalent value in twips.</returns>
         public static long PixelsToTwips(double pixels)
         {
             if (double.IsNaN(pixels)) return 0;
             return (long)Math.Round(pixels * TwipsPerPixel);
         }
 
+        /// <summary>
+        /// Gets a property value from a VB control model.
+        /// </summary>
+        /// <param name="model">The control model.</param>
+        /// <param name="propName">The property name.</param>
+        /// <returns>The property value or "0" if not found.</returns>
         public static string GetPropVal(VbControlModel model, string propName)
         {
             return model.Properties.ContainsKey(propName) ? model.Properties[propName] : "0";
