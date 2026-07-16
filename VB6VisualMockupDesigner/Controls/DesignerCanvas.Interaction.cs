@@ -138,12 +138,21 @@ namespace VB6VisualMockupDesigner.Controls
 
         private readonly HashSet<UIElement> _selectedControls = new HashSet<UIElement>();
         private Dictionary<UIElement, Border> _selectionAdorners = new Dictionary<UIElement, Border>();
-        private Dictionary<UIElement, Point> _initialPositions = new Dictionary<UIElement, Point>();
+        private sealed class DragState
+        {
+            public double BaseLeft { get; set; }
+            public double BaseTop { get; set; }
+            public TranslateTransform DragTransform { get; set; }
+        }
+
+        private readonly Dictionary<UIElement, DragState> _dragStates = new Dictionary<UIElement, DragState>();
 
         //private List<string> _clipboardControls = new List<string>();
 
         private bool _isDragging = false;
         private Point _dragStartPoint;
+        private DateTime _nextDragFrameAtUtc = DateTime.MinValue;
+        private static readonly TimeSpan DragFrameInterval = TimeSpan.FromMilliseconds(16);
 
         // Variables de Redimensión
         private List<Rectangle> _resizeHandles = new List<Rectangle>();
@@ -215,6 +224,110 @@ namespace VB6VisualMockupDesigner.Controls
                 if (!VB6Data.GetIsLocked(ctrl)) return false; // Encontró uno desbloqueado
             }
             return true; // Todos están bloqueados
+        }
+
+        private void AttachControlInteractionHandlers(UIElement control)
+        {
+            control.PreviewMouseDown -= Control_PreviewMouseDown;
+            control.PreviewMouseMove -= Control_PreviewMouseMove;
+            control.PreviewMouseUp -= Control_PreviewMouseUp;
+            control.LostMouseCapture -= Control_LostMouseCapture;
+
+            control.PreviewMouseDown += Control_PreviewMouseDown;
+            control.PreviewMouseMove += Control_PreviewMouseMove;
+            control.PreviewMouseUp += Control_PreviewMouseUp;
+            control.LostMouseCapture += Control_LostMouseCapture;
+        }
+
+        private void DetachControlInteractionHandlers(UIElement control)
+        {
+            control.PreviewMouseDown -= Control_PreviewMouseDown;
+            control.PreviewMouseMove -= Control_PreviewMouseMove;
+            control.PreviewMouseUp -= Control_PreviewMouseUp;
+            control.LostMouseCapture -= Control_LostMouseCapture;
+        }
+
+        private static TranslateTransform EnsureDragTransform(UIElement element)
+        {
+            if (element.RenderTransform is TranslateTransform translate)
+            {
+                return translate;
+            }
+
+            if (element.RenderTransform is TransformGroup group)
+            {
+                var existing = group.Children.OfType<TranslateTransform>().FirstOrDefault();
+                if (existing != null)
+                {
+                    return existing;
+                }
+
+                var newTranslate = new TranslateTransform();
+                group.Children.Add(newTranslate);
+                return newTranslate;
+            }
+
+            var newGroup = new TransformGroup();
+            if (!(element.RenderTransform is MatrixTransform mt && mt.Matrix.IsIdentity))
+            {
+                newGroup.Children.Add(element.RenderTransform);
+            }
+
+            var dragTranslate = new TranslateTransform();
+            newGroup.Children.Add(dragTranslate);
+            element.RenderTransform = newGroup;
+            return dragTranslate;
+        }
+
+        private static double GetCanvasLeft(UIElement element)
+        {
+            double left = Canvas.GetLeft(element);
+            return double.IsNaN(left) ? 0.0 : left;
+        }
+
+        private static double GetCanvasTop(UIElement element)
+        {
+            double top = Canvas.GetTop(element);
+            return double.IsNaN(top) ? 0.0 : top;
+        }
+
+        private void CommitDrag(FrameworkElement captureOwner)
+        {
+            if (!_isDragging) return;
+            _isDragging = false;
+
+            foreach (var entry in _dragStates)
+            {
+                if (entry.Key is not FrameworkElement fe) continue;
+
+                var state = entry.Value;
+                double newLeft = state.BaseLeft + state.DragTransform.X;
+                double newTop = state.BaseTop + state.DragTransform.Y;
+
+                Canvas.SetLeft(fe, newLeft);
+                Canvas.SetTop(fe, newTop);
+                state.DragTransform.X = 0;
+                state.DragTransform.Y = 0;
+            }
+
+            _dragStates.Clear();
+            _nextDragFrameAtUtc = DateTime.MinValue;
+
+            if (captureOwner != null && captureOwner.IsMouseCaptured)
+            {
+                captureOwner.ReleaseMouseCapture();
+            }
+        }
+
+        private void Control_LostMouseCapture(object sender, MouseEventArgs e)
+        {
+            if (sender is FrameworkElement control)
+            {
+                CommitDrag(control);
+                SnapLineOverlay?.Children.Clear();
+                HideInfoTip();
+                UpdateSelectionVisuals();
+            }
         }
 
 
@@ -335,11 +448,21 @@ namespace VB6VisualMockupDesigner.Controls
             _isDragging = true;
             _dragStartPoint = e.GetPosition(DesignSurface);
             _hasSavedUndoForDrag = false;
+            _nextDragFrameAtUtc = DateTime.MinValue;
 
-            _initialPositions.Clear();
+            _dragStates.Clear();
             foreach (var item in _selectedControls)
             {
-                _initialPositions[item] = new Point(Canvas.GetLeft(item), Canvas.GetTop(item));
+                var dragTransform = EnsureDragTransform(item);
+                dragTransform.X = 0;
+                dragTransform.Y = 0;
+
+                _dragStates[item] = new DragState
+                {
+                    BaseLeft = GetCanvasLeft(item),
+                    BaseTop = GetCanvasTop(item),
+                    DragTransform = dragTransform
+                };
             }
 
             // Capturamos el mouse para que el arrastre sea fluido aunque salgamos del control rápido
@@ -355,6 +478,10 @@ namespace VB6VisualMockupDesigner.Controls
 
             if (_isDragging && _selectedControls.Count > 0)
             {
+                var now = DateTime.UtcNow;
+                if (now < _nextDragFrameAtUtc) return;
+                _nextDragFrameAtUtc = now + DragFrameInterval;
+
                 // 1. Limpiar líneas rojas del frame anterior
                 if (SnapLineOverlay != null) SnapLineOverlay.Children.Clear();
 
@@ -374,11 +501,11 @@ namespace VB6VisualMockupDesigner.Controls
                 if (_selectedControls.Count == 1)
                 {
                     var activeCtrl = _selectedControls.First() as FrameworkElement;
-                    if (_initialPositions.TryGetValue(activeCtrl, out Point startPos))
+                    if (_dragStates.TryGetValue(activeCtrl, out DragState startState))
                     {
                         // Coordenadas propuestas
-                        double pLeft = startPos.X + rawDeltaX;
-                        double pTop = startPos.Y + rawDeltaY;
+                        double pLeft = startState.BaseLeft + rawDeltaX;
+                        double pTop = startState.BaseTop + rawDeltaY;
                         double pRight = pLeft + activeCtrl.ActualWidth;
                         double pBottom = pTop + activeCtrl.ActualHeight;
 
@@ -390,8 +517,8 @@ namespace VB6VisualMockupDesigner.Controls
 
                             if (child is FrameworkElement target && target.Visibility == Visibility.Visible)
                             {
-                                double tLeft = Canvas.GetLeft(target);
-                                double tTop = Canvas.GetTop(target);
+                                double tLeft = GetCanvasLeft(target);
+                                double tTop = GetCanvasTop(target);
                                 double tRight = tLeft + target.ActualWidth;
                                 double tBottom = tTop + target.ActualHeight;
 
@@ -401,28 +528,28 @@ namespace VB6VisualMockupDesigner.Controls
                                     // Izquierda con Izquierda
                                     if (Math.Abs(pLeft - tLeft) < snapThreshold)
                                     {
-                                        correctedDeltaX = tLeft - startPos.X;
+                                        correctedDeltaX = tLeft - startState.BaseLeft;
                                         DrawSnapLine(tLeft, Math.Min(pTop, tTop), tLeft, Math.Max(pBottom, tBottom));
                                         snappedX = true;
                                     }
                                     // Izquierda con Derecha (Mi Izq toca su Der)
                                     else if (Math.Abs(pLeft - tRight) < snapThreshold)
                                     {
-                                        correctedDeltaX = tRight - startPos.X;
+                                        correctedDeltaX = tRight - startState.BaseLeft;
                                         DrawSnapLine(tRight, Math.Min(pTop, tTop), tRight, Math.Max(pBottom, tBottom));
                                         snappedX = true;
                                     }
                                     // Derecha con Derecha
                                     else if (Math.Abs(pRight - tRight) < snapThreshold)
                                     {
-                                        correctedDeltaX = (tRight - activeCtrl.ActualWidth) - startPos.X;
+                                        correctedDeltaX = (tRight - activeCtrl.ActualWidth) - startState.BaseLeft;
                                         DrawSnapLine(tRight, Math.Min(pTop, tTop), tRight, Math.Max(pBottom, tBottom));
                                         snappedX = true;
                                     }
                                     // Derecha con Izquierda (Mi Der toca su Izq)
                                     else if (Math.Abs(pRight - tLeft) < snapThreshold)
                                     {
-                                        correctedDeltaX = (tLeft - activeCtrl.ActualWidth) - startPos.X;
+                                        correctedDeltaX = (tLeft - activeCtrl.ActualWidth) - startState.BaseLeft;
                                         DrawSnapLine(tLeft, Math.Min(pTop, tTop), tLeft, Math.Max(pBottom, tBottom));
                                         snappedX = true;
                                     }
@@ -434,28 +561,28 @@ namespace VB6VisualMockupDesigner.Controls
                                     // Top con Top
                                     if (Math.Abs(pTop - tTop) < snapThreshold)
                                     {
-                                        correctedDeltaY = tTop - startPos.Y;
+                                        correctedDeltaY = tTop - startState.BaseTop;
                                         DrawSnapLine(Math.Min(pLeft, tLeft), tTop, Math.Max(pRight, tRight), tTop);
                                         snappedY = true;
                                     }
                                     // Top con Bottom
                                     else if (Math.Abs(pTop - tBottom) < snapThreshold)
                                     {
-                                        correctedDeltaY = tBottom - startPos.Y;
+                                        correctedDeltaY = tBottom - startState.BaseTop;
                                         DrawSnapLine(Math.Min(pLeft, tLeft), tBottom, Math.Max(pRight, tRight), tBottom);
                                         snappedY = true;
                                     }
                                     // Bottom con Bottom
                                     else if (Math.Abs(pBottom - tBottom) < snapThreshold)
                                     {
-                                        correctedDeltaY = (tBottom - activeCtrl.ActualHeight) - startPos.Y;
+                                        correctedDeltaY = (tBottom - activeCtrl.ActualHeight) - startState.BaseTop;
                                         DrawSnapLine(Math.Min(pLeft, tLeft), tBottom, Math.Max(pRight, tRight), tBottom);
                                         snappedY = true;
                                     }
                                     // Bottom con Top
                                     else if (Math.Abs(pBottom - tTop) < snapThreshold)
                                     {
-                                        correctedDeltaY = (tTop - activeCtrl.ActualHeight) - startPos.Y;
+                                        correctedDeltaY = (tTop - activeCtrl.ActualHeight) - startState.BaseTop;
                                         DrawSnapLine(Math.Min(pLeft, tLeft), tTop, Math.Max(pRight, tRight), tTop);
                                         snappedY = true;
                                     }
@@ -483,22 +610,35 @@ namespace VB6VisualMockupDesigner.Controls
                 if (double.IsNaN(formWidth)) formWidth = WindowResizerGrid.ActualWidth;
                 if (double.IsNaN(formHeight)) formHeight = WindowResizerGrid.ActualHeight;
 
+                double minAllowedDeltaX = double.NegativeInfinity;
+                double maxAllowedDeltaX = double.PositiveInfinity;
+                double minAllowedDeltaY = double.NegativeInfinity;
+                double maxAllowedDeltaY = double.PositiveInfinity;
+
+                foreach (var control in _selectedControls.OfType<FrameworkElement>())
+                {
+                    if (!_dragStates.TryGetValue(control, out DragState dragState)) continue;
+
+                    minAllowedDeltaX = Math.Max(minAllowedDeltaX, -dragState.BaseLeft);
+                    maxAllowedDeltaX = Math.Min(maxAllowedDeltaX, formWidth - control.ActualWidth - dragState.BaseLeft);
+                    minAllowedDeltaY = Math.Max(minAllowedDeltaY, -dragState.BaseTop);
+                    maxAllowedDeltaY = Math.Min(maxAllowedDeltaY, formHeight - control.ActualHeight - dragState.BaseTop);
+                }
+
+                double boundedDeltaX = Math.Max(minAllowedDeltaX, Math.Min(maxAllowedDeltaX, finalDeltaX));
+                double boundedDeltaY = Math.Max(minAllowedDeltaY, Math.Min(maxAllowedDeltaY, finalDeltaY));
+
                 foreach (var control in _selectedControls)
                 {
-                    if (_initialPositions.TryGetValue(control, out Point startPos))
+                    if (_dragStates.TryGetValue(control, out DragState startState))
                     {
                         var fe = control as FrameworkElement;
-                        double newLeft = startPos.X + finalDeltaX;
-                        double newTop = startPos.Y + finalDeltaY;
+                        if (fe == null) continue;
+                        double newLeft = startState.BaseLeft + boundedDeltaX;
+                        double newTop = startState.BaseTop + boundedDeltaY;
 
-                        // Restricciones (0,0 y Ancho/Alto Form)
-                        newLeft = Math.Max(0, newLeft);
-                        newTop = Math.Max(0, newTop);
-                        if (newLeft + fe.ActualWidth > formWidth) newLeft = formWidth - fe.ActualWidth;
-                        if (newTop + fe.ActualHeight > formHeight) newTop = formHeight - fe.ActualHeight;
-
-                        Canvas.SetLeft(control, newLeft);
-                        Canvas.SetTop(control, newTop);
+                        startState.DragTransform.X = newLeft - startState.BaseLeft;
+                        startState.DragTransform.Y = newTop - startState.BaseTop;
 
                         // Actualizar Tooltip de coordenadas
                         if (_selectedControls.Count == 1)
@@ -523,8 +663,7 @@ namespace VB6VisualMockupDesigner.Controls
 
             if (_isDragging)
             {
-                control?.ReleaseMouseCapture();
-                _isDragging = false;                
+                CommitDrag(control);
             }
 
             // Guardar Snapshot para Undo (esto ya lo tenías, asegúrate de mantenerlo)
@@ -1012,9 +1151,7 @@ namespace VB6VisualMockupDesigner.Controls
             // 4. CONECTAR EVENTOS (Esto aplica igual para ambos casos)
             if (newControl is FrameworkElement element)
             {
-                element.PreviewMouseDown += Control_PreviewMouseDown;
-                element.PreviewMouseMove += Control_PreviewMouseMove;
-                element.PreviewMouseUp += Control_PreviewMouseUp;
+                AttachControlInteractionHandlers(element);
 
                 // Menú contextual
                 if (this.Resources.Contains("ControlContextMenu"))
@@ -1036,9 +1173,7 @@ namespace VB6VisualMockupDesigner.Controls
             if (double.IsNaN(y)) y = 0;
 
             // Suscribir eventos
-            control.PreviewMouseDown += Control_PreviewMouseDown;
-            control.PreviewMouseMove += Control_PreviewMouseMove;
-            control.PreviewMouseUp += Control_PreviewMouseUp;
+            AttachControlInteractionHandlers(control);
 
             if (control is FrameworkElement fe)
             {
@@ -1068,7 +1203,13 @@ namespace VB6VisualMockupDesigner.Controls
 
             foreach (var ctrl in toDelete)
             {
-                DesignSurface.Children.Remove(ctrl);
+                DetachControlInteractionHandlers(ctrl);
+                _dragStates.Remove(ctrl);
+
+                if (VisualTreeHelper.GetParent(ctrl) is Panel parent)
+                {
+                    parent.Children.Remove(ctrl);
+                }
 
                 if (_selectionAdorners.ContainsKey(ctrl))
                 {

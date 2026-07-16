@@ -163,6 +163,11 @@ namespace VB6VisualMockupDesigner.Controls
         /// </summary>
         public void ClearCanvas()
         {
+            foreach (UIElement child in DesignSurface.Children)
+            {
+                DetachControlInteractionHandlers(child);
+            }
+
             // 1. Limpiar hijos visuales
             DesignSurface.Children.Clear();
 
@@ -170,6 +175,7 @@ namespace VB6VisualMockupDesigner.Controls
             _resizeHandles.Clear();
             _selectionAdorners.Clear(); // CORREGIDO: Antes era _selectionBorder
             _selectedControls.Clear();  // Importante limpiar la selección lógica también
+            _dragStates.Clear();
 
             // 3. Notificar que no hay nada seleccionado
             ControlSelected?.Invoke(this, null);
@@ -246,11 +252,10 @@ namespace VB6VisualMockupDesigner.Controls
                 if (element != null)
                 {
                     var fe = element as FrameworkElement;
+                    if (fe == null) continue;
 
                     // Conectar eventos de interacción (Definidos en Interaction.cs)
-                    fe.PreviewMouseDown += Control_PreviewMouseDown;
-                    fe.PreviewMouseMove += Control_PreviewMouseMove;
-                    fe.PreviewMouseUp += Control_PreviewMouseUp;
+                    AttachControlInteractionHandlers(fe);
                     fe.Cursor = Cursors.SizeAll;
 
                     // Posición y Tamaño
